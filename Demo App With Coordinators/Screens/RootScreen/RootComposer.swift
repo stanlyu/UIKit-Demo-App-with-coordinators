@@ -25,37 +25,7 @@ struct RootComposer: RootComposing {
     }
 
     func makeMainTabsViewController() -> UIViewController {
-        let tabBarController = UITabBarController()
-        
-        // Создаем первую вкладку "Главная"
-        let homeViewController = UIViewController()
-        homeViewController.title = "Главная"
-        homeViewController.tabBarItem = UITabBarItem(
-            title: "Главная",
-            image: nil, // Можно добавить иконку позже
-            selectedImage: nil
-        )
-        
-        // Создаем вторую вкладку "Корзина"
-        let cartViewController = UIViewController()
-        cartViewController.title = "Корзина"
-        cartViewController.tabBarItem = UITabBarItem(
-            title: "Корзина",
-            image: nil, // Можно добавить иконку позже
-            selectedImage: nil
-        )
-        
-        // Настраиваем цвет вкладок
-        if #available(iOS 15.0, *) {
-            let appearance = UITabBarAppearance()
-            appearance.configureWithOpaqueBackground()
-            tabBarController.tabBar.standardAppearance = appearance
-            tabBarController.tabBar.scrollEdgeAppearance = appearance
-        }
-        
-        // Добавляем вкладки в контроллер
-        tabBarController.viewControllers = [homeViewController, cartViewController]
-        
-        return tabBarController
+        let mainTabsComposer = MainTabsComposer()
+        return MainTabsCoordinator(composer: mainTabsComposer)
     }
 }
