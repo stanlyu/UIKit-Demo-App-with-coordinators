@@ -62,7 +62,6 @@ final class RootRouter: UIViewController, RootRouting {
     private func setupChildView(_ childView: UIView) {
         view.addSubview(childView)
         
-        // Настройка Auto Layout constraints
         childView.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
             childView.topAnchor.constraint(equalTo: view.topAnchor),

@@ -35,7 +35,7 @@ final class LaunchInteractor: LaunchInteracting {
         Task {
             continuation.yield(.loading)
             // Эмитируем загрузку необходимых данных для того, чтобы можно было обновить UI
-            try? await Task.sleep(for: .seconds(3))
+            try? await Task.sleep(for: .seconds(10))
             continuation.yield(.loaded)
             continuation.finish()
         }
