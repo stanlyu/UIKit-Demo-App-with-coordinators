@@ -7,7 +7,7 @@
 
 import UIKit
 
-protocol LaunchViewInput: AnyObject {
+protocol LaunchView: AnyObject {
     func startAnimation()
     func stopAnimation()
 }
@@ -193,7 +193,7 @@ class LaunchViewController: UIViewController {
 
 // MARK: - LaunchViewInput (Animation Logic)
 
-extension LaunchViewController: LaunchViewInput {
+extension LaunchViewController: LaunchView {
 
     func startAnimation() {
         guard !isAnimating else { return }

@@ -6,6 +6,9 @@
 //
 
 import UIKit
+import HomeFeature
+import CartFeature
+import DeliveryFeature
 
 final class MainTabsCoordinator: UIViewController {
 
@@ -53,6 +56,9 @@ final class MainTabsCoordinator: UIViewController {
         case .placeOrder(let orderID):
             _tabBarController.selectedViewController = cartViewController
             cartInput.placeOrder(orderID)
+        case .selectPickupPoint:
+            _tabBarController.present(DeliveryFeature.pickupPointsViewController(), animated: true)
+            break
         }
     }
 }

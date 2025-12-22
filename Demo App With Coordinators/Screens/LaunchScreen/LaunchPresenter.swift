@@ -10,7 +10,7 @@ protocol LaunchViewOutput: AnyObject {
 }
 
 final class LaunchPresenter {
-    weak var view: LaunchViewInput?
+    weak var view: LaunchView?
 
     init(interactor: LaunchInteracting, onEvent: @escaping (LaunchScreenEvent) -> Void) {
         self.interactor = interactor

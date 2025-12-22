@@ -1,15 +1,18 @@
 //
-//  TabsComposer.swift
+//  MainTabsComposer.swift
 //  Demo App With Coordinators
 //
 //  Created by Любченко Станислав Валерьевич on 18.12.2025.
 //
 
 import UIKit
+import HomeFeature
+import CartFeature
 
+@MainActor
 protocol MainTabsComposing {
     func makeTabBarController(with viewControllers: [UIViewController]) -> UITabBarController
-    func makeHomeViewController(with eventHandler: (HomeScreenEvent) -> Void) -> UIViewController
+    func makeHomeViewController(with eventHandler: @escaping (HomeScreenEvent) -> Void) -> UIViewController
     func makeCartViewController(with inputProvider: (CartInput) -> Void) -> UIViewController
 }
 
@@ -29,7 +32,7 @@ struct MainTabsComposer: MainTabsComposing {
         return tabBarController
     }
 
-    func makeHomeViewController(with eventHandler: (HomeScreenEvent) -> Void) -> UIViewController {
+    func makeHomeViewController(with eventHandler: @escaping (HomeScreenEvent) -> Void) -> UIViewController {
         let homeViewController = homeViewController(with: eventHandler)
         homeViewController.title = "Главная"
         homeViewController.tabBarItem = UITabBarItem(
@@ -37,7 +40,6 @@ struct MainTabsComposer: MainTabsComposing {
             image: nil,
             selectedImage: nil
         )
-        #warning("TODO: Implement makeHomeViewController in MainTabsComposer")
         return homeViewController
     }
 

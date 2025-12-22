@@ -16,16 +16,20 @@ protocol LaunchInteracting: AnyObject {
     func start(handler: @escaping (LaunchInteractingState) -> Void)
 }
 
-final class LaunchInteractor: LaunchInteracting {
-    private let stateStream: AsyncStream<LaunchInteractingState>
-    private let continuation: AsyncStream<LaunchInteractingState>.Continuation
-
+final class LaunchInteractor {
     init() {
         let (stream, continuation) = AsyncStream<LaunchInteractingState>.makeStream()
         stateStream = stream
         self.continuation = continuation
     }
-    
+
+    // MARK: - Private properties
+
+    private let stateStream: AsyncStream<LaunchInteractingState>
+    private let continuation: AsyncStream<LaunchInteractingState>.Continuation
+}
+
+extension LaunchInteractor: LaunchInteracting {
     func start(handler: @escaping (LaunchInteractingState) -> Void) {
         Task {
             for await state in self.stateStream {
@@ -35,7 +39,7 @@ final class LaunchInteractor: LaunchInteracting {
         Task {
             continuation.yield(.loading)
             // Эмитируем загрузку необходимых данных для того, чтобы можно было обновить UI
-            try? await Task.sleep(for: .seconds(10))
+            try? await Task.sleep(for: .seconds(5))
             continuation.yield(.loaded)
             continuation.finish()
         }

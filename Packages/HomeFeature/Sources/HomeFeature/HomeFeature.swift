@@ -9,9 +9,10 @@ import UIKit
 
 public enum HomeScreenEvent {
     case placeOrder(Int)
+    case selectPickupPoint
 }
 
-public func homeViewController(with eventHandler: (HomeScreenEvent) -> Void) -> UIViewController {
-    #warning("TODO: Implement homeViewController in HomeInterfaces")
-    return UIViewController()
+@MainActor
+public func homeViewController(with eventHandler: @escaping (HomeScreenEvent) -> Void) -> UIViewController {
+    HomeCoordinator(composer: HomeComposer(), eventHandler: eventHandler)
 }

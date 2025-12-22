@@ -7,6 +7,7 @@
 
 import UIKit
 
+@MainActor
 public protocol CartInput {
     func placeOrder(_ orderID: Int)
 }
