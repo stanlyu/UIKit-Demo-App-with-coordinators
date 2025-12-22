@@ -1,12 +1,7 @@
 //
-//  DeliveryCoordinator.swift
+//  PickupPointsViewController.swift
 //  DeliveryFeature
 //
 //  Created by Любченко Станислав Валерьевич on 22.12.2025.
 //
 
-import UIKit
-
-final class DeliveryCoordinator: UIViewController {
-    
-}

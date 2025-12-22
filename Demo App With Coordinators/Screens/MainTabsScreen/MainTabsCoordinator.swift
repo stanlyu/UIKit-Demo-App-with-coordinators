@@ -9,6 +9,7 @@ import UIKit
 import HomeFeature
 import CartFeature
 import DeliveryFeature
+import Core
 
 final class MainTabsCoordinator: UIViewController {
 
@@ -30,17 +31,7 @@ final class MainTabsCoordinator: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        addChild(_tabBarController)
-        view.addSubview(_tabBarController.view)
-
-        _tabBarController.view.translatesAutoresizingMaskIntoConstraints = false
-        NSLayoutConstraint.activate([
-            _tabBarController.view.topAnchor.constraint(equalTo: view.topAnchor),
-            _tabBarController.view.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            _tabBarController.view.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            _tabBarController.view.bottomAnchor.constraint(equalTo: view.bottomAnchor)
-        ])
-        _tabBarController.didMove(toParent: self)
+        setupChildViewController(_tabBarController)
     }
 
     // MARK: - Private members

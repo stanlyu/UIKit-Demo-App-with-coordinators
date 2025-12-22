@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import Core
 
 final class HomeCoordinator: UIViewController {
     init(composer: HomeComposing, eventHandler: @escaping (HomeScreenEvent) -> Void) {
@@ -20,18 +21,7 @@ final class HomeCoordinator: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        addChild(homeNavigationController)
-        view.addSubview(homeNavigationController.view)
-        
-        homeNavigationController.view.translatesAutoresizingMaskIntoConstraints = false
-        NSLayoutConstraint.activate([
-            homeNavigationController.view.topAnchor.constraint(equalTo: view.topAnchor),
-            homeNavigationController.view.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            homeNavigationController.view.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            homeNavigationController.view.bottomAnchor.constraint(equalTo: view.bottomAnchor)
-        ])
-        
-        homeNavigationController.didMove(toParent: self)
+        setupChildViewController(homeNavigationController)
     }
 
     // MARK: - Private members

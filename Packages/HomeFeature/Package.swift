@@ -7,11 +7,15 @@ let package = Package(
     products: [
         .library(name: "HomeFeature", targets: ["HomeFeature"]),
     ],
-    dependencies: [],
+    dependencies: [
+        .package(name: "Core", path: "../Core")
+    ],
     targets: [
         .target(
             name: "HomeFeature",
-            dependencies: [],
+            dependencies: [
+                "Core"
+            ],
             swiftSettings: [
                 .swiftLanguageMode(.v6)
             ]

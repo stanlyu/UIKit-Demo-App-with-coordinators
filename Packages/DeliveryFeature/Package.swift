@@ -7,11 +7,15 @@ let package = Package(
     products: [
         .library(name: "DeliveryFeature", targets: ["DeliveryFeature"]),
     ],
-    dependencies: [],
+    dependencies: [
+        .package(name: "Core", path: "../Core")
+    ],
     targets: [
         .target(
             name: "DeliveryFeature",
-            dependencies: [],
+            dependencies: [
+                "Core"
+            ],
             swiftSettings: [
                 .swiftLanguageMode(.v6)
             ]

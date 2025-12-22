@@ -8,11 +8,15 @@ let package = Package(
     products: [
         .library(name: "CartFeature", targets: ["CartFeature"]),
     ],
-    dependencies: [],
+    dependencies: [
+        .package(name: "Core", path: "../Core")
+    ],
     targets: [
         .target(
             name: "CartFeature",
-            dependencies: [],
+            dependencies: [
+                "Core"
+            ],
             swiftSettings: [
                 .swiftLanguageMode(.v6)
             ]

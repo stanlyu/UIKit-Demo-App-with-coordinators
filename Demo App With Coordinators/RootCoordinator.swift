@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import Core
 
 final class RootCoordinator: UIViewController {
 
@@ -23,7 +24,7 @@ final class RootCoordinator: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        addChildViewControllerInternal(contentViewController)
+        setupChildViewController(contentViewController)
     }
 
     // MARK: - Private members
@@ -47,13 +48,6 @@ final class RootCoordinator: UIViewController {
             viewController.didMove(toParent: self)
             self.contentViewController = viewController
         }
-    }
-
-    private func addChildViewControllerInternal(_ viewController: UIViewController) {
-        addChild(viewController)
-        setupChildView(viewController.view)
-        viewController.didMove(toParent: self)
-        contentViewController = viewController
     }
 
     private func setupChildView(_ childView: UIView) {
