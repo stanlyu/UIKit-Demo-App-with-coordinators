@@ -42,7 +42,7 @@ final class MainTabsCoordinator: UIViewController {
     private var cartInput: CartInput!
     private let composer: MainTabsComposing
 
-    private func handle(event: HomeScreenEvent) {
+    private func handle(event: HomeEvent) {
         switch event {
         case .placeOrder(let orderID):
             _tabBarController.selectedViewController = cartViewController

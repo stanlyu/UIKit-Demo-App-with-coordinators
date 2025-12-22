@@ -23,6 +23,13 @@ final class HomeViewController: UIViewController {
         view.backgroundColor = .systemMint
         loadingIndicator.layout(in: view)
         setupOrderButton()
+        title = "Главная"
+
+        let action = UIAction { [unowned self] _ in
+            self.viewOutput?.pickupPointButtonDidTap()
+        }
+
+        navigationItem.rightBarButtonItem = UIBarButtonItem(title: "ПВЗ", primaryAction: action)
         viewOutput?.viewDidLoad()
     }
 
@@ -75,16 +82,28 @@ final class HomeViewController: UIViewController {
     }
 
     @objc private func orderButtonTapped() {
-        viewOutput?.orderButtonTapped()
+        viewOutput?.orderButtonDidTap()
     }
 }
 
 extension HomeViewController: HomeView {
     func startLoading() {
         loadingIndicator.startLoading()
+
+        if #available(iOS 16.0, *) {
+            navigationItem.rightBarButtonItem?.isHidden = true
+        } else {
+            navigationItem.rightBarButtonItem?.isEnabled = false
+        }
     }
 
     func stopLoading() {
         loadingIndicator.stopLoading()
+
+        if #available(iOS 16.0, *) {
+            navigationItem.rightBarButtonItem?.isHidden = false
+        } else {
+            navigationItem.rightBarButtonItem?.isEnabled = true
+        }
     }
 }

@@ -7,13 +7,35 @@
 
 import UIKit
 
+typealias PickupPointsEventHandler = (PickupPointsPresenter.Event) -> Void
+typealias AddPickupPointEventHandler = (AddPickupPointsPresenter.Event) -> Void
+
+@MainActor
 protocol DeliveryComposing {
-    func makePickupPointsViewController() -> UINavigationController
+    func makePickupPointsViewController(
+        with eventHandler: @escaping PickupPointsEventHandler
+    ) -> UINavigationController
+
+    func makeAddPickupPointViewController(with eventHandler: @escaping AddPickupPointEventHandler) -> UIViewController
 }
 
 struct DeliveryComposer: DeliveryComposing {
-    func makePickupPointsViewController() -> UINavigationController {
-        #warning("TODO: Implement makePickupPointsViewController in DeliveryComposer")
-        return UINavigationController(rootViewController: UIViewController())
+    func makePickupPointsViewController(
+        with eventHandler: @escaping PickupPointsEventHandler
+    ) -> UINavigationController {
+        let service = PickupPointsService()
+        let interactor = PickupPointsInteractor(service: service)
+        let presenter = PickupPointsPresenter(interactor: interactor, onEvent: eventHandler)
+        let viewController = PickupPointsViewController()
+        presenter.view = viewController
+        viewController.viewOutput = presenter
+        let navigationController = UINavigationController(rootViewController: viewController)
+        navigationController.navigationBar.prefersLargeTitles = true
+        return navigationController
+    }
+
+    func makeAddPickupPointViewController(with eventHandler: @escaping AddPickupPointEventHandler) -> UIViewController {
+        let presenter = AddPickupPointsPresenter(onEvent: eventHandler)
+        return AddPickupPointsViewController(viewOutput: presenter)
     }
 }

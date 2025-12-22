@@ -9,10 +9,17 @@ import UIKit
 import Core
 
 final class HomeCoordinator: UIViewController {
-    init(composer: HomeComposing, eventHandler: @escaping (HomeScreenEvent) -> Void) {
+    init(composer: HomeComposing, eventHandler: @escaping (HomeEvent) -> Void) {
         self.composer = composer
         super.init(nibName: nil, bundle: nil)
-        homeNavigationController = composer.makeHomeNavigationController(with: eventHandler)
+        homeNavigationController = composer.makeHomeNavigationController { [unowned self] event in
+            switch event {
+            case .onPlaceOrderTap(let orderID):
+                eventHandler(.placeOrder(orderID))
+            case .onPickupPointTap:
+                eventHandler(.selectPickupPoint)
+            }
+        }
     }
 
     required init?(coder: NSCoder) {

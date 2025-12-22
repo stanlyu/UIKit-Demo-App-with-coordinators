@@ -8,13 +8,19 @@
 @MainActor
 protocol HomeViewOutput: AnyObject {
     func viewDidLoad()
-    func orderButtonTapped()
+    func orderButtonDidTap()
+    func pickupPointButtonDidTap()
 }
 
 final class HomePresenter {
+    enum Event {
+        case onPickupPointTap
+        case onPlaceOrderTap(Int)
+    }
+
     weak var view: HomeView?
 
-    init(interactor: HomeInteracting, onEvent: @escaping (HomeScreenEvent) -> Void) {
+    init(interactor: HomeInteracting, onEvent: @escaping (Event) -> Void) {
         self.interactor = interactor
         self.onEvent = onEvent
     }
@@ -22,7 +28,7 @@ final class HomePresenter {
     // MARK: - Private properties
 
     private let interactor: HomeInteracting
-    private let onEvent: (HomeScreenEvent) -> Void
+    private let onEvent: (Event) -> Void
 }
 
 extension HomePresenter: HomeViewOutput {
@@ -34,7 +40,11 @@ extension HomePresenter: HomeViewOutput {
         }
     }
 
-    func orderButtonTapped() {
-        onEvent(.placeOrder(Int.random(in: 1...1000000)))
+    func orderButtonDidTap() {
+        onEvent(.onPlaceOrderTap(interactor.orderID))
+    }
+
+    func pickupPointButtonDidTap() {
+        onEvent(.onPickupPointTap)
     }
 }

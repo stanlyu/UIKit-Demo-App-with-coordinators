@@ -7,6 +7,7 @@
 
 @MainActor
 protocol HomeInteracting: AnyObject {
+    var orderID: Int { get }
     func fetchData(completion: @escaping () -> Void)
 }
 
@@ -22,6 +23,10 @@ final class HomeInteractor {
 }
 
 extension HomeInteractor: HomeInteracting {
+    var orderID: Int {
+        Int.random(in: 1...1000000)
+    }
+
     func fetchData(completion: @escaping () -> Void) {
         Task {
             await service.fetchHomeData()

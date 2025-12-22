@@ -7,12 +7,12 @@
 
 import UIKit
 
-public enum HomeScreenEvent {
+public enum HomeEvent {
     case placeOrder(Int)
     case selectPickupPoint
 }
 
 @MainActor
-public func homeViewController(with eventHandler: @escaping (HomeScreenEvent) -> Void) -> UIViewController {
+public func homeViewController(with eventHandler: @escaping (HomeEvent) -> Void) -> UIViewController {
     HomeCoordinator(composer: HomeComposer(), eventHandler: eventHandler)
 }

@@ -8,10 +8,5 @@
 import UIKit
 
 public func pickupPointsViewController() -> UIViewController {
-    #warning("TODO: Implement makePickupPointsViewController in DeliveryFeature")
-    let viewController = UIViewController()
-    viewController.title = "Выбор ПВЗ"
-    let navigationController = UINavigationController(rootViewController: viewController)
-    navigationController.navigationBar.prefersLargeTitles = true
-    return navigationController
+    DeliveryCoordinator(composer: DeliveryComposer())
 }
