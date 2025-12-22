@@ -48,7 +48,12 @@ final class MainTabsCoordinator: UIViewController {
         switch homeEvent {
         case .placeOrder(let orderID):
             _tabBarController.selectedViewController = cartViewController
-            cartInput.placeOrder(orderID)
+            cartInput.placeOrder(orderID) { [unowned self] event in
+                switch event {
+                case .changePickupPoint:
+                    self._tabBarController.present(DeliveryFeature.pickupPointsViewController(), animated: true)
+                }
+            }
         case .selectPickupPoint:
             _tabBarController.present(DeliveryFeature.pickupPointsViewController(), animated: true)
         }

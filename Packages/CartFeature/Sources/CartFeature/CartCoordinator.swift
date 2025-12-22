@@ -15,7 +15,7 @@ final class CartCoordinator: UIViewController {
         cartNavigationController = composer.makeCartViewController { [unowned self] event in
             switch event {
             case .onPlaceOrderTap(let orderID):
-                self.placeOrder(orderID)
+                self.placeOrder(orderID, eventHandler: eventHandler)
             }
         }
     }
@@ -36,8 +36,18 @@ final class CartCoordinator: UIViewController {
 }
 
 extension CartCoordinator: CartInput {
-    func placeOrder(_ orderID: Int) {
-        let placeOrderVC = composer.makePlaceOrderViewController(orderID: orderID)
+    func placeOrder(_ orderID: Int, eventHandler: @escaping (CartEvent) -> Void) {
+        let placeOrderVC = composer.makePlaceOrderViewController(with: orderID) { [unowned self] event in
+            switch event {
+            case .onBackTap:
+                self.cartNavigationController.popViewController(animated: true)
+            case .onChangePickupPointTap:
+                eventHandler(.changePickupPoint)
+            case .onCompletion:
+                let orderConfirmationVC = self.composer.makeOrderConfirmationViewController()
+                self.cartNavigationController.pushViewController(orderConfirmationVC, animated: true)
+            }
+        }
         cartNavigationController.pushViewController(placeOrderVC, animated: true)
     }
 }
