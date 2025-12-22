@@ -16,11 +16,13 @@ final class MainTabsCoordinator: UIViewController {
     init(composer: MainTabsComposing) {
         self.composer = composer
         super.init(nibName: nil, bundle: nil)
-        mainViewController = composer.makeHomeViewController { [weak self] event in
-            self?.handle(event: event)
+        mainViewController = composer.makeHomeViewController { [unowned self] event in
+            self.handle(homeEvent: event)
         }
-        cartViewController = composer.makeCartViewController { [weak self] input in
-            self?.cartInput = input
+        cartViewController = composer.makeCartViewController { [unowned self] input in
+            self.cartInput = input
+        } eventHandler: { [unowned self] event in
+            self.handle(cartEvent: event)
         }
         _tabBarController = composer.makeTabBarController(with: [mainViewController, cartViewController])
     }
@@ -42,14 +44,20 @@ final class MainTabsCoordinator: UIViewController {
     private var cartInput: CartInput!
     private let composer: MainTabsComposing
 
-    private func handle(event: HomeEvent) {
-        switch event {
+    private func handle(homeEvent: HomeEvent) {
+        switch homeEvent {
         case .placeOrder(let orderID):
             _tabBarController.selectedViewController = cartViewController
             cartInput.placeOrder(orderID)
         case .selectPickupPoint:
             _tabBarController.present(DeliveryFeature.pickupPointsViewController(), animated: true)
-            break
+        }
+    }
+
+    private func handle(cartEvent: CartEvent) {
+        switch cartEvent {
+        case .changePickupPoint:
+            _tabBarController.present(DeliveryFeature.pickupPointsViewController(), animated: true)
         }
     }
 }

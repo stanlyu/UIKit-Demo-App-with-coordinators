@@ -1,35 +1,29 @@
 //
-//  HomeViewController.swift
-//  HomeFeature
+//  CartViewController.swift
+//  CartFeature
 //
-//  Created by Любченко Станислав Валерьевич on 19.12.2025.
+//  Created by Любченко Станислав Валерьевич on 22.12.2025.
 //
 
 import UIKit
 import Core
 
 @MainActor
-protocol HomeView: AnyObject {
+protocol CartView: AnyObject {
     func startLoading()
     func stopLoading()
 }
 
-final class HomeViewController: UIViewController {
+final class CartViewController: UIViewController {
 
-    var viewOutput: HomeViewOutput?
+    var viewOutput: CartViewOutput?
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        view.backgroundColor = .systemMint
+        view.backgroundColor = .systemOrange
         loadingIndicator.layout(in: view)
         setupOrderButton()
-        title = "Главная"
-
-        let action = UIAction { [unowned self] _ in
-            self.viewOutput?.pickupPointButtonDidTap()
-        }
-
-        navigationItem.rightBarButtonItem = UIBarButtonItem(title: "ПВЗ", primaryAction: action)
+        title = "Корзина"
         viewOutput?.viewDidLoad()
     }
 
@@ -42,10 +36,10 @@ final class HomeViewController: UIViewController {
     private lazy var loadingIndicator: LoadingView = LoadingView {
         placeOrderButton
     }
-
     private lazy var placeOrderButton: UIButton = {
         let button = UIButton.styledButton(
-            title: "Оформить заказ"
+            title: "Оформить заказ",
+            backgroundColor: .systemPurple
         ) { [weak self] in
             self?.viewOutput?.placeOrderButtonDidTap()
         }
@@ -66,7 +60,7 @@ final class HomeViewController: UIViewController {
     }
 }
 
-extension HomeViewController: HomeView {
+extension CartViewController: CartView {
     func startLoading() {
         loadingIndicator.startLoading()
         deactivateNavigationRightBarButton()

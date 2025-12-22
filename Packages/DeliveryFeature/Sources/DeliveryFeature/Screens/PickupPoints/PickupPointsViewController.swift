@@ -37,21 +37,11 @@ final class PickupPointsViewController: UIViewController {
 extension PickupPointsViewController: PickupPointsView {
     func startLoading() {
         loadingIndicator.startLoading()
-
-        if #available(iOS 16.0, *) {
-            navigationItem.rightBarButtonItem?.isHidden = true
-        } else {
-            navigationItem.rightBarButtonItem?.isEnabled = false
-        }
+        deactivateNavigationRightBarButton()
     }
     
     func stopLoading() {
         loadingIndicator.stopLoading()
-
-        if #available(iOS 16.0, *) {
-            navigationItem.rightBarButtonItem?.isHidden = false
-        } else {
-            navigationItem.rightBarButtonItem?.isEnabled = true
-        }
+        activateNavigationRightBarButton()
     }
 }

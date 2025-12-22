@@ -1,40 +1,37 @@
 //
-//  HomePresenter.swift
-//  HomeFeature
+//  CartPresenter.swift
+//  CartFeature
 //
-//  Created by Любченко Станислав Валерьевич on 19.12.2025.
+//  Created by Любченко Станислав Валерьевич on 22.12.2025.
 //
 
 @MainActor
-protocol HomeViewOutput: AnyObject {
+protocol CartViewOutput: AnyObject {
     func viewDidLoad()
     func placeOrderButtonDidTap()
-    func pickupPointButtonDidTap()
 }
 
-final class HomePresenter {
+final class CartPresenter {
     enum Event {
-        case onPickupPointTap
         case onPlaceOrderTap(Int)
     }
 
-    weak var view: HomeView?
+    weak var view: CartView?
 
-    init(interactor: HomeInteracting, onEvent: @escaping (Event) -> Void) {
+    init(interactor: CartInteracting, onEvent: @escaping (Event) -> Void) {
         self.interactor = interactor
         self.onEvent = onEvent
     }
 
     // MARK: - Private properties
 
-    private let interactor: HomeInteracting
+    private let interactor: CartInteracting
     private let onEvent: (Event) -> Void
 }
 
-extension HomePresenter: HomeViewOutput {
+extension CartPresenter: CartViewOutput {
     func viewDidLoad() {
         view?.startLoading()
-        
         interactor.fetchData { [unowned self] in
             self.view?.stopLoading()
         }
@@ -42,9 +39,5 @@ extension HomePresenter: HomeViewOutput {
 
     func placeOrderButtonDidTap() {
         onEvent(.onPlaceOrderTap(interactor.orderID))
-    }
-
-    func pickupPointButtonDidTap() {
-        onEvent(.onPickupPointTap)
     }
 }

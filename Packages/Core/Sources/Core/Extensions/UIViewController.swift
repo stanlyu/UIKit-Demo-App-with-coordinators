@@ -21,4 +21,20 @@ public extension UIViewController {
         ])
         viewController.didMove(toParent: self)
     }
+
+    func activateNavigationRightBarButton() {
+        if #available(iOS 16.0, *) {
+            navigationItem.rightBarButtonItem?.isHidden = false
+        } else {
+            navigationItem.rightBarButtonItem?.isEnabled = true
+        }
+    }
+
+    func deactivateNavigationRightBarButton() {
+        if #available(iOS 16.0, *) {
+            navigationItem.rightBarButtonItem?.isHidden = true
+        } else {
+            navigationItem.rightBarButtonItem?.isEnabled = false
+        }
+    }
 }

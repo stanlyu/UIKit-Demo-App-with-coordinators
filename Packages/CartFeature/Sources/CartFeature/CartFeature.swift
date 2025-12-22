@@ -7,14 +7,21 @@
 
 import UIKit
 
+public enum CartEvent {
+    case changePickupPoint
+}
+
 @MainActor
 public protocol CartInput {
     func placeOrder(_ orderID: Int)
 }
 
-public func cartViewController(with inputProvider: (CartInput) -> Void) -> UIViewController {
-    #warning("TODO: Implement cartViewController in CartInterfaces")
-    let cartCoordinator = CartCoordinator()
-    inputProvider(cartCoordinator)
-    return cartCoordinator
+@MainActor
+public func cartViewController(
+    with inputProvider: (CartInput) -> Void,
+    eventHandler: @escaping (CartEvent) -> Void
+) -> UIViewController {
+    let coordinator = CartCoordinator(composer: CartComposer(), eventHandler: eventHandler)
+    inputProvider(coordinator)
+    return coordinator
 }
