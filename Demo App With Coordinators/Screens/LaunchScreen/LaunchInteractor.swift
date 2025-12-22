@@ -39,7 +39,7 @@ extension LaunchInteractor: LaunchInteracting {
         Task {
             continuation.yield(.loading)
             // Эмитируем загрузку необходимых данных для того, чтобы можно было обновить UI
-            try? await Task.sleep(for: .seconds(5))
+            try? await Task.sleep(nanoseconds: UInt64.random(in: 2_000_000_000...5_000_000_000))
             continuation.yield(.loaded)
             continuation.finish()
         }

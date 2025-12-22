@@ -44,7 +44,12 @@ extension CartCoordinator: CartInput {
             case .onChangePickupPointTap:
                 eventHandler(.changePickupPoint)
             case .onCompletion:
-                let orderConfirmationVC = self.composer.makeOrderConfirmationViewController()
+                let orderConfirmationVC = self.composer.makeOrderConfirmationViewController { event in
+                    switch event {
+                    case .onReturnTap:
+                        self.cartNavigationController.popToRootViewController(animated: true)
+                    }
+                }
                 self.cartNavigationController.pushViewController(orderConfirmationVC, animated: true)
             }
         }

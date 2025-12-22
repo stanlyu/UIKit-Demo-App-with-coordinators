@@ -9,6 +9,7 @@ import UIKit
 
 typealias CartEventHandler = (CartPresenter.Event) -> Void
 typealias PlaceOrderEventHandler = (PlaceOrderPresenter.Event) -> Void
+typealias OrderConfirmationEventHandler = (OrderConfirmationPresenter.Event) -> Void
 
 @MainActor
 protocol CartComposing {
@@ -19,7 +20,9 @@ protocol CartComposing {
         eventHandler: @escaping PlaceOrderEventHandler
     ) -> UIViewController
 
-    func makeOrderConfirmationViewController() -> UIViewController
+    func makeOrderConfirmationViewController(
+        with eventHandler: @escaping OrderConfirmationEventHandler
+    ) -> UIViewController
 }
 
 struct CartComposer: CartComposing {
@@ -48,8 +51,12 @@ struct CartComposer: CartComposing {
         return viewController
     }
 
-    func makeOrderConfirmationViewController() -> UIViewController {
-        #warning("TODO: Implement makeOrderConfirmationViewController in CartComposer")
-        return UIViewController()
+    func makeOrderConfirmationViewController(
+        with eventHandler: @escaping OrderConfirmationEventHandler
+    ) -> UIViewController {
+        let presenter = OrderConfirmationPresenter(onEvent: eventHandler)
+        let viewController = OrderConfirmationViewController()
+        viewController.viewOutput = presenter
+        return viewController
     }
 }
