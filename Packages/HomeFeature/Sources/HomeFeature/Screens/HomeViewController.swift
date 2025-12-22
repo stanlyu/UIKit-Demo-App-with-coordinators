@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import Core
 
 @MainActor
 protocol HomeView: AnyObject {
@@ -20,7 +21,7 @@ final class HomeViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .systemMint
-        setupLoadingIndicator()
+        loadingIndicator.layout(in: view)
         setupOrderButton()
         viewOutput?.viewDidLoad()
     }
@@ -32,15 +33,9 @@ final class HomeViewController: UIViewController {
     }
 
     // MARK: - Private properties
-    private let loadingIndicator: UIActivityIndicatorView = {
-        let indicator = UIActivityIndicatorView(style: .large)
-        indicator.translatesAutoresizingMaskIntoConstraints = false
-        indicator.hidesWhenStopped = true
-        indicator.color = .systemGray
-        indicator.alpha = 0.0
-        return indicator
-    }()
-
+    private lazy var loadingIndicator: LoadingView = LoadingView {
+        orderButton
+    }
     private lazy var orderButton: UIButton = {
         let button = UIButton(type: .system)
         button.translatesAutoresizingMaskIntoConstraints = false
@@ -69,15 +64,6 @@ final class HomeViewController: UIViewController {
     }()
 
     // MARK: - Private methods
-    
-    private func setupLoadingIndicator() {
-        view.addSubview(loadingIndicator)
-        
-        NSLayoutConstraint.activate([
-            loadingIndicator.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            loadingIndicator.centerYAnchor.constraint(equalTo: view.centerYAnchor)
-        ])
-    }
 
     private func setupOrderButton() {
         view.addSubview(orderButton)
@@ -88,15 +74,6 @@ final class HomeViewController: UIViewController {
         ])
     }
 
-    private func animateViews(isLoading: Bool, completion: (() -> Void)? = nil) {
-        UIView.animate(withDuration: 0.3) {
-            self.orderButton.alpha = isLoading ? 0.0 : 1.0
-            self.loadingIndicator.alpha = isLoading ? 1.0 : 0.0
-        } completion: { _ in
-            completion?()
-        }
-    }
-
     @objc private func orderButtonTapped() {
         viewOutput?.orderButtonTapped()
     }
@@ -104,13 +81,10 @@ final class HomeViewController: UIViewController {
 
 extension HomeViewController: HomeView {
     func startLoading() {
-        loadingIndicator.startAnimating()
-        animateViews(isLoading: true)
+        loadingIndicator.startLoading()
     }
 
     func stopLoading() {
-        animateViews(isLoading: false) { [weak self] in
-            self?.loadingIndicator.stopAnimating()
-        }
+        loadingIndicator.stopLoading()
     }
 }
