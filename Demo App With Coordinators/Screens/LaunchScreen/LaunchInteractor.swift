@@ -7,41 +7,26 @@
 
 import Foundation
 
-enum LaunchInteractingState {
-    case loading
-    case loaded
-}
-
+@MainActor
 protocol LaunchInteracting: AnyObject {
-    func start(handler: @escaping (LaunchInteractingState) -> Void)
+    func fetchData(completion: @escaping () -> Void)
 }
 
 final class LaunchInteractor {
-    init() {
-        let (stream, continuation) = AsyncStream<LaunchInteractingState>.makeStream()
-        stateStream = stream
-        self.continuation = continuation
+    init(service: LaunchServicing) {
+        self.service = service
     }
 
     // MARK: - Private properties
 
-    private let stateStream: AsyncStream<LaunchInteractingState>
-    private let continuation: AsyncStream<LaunchInteractingState>.Continuation
+    private let service: LaunchServicing
 }
 
 extension LaunchInteractor: LaunchInteracting {
-    func start(handler: @escaping (LaunchInteractingState) -> Void) {
+    func fetchData(completion: @escaping () -> Void) {
         Task {
-            for await state in self.stateStream {
-                handler(state)
-            }
-        }
-        Task {
-            continuation.yield(.loading)
-            // Эмитируем загрузку необходимых данных для того, чтобы можно было обновить UI
-            try? await Task.sleep(nanoseconds: UInt64.random(in: 2_000_000_000...5_000_000_000))
-            continuation.yield(.loaded)
-            continuation.finish()
+            await service.fetchData()
+            completion()
         }
     }
 }

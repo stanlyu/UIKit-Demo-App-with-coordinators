@@ -22,6 +22,7 @@ public func cartViewController(
     eventHandler: @escaping (CartEvent) -> Void
 ) -> UIViewController {
     let coordinator = CartCoordinator(composer: CartComposer(), eventHandler: eventHandler)
+    coordinator.navigationBar.prefersLargeTitles = true
     inputProvider(coordinator)
     return coordinator
 }

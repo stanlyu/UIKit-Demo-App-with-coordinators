@@ -23,14 +23,25 @@ struct MainTabsComposer: MainTabsComposing {
     func makeTabBarController(with viewControllers: [UIViewController]) -> UITabBarController {
         let tabBarController = UITabBarController()
 
-        // Настраиваем цвет вкладок
-        if #available(iOS 15.0, *) {
-            let appearance = UITabBarAppearance()
-            appearance.configureWithOpaqueBackground()
-            tabBarController.tabBar.standardAppearance = appearance
-            tabBarController.tabBar.scrollEdgeAppearance = appearance
-        }
-
+        let appearance = UITabBarAppearance()
+        appearance.configureWithTransparentBackground()
+        let fontSize: CGFloat = 12
+        let normalAttributes: [NSAttributedString.Key: Any] = [
+            .font: UIFont.systemFont(ofSize: fontSize, weight: .medium),
+            .foregroundColor: UIColor.secondaryLabel
+        ]
+        let selectedAttributes: [NSAttributedString.Key: Any] = [
+            .font: UIFont.systemFont(ofSize: fontSize, weight: .bold),
+            .foregroundColor: UIColor.systemBlue
+        ]
+        let itemAppearance = UITabBarItemAppearance()
+        itemAppearance.normal.titleTextAttributes = normalAttributes
+        itemAppearance.selected.titleTextAttributes = selectedAttributes
+        appearance.stackedLayoutAppearance = itemAppearance
+        appearance.inlineLayoutAppearance = itemAppearance
+        appearance.compactInlineLayoutAppearance = itemAppearance
+        tabBarController.tabBar.standardAppearance = appearance
+        tabBarController.tabBar.scrollEdgeAppearance = appearance
         tabBarController.viewControllers = viewControllers
         return tabBarController
     }

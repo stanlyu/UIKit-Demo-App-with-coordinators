@@ -5,7 +5,7 @@
 //  Created by Любченко Станислав Валерьевич on 22.12.2025.
 //
 
-protocol PlaceOrderServicing {
+protocol PlaceOrderServicing: Sendable {
     @concurrent func placeOrder(orderID: Int) async
 }
 

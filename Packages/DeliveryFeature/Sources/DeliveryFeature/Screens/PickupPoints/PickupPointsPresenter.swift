@@ -33,8 +33,8 @@ extension PickupPointsPresenter: PickupPointsViewOutput {
     func viewDidLoad() {
         view?.startLoading()
 
-        interactor.fetchData { [unowned self] in
-            self.view?.stopLoading()
+        interactor.fetchData { [weak self] in
+            self?.view?.stopLoading()
         }
     }
 

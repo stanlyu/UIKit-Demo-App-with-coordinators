@@ -1,5 +1,5 @@
 //
-//  RootCoordinator.swift
+//  ApplicationCoordinator.swift
 //  Demo App With Coordinators
 //
 //  Created by Любченко Станислав Валерьевич on 17.12.2025.
@@ -8,9 +8,9 @@
 import UIKit
 import Core
 
-final class RootCoordinator: UIViewController {
+final class ApplicationCoordinator: UIViewController {
 
-    init(composer: RootComposing = RootComposer()) {
+    init(composer: ApplicationComposing = ApplicationComposer()) {
         self.composer = composer
         super.init(nibName: nil, bundle: nil)
         contentViewController = composer.makeLaunchViewController { [unowned self] event in
@@ -29,7 +29,7 @@ final class RootCoordinator: UIViewController {
 
     // MARK: - Private members
 
-    private let composer: RootComposing
+    private let composer: ApplicationComposing
     private var contentViewController: UIViewController!
 
     private func routeToViewController(_ viewController: UIViewController) {
@@ -74,7 +74,7 @@ protocol RootContentProviding: AnyObject {
     var content: UIViewController { get }
 }
 
-extension RootCoordinator: RootContentProviding {
+extension ApplicationCoordinator: RootContentProviding {
     var content: UIViewController {
         composer.makeLaunchViewController(with: handleLaunchEvent)
     }

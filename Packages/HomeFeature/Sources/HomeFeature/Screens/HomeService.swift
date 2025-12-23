@@ -5,7 +5,7 @@
 //  Created by Любченко Станислав Валерьевич on 19.12.2025.
 //
 
-protocol HomeServicing {
+protocol HomeServicing: Sendable {
     @concurrent func fetchHomeData() async
 }
 

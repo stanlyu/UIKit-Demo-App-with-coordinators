@@ -1,5 +1,5 @@
 //
-//  TabsCoordinator.swift
+//  MainTabsCoordinator.swift
 //  Demo App With Coordinators
 //
 //  Created by Любченко Станислав Валерьевич on 18.12.2025.

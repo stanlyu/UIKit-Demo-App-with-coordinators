@@ -13,7 +13,7 @@ typealias OrderConfirmationEventHandler = (OrderConfirmationPresenter.Event) -> 
 
 @MainActor
 protocol CartComposing {
-    func makeCartViewController(with eventHandler: @escaping CartEventHandler) -> UINavigationController
+    func makeCartViewController(with eventHandler: @escaping CartEventHandler) -> UIViewController
 
     func makePlaceOrderViewController(
         with orderID: Int,
@@ -26,16 +26,14 @@ protocol CartComposing {
 }
 
 struct CartComposer: CartComposing {
-    func makeCartViewController(with eventHandler: @escaping CartEventHandler) -> UINavigationController {
+    func makeCartViewController(with eventHandler: @escaping CartEventHandler) -> UIViewController {
         let service = CartService()
         let interactor = CartInteractor(service: service)
         let presenter = CartPresenter(interactor: interactor, onEvent: eventHandler)
         let cartViewController = CartViewController()
         presenter.view = cartViewController
         cartViewController.viewOutput = presenter
-        let navigationController = UINavigationController(rootViewController: cartViewController)
-        navigationController.navigationBar.prefersLargeTitles = true
-        return navigationController
+        return cartViewController
     }
 
     func makePlaceOrderViewController(
@@ -48,6 +46,7 @@ struct CartComposer: CartComposing {
         let viewController = PlaceOrderViewController()
         presenter.view = viewController
         viewController.viewOutput = presenter
+        viewController.hidesBottomBarWhenPushed = true
         return viewController
     }
 

@@ -48,9 +48,9 @@ extension PlaceOrderPresenter: PlaceOrderViewOutput {
     
     func continueButtonDidTap() {
         view?.startLoading()
-        interactor.placeOrder { [unowned self] in
-            self.view?.stopLoading()
-            onEvent(.onCompletion)
+        interactor.placeOrder { [weak self] in
+            self?.view?.stopLoading()
+            self?.onEvent(.onCompletion)
         }
     }
 }

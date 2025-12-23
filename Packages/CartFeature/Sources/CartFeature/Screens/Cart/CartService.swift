@@ -5,7 +5,7 @@
 //  Created by Любченко Станислав Валерьевич on 22.12.2025.
 //
 
-protocol CartServicing {
+protocol CartServicing: Sendable {
     @concurrent func fetchCartData() async
 }
 

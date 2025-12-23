@@ -25,14 +25,10 @@ final class LaunchPresenter {
 
 extension LaunchPresenter: LaunchViewOutput {
     func viewDidLoad() {
-        interactor.start { [unowned self] state in
-            switch state {
-            case .loaded:
-                self.view?.stopAnimation()
-                self.onEvent(.mainFlowStarted)
-            case .loading:
-                self.view?.startAnimation()
-            }
+        view?.startAnimation()
+        interactor.fetchData { [weak self] in
+            self?.view?.stopAnimation()
+            self?.onEvent(.mainFlowStarted)
         }
     }
 }
