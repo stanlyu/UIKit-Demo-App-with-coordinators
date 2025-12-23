@@ -31,6 +31,22 @@ final class PlaceOrderViewController: UIViewController {
             self.viewOutput?.changePickupPointButtonDidTap()
         }
 
+        if #available(iOS 16.0, *) {
+            navigationItem.backAction = UIAction { [weak self] _ in
+                self?.viewOutput?.backButtonDidTap()
+            }
+        } else {
+            let backButton = UIBarButtonItem(
+                    image: UIImage(systemName: "chevron.left"),
+                    style: .plain,
+                    target: self,
+                    action: #selector(handleBackButtonTap)
+                )
+
+                navigationItem.leftBarButtonItem = backButton
+                navigationController?.interactivePopGestureRecognizer?.delegate = self
+        }
+
         navigationItem.rightBarButtonItem = UIBarButtonItem(title: "Смена ПВЗ", primaryAction: action)
         viewOutput?.viewDidLoad()
     }
@@ -85,6 +101,10 @@ final class PlaceOrderViewController: UIViewController {
             subtitleLabel.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 8)
         ])
     }
+
+    @objc private func handleBackButtonTap() {
+        viewOutput?.backButtonDidTap()
+    }
 }
 
 extension PlaceOrderViewController: PlaceOrderView {
@@ -101,5 +121,14 @@ extension PlaceOrderViewController: PlaceOrderView {
     func setNavigationSubtitle(_ subtitle: String) {
         subtitleLabel.text = subtitle
         self.subtitleLabel.alpha = subtitle.isEmpty ? 0.0 : 1.0
+    }
+}
+
+extension PlaceOrderViewController: UIGestureRecognizerDelegate {
+    func gestureRecognizer(
+        _ gestureRecognizer: UIGestureRecognizer,
+        shouldBeRequiredToFailBy otherGestureRecognizer: UIGestureRecognizer
+    ) -> Bool {
+        return true
     }
 }

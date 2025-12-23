@@ -24,8 +24,36 @@ class AddPickupPointsViewController: UIViewController {
         super.viewDidLoad()
         view.backgroundColor = .systemYellow
         title = "Добавить ПВЗ"
-        navigationItem.backBarButtonItem = UIBarButtonItem(primaryAction: UIAction(handler: { [unowned self] _ in
-            self.viewOutput.backButtonDidTap()
-        }))
+
+        if #available(iOS 16.0, *) {
+            navigationItem.backAction = UIAction { [weak self] _ in
+                self?.viewOutput.backButtonDidTap()
+            }
+        } else {
+            let backButton = UIBarButtonItem(
+                    image: UIImage(systemName: "chevron.left"),
+                    style: .plain,
+                    target: self,
+                    action: #selector(handleBackButtonTap)
+                )
+
+                navigationItem.leftBarButtonItem = backButton
+                navigationController?.interactivePopGestureRecognizer?.delegate = self
+        }
+    }
+
+    // MARK: - Private members
+
+    @objc private func handleBackButtonTap() {
+        viewOutput.backButtonDidTap()
+    }
+}
+
+extension AddPickupPointsViewController: UIGestureRecognizerDelegate {
+    func gestureRecognizer(
+        _ gestureRecognizer: UIGestureRecognizer,
+        shouldBeRequiredToFailBy otherGestureRecognizer: UIGestureRecognizer
+    ) -> Bool {
+        return true
     }
 }
