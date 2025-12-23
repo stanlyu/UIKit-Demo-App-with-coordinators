@@ -11,19 +11,17 @@ typealias HomeEventHandler = (HomePresenter.Event) -> Void
 
 @MainActor
 protocol HomeComposing {
-    func makeHomeNavigationController(with eventHandler: @escaping HomeEventHandler) -> UINavigationController
+    func makeHomeViewController(with eventHandler: @escaping HomeEventHandler) -> UIViewController
 }
 
 struct HomeComposer: HomeComposing {
-    func makeHomeNavigationController(with eventHandler: @escaping HomeEventHandler) -> UINavigationController {
+    func makeHomeViewController(with eventHandler: @escaping HomeEventHandler) -> UIViewController {
         let service = HomeService()
         let interactor = HomeInteractor(service: service)
         let homePresenter = HomePresenter(interactor: interactor, onEvent: eventHandler)
         let homeViewController = HomeViewController()
         homePresenter.view = homeViewController
         homeViewController.viewOutput = homePresenter
-        let navigationController = UINavigationController(rootViewController: homeViewController)
-        navigationController.navigationBar.prefersLargeTitles = true
-        return navigationController
+        return homeViewController
     }
 }

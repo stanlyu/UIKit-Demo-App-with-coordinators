@@ -8,11 +8,11 @@
 import UIKit
 import Core
 
-final class HomeCoordinator: UIViewController {
+final class HomeCoordinator: UINavigationController {
     init(composer: HomeComposing, eventHandler: @escaping (HomeEvent) -> Void) {
         self.composer = composer
         super.init(nibName: nil, bundle: nil)
-        homeNavigationController = composer.makeHomeNavigationController { [unowned self] event in
+        let rootViewController = composer.makeHomeViewController { [unowned self] event in
             switch event {
             case .onPlaceOrderTap(let orderID):
                 eventHandler(.placeOrder(orderID))
@@ -20,19 +20,14 @@ final class HomeCoordinator: UIViewController {
                 eventHandler(.selectPickupPoint)
             }
         }
+        self.setViewControllers([rootViewController], animated: false)
     }
 
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
 
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        setupChildViewController(homeNavigationController)
-    }
-
     // MARK: - Private members
 
     private let composer: HomeComposing
-    private var homeNavigationController: UINavigationController!
 }
