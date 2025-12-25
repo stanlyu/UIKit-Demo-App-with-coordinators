@@ -11,11 +11,12 @@ import Core
 final class CartCoordinator: UINavigationController {
     init(composer: CartComposing, eventHandler: @escaping (CartEvent) -> Void) {
         self.composer = composer
+        self.eventHandler = eventHandler
         super.init(nibName: nil, bundle: nil)
         let rootViewController = composer.makeCartViewController { [unowned self] event in
             switch event {
             case .onPlaceOrderTap(let orderID):
-                self.placeOrder(orderID, eventHandler: eventHandler)
+                self.placeOrder(orderID)
             }
         }
         self.setViewControllers([rootViewController], animated: false)
@@ -28,16 +29,17 @@ final class CartCoordinator: UINavigationController {
     // MARK: - Private members
 
     private let composer: CartComposing
+    private let eventHandler: (CartEvent) -> Void
 }
 
 extension CartCoordinator: CartInput {
-    func placeOrder(_ orderID: Int, eventHandler: @escaping (CartEvent) -> Void) {
+    func placeOrder(_ orderID: Int) {
         let placeOrderVC = composer.makePlaceOrderViewController(with: orderID) { [unowned self] event in
             switch event {
             case .onBackTap:
                 self.popViewController(animated: true)
             case .onChangePickupPointTap:
-                eventHandler(.changePickupPoint)
+                self.eventHandler(.changePickupPoint)
             case .onCompletion:
                 let orderConfirmationVC = self.composer.makeOrderConfirmationViewController { event in
                     switch event {

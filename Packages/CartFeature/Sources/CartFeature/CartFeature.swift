@@ -13,7 +13,7 @@ public enum CartEvent {
 
 @MainActor
 public protocol CartInput {
-    func placeOrder(_ orderID: Int, eventHandler: @escaping (CartEvent) -> Void)
+    func placeOrder(_ orderID: Int)
 }
 
 @MainActor
