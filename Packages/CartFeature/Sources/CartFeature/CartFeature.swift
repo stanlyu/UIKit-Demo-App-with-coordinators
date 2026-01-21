@@ -17,12 +17,8 @@ public protocol CartInput {
 }
 
 @MainActor
-public func cartViewController(
-    with inputProvider: (CartInput) -> Void,
-    eventHandler: @escaping (CartEvent) -> Void
-) -> UIViewController {
+public func cartViewController(with eventHandler: @escaping (CartEvent) -> Void) -> UIViewController & CartInput {
     let coordinator = CartCoordinator(composer: CartComposer(), eventHandler: eventHandler)
     coordinator.navigationBar.prefersLargeTitles = true
-    inputProvider(coordinator)
     return coordinator
 }

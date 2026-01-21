@@ -34,6 +34,10 @@ final class CartCoordinator: UINavigationController {
 
 extension CartCoordinator: CartInput {
     func placeOrder(_ orderID: Int) {
+        if viewControllers.count > 1 {
+            popToRootViewController(animated: false)
+        }
+
         let placeOrderVC = composer.makePlaceOrderViewController(with: orderID) { [unowned self] event in
             switch event {
             case .onBackTap:

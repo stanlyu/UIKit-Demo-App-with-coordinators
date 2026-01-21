@@ -13,10 +13,7 @@ import CartFeature
 protocol MainTabsComposing {
     func makeTabBarController(with viewControllers: [UIViewController]) -> UITabBarController
     func makeHomeViewController(with eventHandler: @escaping (HomeEvent) -> Void) -> UIViewController
-    func makeCartViewController(
-        with inputProvider: (CartInput) -> Void,
-        eventHandler: @escaping (CartEvent) -> Void
-    ) -> UIViewController
+    func makeCartViewController(with eventHandler: @escaping (CartEvent) -> Void) -> UIViewController & CartInput
 }
 
 struct MainTabsComposer: MainTabsComposing {
@@ -57,11 +54,8 @@ struct MainTabsComposer: MainTabsComposing {
         return homeViewController
     }
 
-    func makeCartViewController(
-        with inputProvider: (CartInput) -> Void,
-        eventHandler: @escaping (CartEvent) -> Void
-    ) -> UIViewController {
-        let cartViewController = cartViewController(with: inputProvider, eventHandler: eventHandler)
+    func makeCartViewController(with eventHandler: @escaping (CartEvent) -> Void) -> UIViewController & CartInput {
+        let cartViewController = cartViewController(with: eventHandler)
         cartViewController.tabBarItem = UITabBarItem(
             title: "Корзина",
             image: nil,
