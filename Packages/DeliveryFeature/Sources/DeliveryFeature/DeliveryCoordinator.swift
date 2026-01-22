@@ -6,28 +6,17 @@
 //
 
 import UIKit
+import Core
 
-final class DeliveryCoordinator: UIViewController {
-    override var navigationItem: UINavigationItem {
-        if let pickupPointsViewController {
-            return pickupPointsViewController.navigationItem
-        } else {
-            return super.navigationItem
-        }
-    }
+final class DeliveryCoordinator: ParentViewController {
 
-    init(composer: DeliveryComposing, embeddedInNavigationStack: Bool) {
+    init(composer: DeliveryComposing) {
         self.composer = composer
-        embedded = embeddedInNavigationStack
         super.init(nibName: nil, bundle: nil)
-        if embeddedInNavigationStack {
-            pickupPointsViewController = composer.makePickupPointsViewController { [unowned self] event in
-                self.handle(event: event)
-            }
-        } else {
-            pickupPointsNavigationController = composer.makePickupPointsNavigationController { [unowned self] event in
-                self.handle(event: event)
-            }
+        var eventHandler = EventHandler(composer: composer)
+        pickupPointsViewController = composer.makePickupPointsViewController { [unowned self] event in
+            eventHandler.navigationController = self.navigationController
+            eventHandler.handle(event: event)
         }
     }
 
@@ -37,32 +26,52 @@ final class DeliveryCoordinator: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        guard let childViewController = embedded ? pickupPointsViewController : pickupPointsNavigationController
-        else { return }
-        setupChildViewController(childViewController)
+        putChildViewController(pickupPointsViewController)
     }
 
     // MARK: - Private members
 
     private let composer: DeliveryComposing
-    private var pickupPointsNavigationController: UINavigationController?
-    private var pickupPointsViewController: UIViewController?
-    private let embedded: Bool
-    private var actualNavigationController: UINavigationController? {
-        embedded ? navigationController : pickupPointsNavigationController
+    private var pickupPointsViewController: UIViewController!
+}
+
+final class DeliveryNavigationCoordinator: UINavigationController {
+    init(composer: DeliveryComposing) {
+        self.composer = composer
+        super.init(nibName: nil, bundle: nil)
+        var eventHandler = EventHandler(composer: composer)
+        pickupPointsViewController = composer.makePickupPointsViewController { [unowned self] event in
+            eventHandler.navigationController = self
+            eventHandler.handle(event: event)
+        }
+        setViewControllers([pickupPointsViewController], animated: false)
     }
 
-    private func handle(event: PickupPointsPresenter.Event) {
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    // MARK: - Private members
+
+    private let composer: DeliveryComposing
+    private var pickupPointsViewController: UIViewController!
+}
+
+@MainActor
+private struct EventHandler {
+    let composer: DeliveryComposing
+    var navigationController: UINavigationController?
+
+    func handle(event: PickupPointsPresenter.Event) {
         switch event {
         case .onAddPickupPoint:
-            let addPickupPointViewController = composer.makeAddPickupPointViewController {
-                [unowned self] event in
+            let addPickupPointViewController = composer.makeAddPickupPointViewController { event in
                 switch event {
                 case .onBackTap:
-                    self.actualNavigationController?.popViewController(animated: true)
+                    navigationController?.popViewController(animated: true)
                 }
             }
-            actualNavigationController?.pushViewController(addPickupPointViewController, animated: true)
+            navigationController?.pushViewController(addPickupPointViewController, animated: true)
         }
     }
 }
