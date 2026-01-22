@@ -30,6 +30,11 @@ final class PickupPointsViewController: UIViewController {
         viewOutput?.viewDidLoad()
     }
 
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        viewOutput?.viewDidLoad()
+    }
+
     // MARK: - Private properties
     private lazy var loadingIndicator: LoadingView = LoadingView { UIView() }
 }

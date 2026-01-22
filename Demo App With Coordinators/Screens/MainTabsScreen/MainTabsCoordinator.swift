@@ -16,13 +16,13 @@ final class MainTabsCoordinator: UIViewController {
     init(composer: MainTabsComposing) {
         self.composer = composer
         super.init(nibName: nil, bundle: nil)
-        mainViewController = composer.makeHomeViewController { [unowned self] event in
+        homeViewController = composer.makeHomeViewController { [unowned self] event in
             self.handle(homeEvent: event)
         }
         cartViewController = composer.makeCartViewController { [unowned self] event in
             self.handle(cartEvent: event)
         }
-        _tabBarController = composer.makeTabBarController(with: [mainViewController, cartViewController])
+        _tabBarController = composer.makeTabBarController(with: [homeViewController, cartViewController])
     }
 
     required init?(coder: NSCoder) {
@@ -37,7 +37,7 @@ final class MainTabsCoordinator: UIViewController {
     // MARK: - Private members
 
     private var _tabBarController: UITabBarController!
-    private var mainViewController: UIViewController!
+    private var homeViewController: (UIViewController & HomeInput)!
     private var cartViewController: (UIViewController & CartInput)!
     private let composer: MainTabsComposing
 
@@ -47,7 +47,8 @@ final class MainTabsCoordinator: UIViewController {
             _tabBarController.selectedViewController = cartViewController
             cartViewController.placeOrder(orderID)
         case .selectPickupPoint:
-            _tabBarController.present(DeliveryFeature.pickupPointsViewController(), animated: true)
+            let pickupPointsViewController = DeliveryFeature.pickupPointsViewController(embeddedInNavigationStack: true)
+            homeViewController.presentPickupPointsViewController(pickupPointsViewController)
         }
     }
 

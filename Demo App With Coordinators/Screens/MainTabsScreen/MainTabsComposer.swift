@@ -12,7 +12,7 @@ import CartFeature
 @MainActor
 protocol MainTabsComposing {
     func makeTabBarController(with viewControllers: [UIViewController]) -> UITabBarController
-    func makeHomeViewController(with eventHandler: @escaping (HomeEvent) -> Void) -> UIViewController
+    func makeHomeViewController(with eventHandler: @escaping (HomeEvent) -> Void) -> UIViewController & HomeInput
     func makeCartViewController(with eventHandler: @escaping (CartEvent) -> Void) -> UIViewController & CartInput
 }
 
@@ -43,7 +43,7 @@ struct MainTabsComposer: MainTabsComposing {
         return tabBarController
     }
 
-    func makeHomeViewController(with eventHandler: @escaping (HomeEvent) -> Void) -> UIViewController {
+    func makeHomeViewController(with eventHandler: @escaping (HomeEvent) -> Void) -> UIViewController & HomeInput {
         let homeViewController = homeViewController(with: eventHandler)
         homeViewController.title = "Главная"
         homeViewController.tabBarItem = UITabBarItem(

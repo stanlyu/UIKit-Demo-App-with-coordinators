@@ -14,6 +14,10 @@ typealias AddPickupPointEventHandler = (AddPickupPointsPresenter.Event) -> Void
 protocol DeliveryComposing {
     func makePickupPointsViewController(
         with eventHandler: @escaping PickupPointsEventHandler
+    ) -> UIViewController
+
+    func makePickupPointsNavigationController(
+        with eventHandler: @escaping PickupPointsEventHandler
     ) -> UINavigationController
 
     func makeAddPickupPointViewController(with eventHandler: @escaping AddPickupPointEventHandler) -> UIViewController
@@ -22,13 +26,20 @@ protocol DeliveryComposing {
 struct DeliveryComposer: DeliveryComposing {
     func makePickupPointsViewController(
         with eventHandler: @escaping PickupPointsEventHandler
-    ) -> UINavigationController {
+    ) -> UIViewController {
         let service = PickupPointsService()
         let interactor = PickupPointsInteractor(service: service)
         let presenter = PickupPointsPresenter(interactor: interactor, onEvent: eventHandler)
         let viewController = PickupPointsViewController()
         presenter.view = viewController
         viewController.viewOutput = presenter
+        return viewController
+    }
+
+    func makePickupPointsNavigationController(
+        with eventHandler: @escaping PickupPointsEventHandler
+    ) -> UINavigationController {
+        let viewController = makePickupPointsViewController(with: eventHandler)
         let navigationController = UINavigationController(rootViewController: viewController)
         navigationController.navigationBar.prefersLargeTitles = true
         return navigationController

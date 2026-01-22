@@ -31,3 +31,9 @@ final class HomeCoordinator: UINavigationController {
 
     private let composer: HomeComposing
 }
+
+extension HomeCoordinator: HomeInput {
+    func presentPickupPointsViewController(_ viewController: UIViewController) {
+        pushViewController(viewController, animated: true)
+    }
+}

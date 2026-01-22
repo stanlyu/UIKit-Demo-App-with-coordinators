@@ -7,6 +7,6 @@
 
 import UIKit
 
-public func pickupPointsViewController() -> UIViewController {
-    DeliveryCoordinator(composer: DeliveryComposer())
+public func pickupPointsViewController(embeddedInNavigationStack: Bool = false) -> UIViewController {
+    DeliveryCoordinator(composer: DeliveryComposer(), embeddedInNavigationStack: embeddedInNavigationStack)
 }
