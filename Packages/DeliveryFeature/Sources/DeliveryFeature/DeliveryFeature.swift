@@ -8,11 +8,13 @@
 import UIKit
 
 public func pickupPointsViewController(embeddedInNavigationStack: Bool = false) -> UIViewController {
+    let coordinator = DeliveryCoordinator(composer: DeliveryComposer())
     if embeddedInNavigationStack {
-        return DeliveryCoordinator(composer: DeliveryComposer())
-    } else {
-        let coordinator = DeliveryNavigationCoordinator(composer: DeliveryComposer())
-        coordinator.navigationBar.prefersLargeTitles = true
+        coordinator.hidesBottomBarWhenPushed = true
         return coordinator
+    } else {
+        let navigationController = UINavigationController(rootViewController: coordinator)
+        navigationController.navigationBar.prefersLargeTitles = true
+        return navigationController
     }
 }

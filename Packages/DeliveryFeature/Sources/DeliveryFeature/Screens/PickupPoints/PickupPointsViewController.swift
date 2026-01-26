@@ -30,13 +30,23 @@ final class PickupPointsViewController: UIViewController {
         viewOutput?.viewDidLoad()
     }
 
-    override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(animated)
-        viewOutput?.viewDidLoad()
+    override var title: String? {
+        didSet {
+            navigationItem.title = title
+        }
+    }
+
+    override var navigationItem: UINavigationItem {
+        _navigationItem ?? super.navigationItem
+    }
+
+    func setup(navigationItem: UINavigationItem) {
+        _navigationItem = navigationItem
     }
 
     // MARK: - Private properties
     private lazy var loadingIndicator: LoadingView = LoadingView { UIView() }
+    private var _navigationItem: UINavigationItem?
 }
 
 extension PickupPointsViewController: PickupPointsView {
