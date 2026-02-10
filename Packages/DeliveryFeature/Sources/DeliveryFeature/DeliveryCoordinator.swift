@@ -8,14 +8,11 @@
 import UIKit
 import Core
 
-final class DeliveryCoordinator: UIViewController {
+final class DeliveryCoordinator: ProxyViewController {
 
     init(composer: DeliveryComposing) {
         self.composer = composer
         super.init(nibName: nil, bundle: nil)
-        pickupPointsViewController = composer.makePickupPointsViewController { [unowned self] event in
-            handle(event: event)
-        }
     }
 
     required init?(coder: NSCoder) {
@@ -24,14 +21,15 @@ final class DeliveryCoordinator: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        pickupPointsViewController.setup(navigationItem: navigationItem)
-        setupChildViewController(pickupPointsViewController)
+        let pickupPointsVC = composer.makePickupPointsViewController { [unowned self] event in
+            handle(event: event)
+        }
+        setContent(pickupPointsVC)
     }
 
     // MARK: - Private members
 
     private let composer: DeliveryComposing
-    private var pickupPointsViewController: PickupPointsViewController!
 
     private func handle(event: PickupPointsPresenter.Event) {
         switch event {

@@ -8,14 +8,11 @@
 import UIKit
 import Core
 
-final class ApplicationCoordinator: UIViewController {
+final class ApplicationCoordinator: ProxyViewController {
 
     init(composer: ApplicationComposing = ApplicationComposer()) {
         self.composer = composer
         super.init(nibName: nil, bundle: nil)
-        contentViewController = composer.makeLaunchViewController { [unowned self] event in
-            self.handleLaunchEvent(event)
-        }
     }
 
     required init?(coder: NSCoder) {
@@ -24,31 +21,47 @@ final class ApplicationCoordinator: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        setupChildViewController(contentViewController)
+        // Запускаем первый экран (Launch)
+        let launchVC = composer.makeLaunchViewController { [unowned self] event in
+            self.handleLaunchEvent(event)
+        }
+        setContent(launchVC)
+    }
+
+    // MARK: - Transition Logic override
+
+    override func transition(from oldViewController: UIViewController?, to newViewController: UIViewController) {
+        // Если старого нет (первый запуск), просто показываем новый
+        guard let oldViewController = oldViewController else {
+            setupChildViewController(newViewController)
+            return
+        }
+
+        // 1. Подготовка нового
+        addChild(newViewController)
+        setupChildView(newViewController.view)
+        newViewController.view.alpha = 0
+        view.layoutIfNeeded()
+
+        // 2. Сообщаем старому, что он уйдет
+        oldViewController.willMove(toParent: nil)
+
+        // 3. Анимация
+        UIView.animate(withDuration: 0.3, animations: {
+            newViewController.view.alpha = 1
+        }, completion: { finished in
+            // 4. Зачистка старого
+            oldViewController.view.removeFromSuperview()
+            oldViewController.removeFromParent()
+
+            // 5. Финализация нового
+            newViewController.didMove(toParent: self)
+        })
     }
 
     // MARK: - Private members
 
     private let composer: ApplicationComposing
-    private var contentViewController: UIViewController!
-
-    private func routeToViewController(_ viewController: UIViewController) {
-        addChild(viewController)
-        setupChildView(viewController.view)
-
-        viewController.view.alpha = 0
-        view.layoutIfNeeded()
-        contentViewController.willMove(toParent: nil)
-
-        UIView.animate(withDuration: 0.3) {
-            viewController.view.alpha = 1
-        } completion: { finished in
-            self.contentViewController.view.removeFromSuperview()
-            self.contentViewController.removeFromParent()
-            viewController.didMove(toParent: self)
-            self.contentViewController = viewController
-        }
-    }
 
     private func setupChildView(_ childView: UIView) {
         view.addSubview(childView)
@@ -65,17 +78,7 @@ final class ApplicationCoordinator: UIViewController {
     private func handleLaunchEvent(_ event: LaunchScreenEvent) {
         switch event {
         case .mainFlowStarted:
-            routeToViewController(composer.makeMainTabsViewController())
+            setContent(composer.makeMainTabsViewController())
         }
-    }
-}
-
-protocol RootContentProviding: AnyObject {
-    var content: UIViewController { get }
-}
-
-extension ApplicationCoordinator: RootContentProviding {
-    var content: UIViewController {
-        composer.makeLaunchViewController(with: handleLaunchEvent)
     }
 }

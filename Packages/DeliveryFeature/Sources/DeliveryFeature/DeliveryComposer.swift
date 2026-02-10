@@ -14,7 +14,7 @@ typealias AddPickupPointEventHandler = (AddPickupPointsPresenter.Event) -> Void
 protocol DeliveryComposing {
     func makePickupPointsViewController(
         with eventHandler: @escaping PickupPointsEventHandler
-    ) -> PickupPointsViewController
+    ) -> UIViewController
 
     func makePickupPointsNavigationController(
         with eventHandler: @escaping PickupPointsEventHandler
@@ -26,7 +26,7 @@ protocol DeliveryComposing {
 struct DeliveryComposer: DeliveryComposing {
     func makePickupPointsViewController(
         with eventHandler: @escaping PickupPointsEventHandler
-    ) -> PickupPointsViewController {
+    ) -> UIViewController {
         let service = PickupPointsService()
         let interactor = PickupPointsInteractor(service: service)
         let presenter = PickupPointsPresenter(interactor: interactor, onEvent: eventHandler)
@@ -47,6 +47,7 @@ struct DeliveryComposer: DeliveryComposing {
 
     func makeAddPickupPointViewController(with eventHandler: @escaping AddPickupPointEventHandler) -> UIViewController {
         let presenter = AddPickupPointsPresenter(onEvent: eventHandler)
-        return AddPickupPointsViewController(viewOutput: presenter)
+        let viewController = AddPickupPointsViewController(viewOutput: presenter)
+        return viewController
     }
 }
