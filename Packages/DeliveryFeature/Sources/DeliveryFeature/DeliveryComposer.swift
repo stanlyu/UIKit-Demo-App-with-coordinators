@@ -33,6 +33,7 @@ struct DeliveryComposer: DeliveryComposing {
         let viewController = PickupPointsViewController()
         presenter.view = viewController
         viewController.viewOutput = presenter
+        viewController.hidesBottomBarWhenPushed = true
         return viewController
     }
 

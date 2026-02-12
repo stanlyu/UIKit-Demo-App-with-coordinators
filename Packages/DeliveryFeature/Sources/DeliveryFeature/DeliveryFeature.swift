@@ -10,7 +10,6 @@ import UIKit
 public func pickupPointsViewController(embeddedInNavigationStack: Bool = false) -> UIViewController {
     let coordinator = DeliveryCoordinator(composer: DeliveryComposer())
     if embeddedInNavigationStack {
-        coordinator.hidesBottomBarWhenPushed = true
         return coordinator
     } else {
         let navigationController = UINavigationController(rootViewController: coordinator)

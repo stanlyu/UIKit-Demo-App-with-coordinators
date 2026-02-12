@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import Core
 
 protocol ApplicationComposing {
     func makeLaunchViewController(with eventHandler: @escaping (LaunchScreenEvent) -> Void) -> UIViewController
@@ -26,6 +27,36 @@ struct ApplicationComposer: ApplicationComposing {
 
     func makeMainTabsViewController() -> UIViewController {
         let mainTabsComposer = MainTabsComposer()
-        return MainTabsCoordinator(composer: mainTabsComposer)
+        let mainTabsCoordinator = MainTabsCoordinator(composer: mainTabsComposer)
+        let mainTabsRouter = TabRouter(coordinator: mainTabsCoordinator)
+        mainTabsCoordinator.router = mainTabsRouter
+        configureMainTabsRouter(mainTabsRouter)
+        return mainTabsRouter
+    }
+
+    private func configureMainTabsRouter(_ router: TabRouter) {
+        let appearance = UITabBarAppearance()
+        appearance.configureWithTransparentBackground()
+
+        let fontSize: CGFloat = 12
+        let normalAttributes: [NSAttributedString.Key: Any] = [
+            .font: UIFont.systemFont(ofSize: fontSize, weight: .medium),
+            .foregroundColor: UIColor.secondaryLabel
+        ]
+        let selectedAttributes: [NSAttributedString.Key: Any] = [
+            .font: UIFont.systemFont(ofSize: fontSize, weight: .bold),
+            .foregroundColor: UIColor.systemBlue
+        ]
+
+        let itemAppearance = UITabBarItemAppearance()
+        itemAppearance.normal.titleTextAttributes = normalAttributes
+        itemAppearance.selected.titleTextAttributes = selectedAttributes
+
+        appearance.stackedLayoutAppearance = itemAppearance
+        appearance.inlineLayoutAppearance = itemAppearance
+        appearance.compactInlineLayoutAppearance = itemAppearance
+
+        router.tabBar.standardAppearance = appearance
+        router.tabBar.scrollEdgeAppearance = appearance
     }
 }

@@ -13,18 +13,14 @@ final class DeliveryCoordinator: ProxyViewController {
     init(composer: DeliveryComposing) {
         self.composer = composer
         super.init(nibName: nil, bundle: nil)
-    }
-
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-
-    override func viewDidLoad() {
-        super.viewDidLoad()
         let pickupPointsVC = composer.makePickupPointsViewController { [unowned self] event in
             handle(event: event)
         }
         setContent(pickupPointsVC)
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
     }
 
     // MARK: - Private members

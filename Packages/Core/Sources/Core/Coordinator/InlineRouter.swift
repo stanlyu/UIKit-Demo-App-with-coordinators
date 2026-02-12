@@ -7,10 +7,16 @@
 
 import UIKit
 
+
 /// Роутер, который **встраивается** в существующий навигационный стек.
 ///
 /// Является `ProxyViewController`, то есть для системы выглядит как один экран,
 /// но на самом деле управляет сегментом стека родительского навигационного контроллера.
+///
+/// - Note: **Конфигурация:** Этот роутер прозрачен. Если вам нужно настроить заголовок флоу,
+///   скрыть таббар (`hidesBottomBarWhenPushed`) или изменить кнопки навигации,
+///   настраивайте эти свойства у **первого контроллера** (Root of Flow), который вы передаете в этот роутер.
+///   Настройка самого `InlineRouter` бесполезна, так как он зеркалирует свой контент.
 public final class InlineRouter: ProxyViewController {
 
     /// Инициализирует роутер с заданным координатором.
@@ -18,15 +24,14 @@ public final class InlineRouter: ProxyViewController {
     public init(coordinator: Coordinator) {
         self.coordinator = coordinator
         super.init(nibName: nil, bundle: nil)
+        // Запускаем поток сразу, чтобы Proxy получил контент и синхронизировал
+        // системные флаги (hidesBottomBar, navigationItem) до того,
+        // как этот контроллер попадет в стек навигации.
+        coordinator.start()
     }
 
     public required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
-    }
-
-    public override func viewDidLoad() {
-        super.viewDidLoad()
-        coordinator.start()
     }
 
     // MARK: - Private members
@@ -128,7 +133,10 @@ extension InlineRouter: StackRouting {
 
         setContent(first)
 
-        guard let nav = navigationController else { return }
+        guard let nav = navigationController else {
+            "⚠️ InlineRouter: Попытка setStack, но роутер не находится в NavigationController."
+            return
+        }
 
         var currentStack = nav.viewControllers
 

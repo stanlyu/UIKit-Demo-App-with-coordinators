@@ -11,38 +11,11 @@ import CartFeature
 
 @MainActor
 protocol MainTabsComposing {
-    func makeTabBarController(with viewControllers: [UIViewController]) -> UITabBarController
     func makeHomeViewController(with eventHandler: @escaping (HomeEvent) -> Void) -> UIViewController & HomeInput
     func makeCartViewController(with eventHandler: @escaping (CartEvent) -> Void) -> UIViewController & CartInput
 }
 
 struct MainTabsComposer: MainTabsComposing {
-    func makeTabBarController(with viewControllers: [UIViewController]) -> UITabBarController {
-        let tabBarController = UITabBarController()
-
-        let appearance = UITabBarAppearance()
-        appearance.configureWithTransparentBackground()
-        let fontSize: CGFloat = 12
-        let normalAttributes: [NSAttributedString.Key: Any] = [
-            .font: UIFont.systemFont(ofSize: fontSize, weight: .medium),
-            .foregroundColor: UIColor.secondaryLabel
-        ]
-        let selectedAttributes: [NSAttributedString.Key: Any] = [
-            .font: UIFont.systemFont(ofSize: fontSize, weight: .bold),
-            .foregroundColor: UIColor.systemBlue
-        ]
-        let itemAppearance = UITabBarItemAppearance()
-        itemAppearance.normal.titleTextAttributes = normalAttributes
-        itemAppearance.selected.titleTextAttributes = selectedAttributes
-        appearance.stackedLayoutAppearance = itemAppearance
-        appearance.inlineLayoutAppearance = itemAppearance
-        appearance.compactInlineLayoutAppearance = itemAppearance
-        tabBarController.tabBar.standardAppearance = appearance
-        tabBarController.tabBar.scrollEdgeAppearance = appearance
-        tabBarController.viewControllers = viewControllers
-        return tabBarController
-    }
-
     func makeHomeViewController(with eventHandler: @escaping (HomeEvent) -> Void) -> UIViewController & HomeInput {
         let homeViewController = homeViewController(with: eventHandler)
         homeViewController.title = "Главная"

@@ -8,77 +8,28 @@
 import UIKit
 import Core
 
-final class ApplicationCoordinator: ProxyViewController {
+final class ApplicationCoordinator: BaseCoordinator<WindowRouter> {
 
     init(composer: ApplicationComposing = ApplicationComposer()) {
         self.composer = composer
-        super.init(nibName: nil, bundle: nil)
+        super.init()
     }
 
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        // Запускаем первый экран (Launch)
+    override func start() {
         let launchVC = composer.makeLaunchViewController { [unowned self] event in
             self.handleLaunchEvent(event)
         }
-        setContent(launchVC)
-    }
-
-    // MARK: - Transition Logic override
-
-    override func transition(from oldViewController: UIViewController?, to newViewController: UIViewController) {
-        // Если старого нет (первый запуск), просто показываем новый
-        guard let oldViewController = oldViewController else {
-            setupChildViewController(newViewController)
-            return
-        }
-
-        // 1. Подготовка нового
-        addChild(newViewController)
-        setupChildView(newViewController.view)
-        newViewController.view.alpha = 0
-        view.layoutIfNeeded()
-
-        // 2. Сообщаем старому, что он уйдет
-        oldViewController.willMove(toParent: nil)
-
-        // 3. Анимация
-        UIView.animate(withDuration: 0.3, animations: {
-            newViewController.view.alpha = 1
-        }, completion: { finished in
-            // 4. Зачистка старого
-            oldViewController.view.removeFromSuperview()
-            oldViewController.removeFromParent()
-
-            // 5. Финализация нового
-            newViewController.didMove(toParent: self)
-        })
+        router?.setRoot(launchVC, animated: false, completion: nil)
     }
 
     // MARK: - Private members
 
     private let composer: ApplicationComposing
 
-    private func setupChildView(_ childView: UIView) {
-        view.addSubview(childView)
-
-        childView.translatesAutoresizingMaskIntoConstraints = false
-        NSLayoutConstraint.activate([
-            childView.topAnchor.constraint(equalTo: view.topAnchor),
-            childView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            childView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            childView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
-        ])
-    }
-
     private func handleLaunchEvent(_ event: LaunchScreenEvent) {
         switch event {
         case .mainFlowStarted:
-            setContent(composer.makeMainTabsViewController())
+            router?.setRoot(composer.makeMainTabsViewController(), animated: true, completion: nil)
         }
     }
 }

@@ -23,7 +23,11 @@ public final class TabRouter: UITabBarController {
 
     public override func viewDidLoad() {
         super.viewDidLoad()
-        coordinator.start()
+        // Старт откладываем на следующий тик main loop, чтобы внешний composer успел
+        // связать coordinator с router (BaseCoordinator.router) до начала flow.
+        Task { @MainActor in
+            coordinator.start()
+        }
     }
 
     // MARK: - Private members
