@@ -11,7 +11,7 @@ import CartFeature
 import DeliveryFeature
 import Core
 
-final class MainTabsCoordinator: BaseCoordinator<TabRouter> {
+final class MainTabsCoordinator<Router: TabRouting>: Coordinator<Router> {
 
     init(composer: MainTabsComposing) {
         self.composer = composer

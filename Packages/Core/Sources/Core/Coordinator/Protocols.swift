@@ -7,16 +7,6 @@
 
 import UIKit
 
-// MARK: - Coordinator (Logic)
-
-/// Базовый интерфейс координатора.
-/// Отвечает за логику переходов (Flow Logic) и управление экранами.
-@MainActor
-public protocol Coordinator: AnyObject {
-    /// Точка входа в логику координатора.
-    /// Этот метод вызывает Роутер, когда он готов к отображению.
-    func start()
-}
 
 // MARK: - Routing (Base)
 

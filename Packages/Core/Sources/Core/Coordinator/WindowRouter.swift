@@ -17,7 +17,7 @@ public final class WindowRouter: ProxyViewController, WindowRouting {
 
     /// Инициализирует роутер с заданным координатором.
     /// - Parameter coordinator: Координатор, который будет управлять этим роутером.
-    public init(coordinator: Coordinator) {
+    public init(coordinator: Coordinator<WindowRouter>) {
         self.coordinator = coordinator
         super.init(nibName: nil, bundle: nil)
     }
@@ -28,11 +28,11 @@ public final class WindowRouter: ProxyViewController, WindowRouting {
 
     public override func viewDidLoad() {
         super.viewDidLoad()
-        coordinator.start()
+        coordinator.start(with: self)
     }
 
     // MARK: - Private members
-    private let coordinator: Coordinator
+    private let coordinator: Coordinator<WindowRouter>
     private var pendingAnimated: Bool = false
     private var pendingCompletion: (() -> Void)?
 

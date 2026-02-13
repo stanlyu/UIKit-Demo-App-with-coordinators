@@ -21,13 +21,13 @@ public final class InlineRouter: ProxyViewController {
 
     /// Инициализирует роутер с заданным координатором.
     /// - Parameter coordinator: Координатор, который будет управлять этим роутером.
-    public init(coordinator: Coordinator) {
+    public init(coordinator: Coordinator<InlineRouter>) {
         self.coordinator = coordinator
         super.init(nibName: nil, bundle: nil)
         // Запускаем поток сразу, чтобы Proxy получил контент и синхронизировал
         // системные флаги (hidesBottomBar, navigationItem) до того,
         // как этот контроллер попадет в стек навигации.
-        coordinator.start()
+        coordinator.start(with: self)
     }
 
     public required init?(coder: NSCoder) {
@@ -36,7 +36,7 @@ public final class InlineRouter: ProxyViewController {
 
     // MARK: - Private members
 
-    private let coordinator: Coordinator
+    private let coordinator: Coordinator<InlineRouter>
 }
 
 extension InlineRouter: StackRouting {

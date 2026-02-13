@@ -7,6 +7,7 @@
 
 import UIKit
 
+@MainActor
 public func pickupPointsViewController(embeddedInNavigationStack: Bool = false) -> UIViewController {
     let coordinator = DeliveryCoordinator(composer: DeliveryComposer())
     if embeddedInNavigationStack {

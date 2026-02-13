@@ -11,11 +11,11 @@ import UIKit
 ///
 /// Используется для создания независимых навигационных цепочек (например, каждая вкладка таббара,
 /// или модальный сценарий со своим навигационным баром).
-public final class StackRouter: UINavigationController {
+public final class StackRouter: UINavigationController{
 
     /// Инициализирует роутер с заданным координатором.
     /// - Parameter coordinator: Координатор, который будет управлять этим роутером.
-    public init(coordinator: Coordinator) {
+    public init(coordinator: Coordinator<StackRouter>) {
         self.coordinator = coordinator
         super.init(nibName: nil, bundle: nil)
     }
@@ -27,12 +27,12 @@ public final class StackRouter: UINavigationController {
     public override func viewDidLoad() {
         super.viewDidLoad()
         // Автоматический запуск логики при загрузке View.
-        coordinator.start()
+        coordinator.start(with: self)
     }
 
     // MARK: - Private members
 
-    private let coordinator: Coordinator
+    private let coordinator: Coordinator<StackRouter>
 }
 
 extension StackRouter: StackRouting {

@@ -12,7 +12,7 @@ public final class TabRouter: UITabBarController {
 
     /// Инициализирует роутер с заданным координатором.
     /// - Parameter coordinator: Координатор, который будет управлять этим роутером.
-    public init(coordinator: Coordinator) {
+    public init(coordinator: Coordinator<TabRouter>) {
         self.coordinator = coordinator
         super.init(nibName: nil, bundle: nil)
     }
@@ -23,16 +23,12 @@ public final class TabRouter: UITabBarController {
 
     public override func viewDidLoad() {
         super.viewDidLoad()
-        // Старт откладываем на следующий тик main loop, чтобы внешний composer успел
-        // связать coordinator с router (BaseCoordinator.router) до начала flow.
-        Task { @MainActor in
-            coordinator.start()
-        }
+        coordinator.start(with: self)
     }
 
     // MARK: - Private members
 
-    private let coordinator: Coordinator
+    private let coordinator: Coordinator<TabRouter>
 }
 
 extension TabRouter: TabRouting {
