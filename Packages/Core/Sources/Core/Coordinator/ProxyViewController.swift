@@ -21,12 +21,11 @@ import UIKit
 ///   Настраивайте эти свойства у самого контентного контроллера (в Factory/Composer).
 public class ProxyViewController: UIViewController {
 
-    // MARK: - Private Properties
-    private(set) var contentViewController: UIViewController?
-    private var observations: [NSKeyValueObservation] = []
+    // MARK: - Init
 
     internal override init(nibName nibNameOrNil: String?, bundle nibBundleOrNil: Bundle?) {
         super.init(nibName: nibNameOrNil, bundle: nibBundleOrNil)
+        setupProtection()
     }
 
     internal required init?(coder: NSCoder) {
@@ -54,8 +53,11 @@ public class ProxyViewController: UIViewController {
     internal func setContent(_ newContent: UIViewController) {
         let oldContent = contentViewController
         contentViewController = newContent
-        observations.removeAll()
-        setupProxying(for: newContent)
+        // Сбрасываем только подписки на старый контент
+        syncObservations.removeAll()
+
+        // Настраиваем новые подписки (Content -> Proxy)
+        setupSync(for: newContent)
 
         // Уведомляем систему, что параметры (Status Bar, Orientation) изменились.
         // Так как contentViewController уже обновлен, система опросит новый контроллер.
@@ -89,11 +91,127 @@ public class ProxyViewController: UIViewController {
 
         setupChildViewController(newViewController)
     }
+
+    // MARK: - Private Properties
+
+    private(set) var contentViewController: UIViewController?
+
+    /// Флаг, разрешающий изменение свойств.
+    /// true = изменение идет от механизма синхронизации (легально).
+    /// false = изменение идет извне (ошибка разработчика).
+    private var isSyncingContent: Bool = false
+
+    /// Наблюдатели защиты (живут вечно, следят за self)
+    private var protectionObservations: [NSKeyValueObservation] = []
+
+    /// Наблюдатели синхронизации (живут пока жив контент, следят за contentVC)
+    private var syncObservations: [NSKeyValueObservation] = []
 }
 
-// MARK: - KVO Proxying Logic
+// MARK: - Protection Logic (Self Observation)
 private extension ProxyViewController {
-    func setupProxying(for child: UIViewController) {
+
+    /// Устанавливает "сигнализацию" на свойства самого Proxy.
+    /// Вызывается один раз в init.
+    func setupProtection() {
+        // 1. Свойства UIViewController
+        protect(self, \.hidesBottomBarWhenPushed)
+        protect(self, \.definesPresentationContext)
+        protect(self, \.providesPresentationContextTransitionStyle)
+        protect(self, \.restoresFocusAfterTransition)
+        protect(self, \.isModalInPresentation)
+        protect(self, \.modalPresentationStyle)
+        protect(self, \.modalTransitionStyle)
+        protect(self, \.overrideUserInterfaceStyle)
+        protect(self, \.edgesForExtendedLayout)
+        protect(self, \.extendedLayoutIncludesOpaqueBars)
+
+        // 2. Navigation Item
+        // Примечание: Обращение к self.navigationItem создает его, если его не было.
+        // Для Proxy это нормально, так как он все равно будет мимикрировать.
+        let nav = self.navigationItem
+        protect(nav, \.title)
+        protect(nav, \.prompt)
+        protect(nav, \.titleView)
+        protect(nav, \.largeTitleDisplayMode)
+
+        // Buttons
+        protect(nav, \.rightBarButtonItem)
+        protect(nav, \.rightBarButtonItems)
+        protect(nav, \.leftBarButtonItem)
+        protect(nav, \.leftBarButtonItems)
+
+        // Back Button
+        protect(nav, \.hidesBackButton)
+        protect(nav, \.backBarButtonItem)
+        protect(nav, \.leftItemsSupplementBackButton)
+        protect(nav, \.backButtonTitle)
+        protect(nav, \.backButtonDisplayMode)
+
+        if #available(iOS 16.0, *) {
+            protect(nav, \.backAction)
+        }
+
+        // Search
+        protect(nav, \.searchController)
+        protect(nav, \.hidesSearchBarWhenScrolling)
+
+        if #available(iOS 16.0, *) {
+            protect(nav, \.preferredSearchBarPlacement)
+        }
+
+        // Appearance
+        protect(nav, \.standardAppearance)
+        protect(nav, \.compactAppearance)
+        protect(nav, \.scrollEdgeAppearance)
+        protect(nav, \.compactScrollEdgeAppearance)
+
+        // 3. Toolbar & TabBar
+
+        protect(self, \.toolbarItems)
+
+        if let tab = self.tabBarItem {
+            protect(tab, \.badgeValue)
+            protect(tab, \.title)
+            protect(tab, \.image)
+            protect(tab, \.selectedImage)
+
+            protect(tab, \.standardAppearance)
+            protect(tab, \.scrollEdgeAppearance)
+        }
+    }
+
+    func protect<Root: NSObject, Value>(_ target: Root, _ keyPath: KeyPath<Root, Value>) {
+        let observation = target.observe(keyPath, options: [.new]) { [weak self] _, _ in
+            guard let self = self else { return }
+
+            // Если изменение происходит НЕ внутри механизма синхронизации — это атака извне.
+            if !self.isSyncingContent {
+                let property = String(describing: keyPath)
+                let message = """
+                🛑 ОШИБКА КОНФИГУРАЦИИ \(type(of: self)):
+                
+                Вы попытались изменить свойство `\(property)` напрямую у \(type(of: self)).
+                
+                Почему это ошибка:
+                \(type(of: self)) — это Proxy ("зеркало"). Он не хранит своего состояния.
+                Любое значение, которое вы установите сейчас, будет молча перезаписано
+                значением из ContentViewController, как только он загрузится.
+                
+                Как исправить:
+                Настраивайте `\(property)` у того контроллера, который вы показываете (Content).
+                """
+                assertionFailure(message)
+            }
+        }
+        protectionObservations.append(observation)
+    }
+}
+
+// MARK: - Sync Logic (Content Observation)
+private extension ProxyViewController {
+    // Настраивает одностороннюю синхронизацию Content -> Proxy.
+    func setupSync(for child: UIViewController) {
 
         // --- 1. View Controller Properties ---
         bind(from: child, to: self, \.hidesBottomBarWhenPushed)
@@ -168,15 +286,14 @@ private extension ProxyViewController {
         to target: Root,
         _ keyPath: ReferenceWritableKeyPath<Root, Value>
     ) {
-        target[keyPath: keyPath] = source[keyPath: keyPath]
+        let observation = source.observe(keyPath, options: [.initial, .new]) { [weak self, weak target] _, change in
+            guard let self = self, let target = target, let newValue = change.newValue else { return }
 
-        // KVO Подписка
-        let observation = source.observe(keyPath, options: [.new, .initial]) { [weak target] _, change in
-            if let newValue = change.newValue {
-                target?[keyPath: keyPath] = newValue
-            }
+            self.isSyncingContent = true
+            target[keyPath: keyPath] = newValue
+            self.isSyncingContent = false
         }
-        observations.append(observation)
+        syncObservations.append(observation)
     }
 }
 
