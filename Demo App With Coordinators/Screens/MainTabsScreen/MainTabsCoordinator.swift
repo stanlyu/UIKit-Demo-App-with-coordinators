@@ -11,7 +11,9 @@ import CartFeature
 import DeliveryFeature
 import Core
 
-final class MainTabsCoordinator<Router: TabRouting>: Coordinator<Router> {
+typealias MainTabsCoordinator = MainTabsCoordinatingLogic<TabRouter>
+
+final class MainTabsCoordinatingLogic<Router: TabRouting>: Coordinator<Router> {
 
     init(composer: MainTabsComposing) {
         self.composer = composer
@@ -24,38 +26,35 @@ final class MainTabsCoordinator<Router: TabRouting>: Coordinator<Router> {
         let homeViewController = composer.makeHomeViewController { [unowned self] event in
             self.handle(homeEvent: event)
         }
-        let cartViewController = composer.makeCartViewController { [unowned self] event in
+        let cartModule = composer.makeCartViewController { [unowned self] event in
             self.handle(cartEvent: event)
         }
 
-        self.homeViewController = homeViewController
-        self.cartViewController = cartViewController
-
-        router.setTabs([homeViewController, cartViewController], animated: false)
+        self.cartModule = cartModule
+        router.setTabs([homeViewController, cartModule.viewController], animated: false)
     }
 
     // MARK: - Private members
 
-    private var homeViewController: (UIViewController & HomeInput)?
-    private var cartViewController: (UIViewController & CartInput)?
+    private var cartModule: CartModule?
     private let composer: MainTabsComposing
 
     private func handle(homeEvent: HomeEvent) {
         switch homeEvent {
         case .placeOrder(let orderID):
-            guard let cartViewController else { return }
-            router?.selectModule(cartViewController)
-            cartViewController.placeOrder(orderID)
-        case .selectPickupPoint:
+            guard let cartModule else { return }
+            router?.selectModule(cartModule.viewController)
+            cartModule.coordinator.placeOrder(orderID)
+        case .selectPickupPoint(let homeCoordinator):
             let pickupPointsViewController = DeliveryFeature.pickupPointsViewController(embeddedInNavigationStack: true)
-            homeViewController?.presentPickupPointsViewController(pickupPointsViewController)
+            homeCoordinator.presentPickupPoints(module: pickupPointsViewController)
         }
     }
 
     private func handle(cartEvent: CartEvent) {
         switch cartEvent {
-        case .changePickupPoint:
-            router?.present(DeliveryFeature.pickupPointsViewController(), animated: true, completion: nil)
+        case .changePickupPoint(let cartCoordinator):
+            cartCoordinator.presentPickupPoints(module: DeliveryFeature.pickupPointsViewController())
         }
     }
 }

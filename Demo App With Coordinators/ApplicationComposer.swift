@@ -27,7 +27,7 @@ struct ApplicationComposer: ApplicationComposing {
 
     func makeMainTabsViewController() -> UIViewController {
         let mainTabsComposer = MainTabsComposer()
-        let mainTabsCoordinator = MainTabsCoordinator<TabRouter>(composer: mainTabsComposer)
+        let mainTabsCoordinator = MainTabsCoordinator(composer: mainTabsComposer)
         let mainTabsRouter = TabRouter(coordinator: mainTabsCoordinator)
         configureMainTabsRouter(mainTabsRouter)
         return mainTabsRouter

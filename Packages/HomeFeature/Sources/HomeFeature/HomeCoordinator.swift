@@ -8,32 +8,35 @@
 import UIKit
 import Core
 
-final class HomeCoordinator: UINavigationController {
+typealias HomeCoordinator = HomeCoordinatingLogic<StackRouter>
+
+final class HomeCoordinatingLogic<Router: StackRouting>: Coordinator<StackRouter> {
     init(composer: HomeComposing, eventHandler: @escaping (HomeEvent) -> Void) {
         self.composer = composer
-        super.init(nibName: nil, bundle: nil)
+        self.eventHandler = eventHandler
+        super.init()
+    }
+
+    override func start() {
         let rootViewController = composer.makeHomeViewController { [unowned self] event in
             switch event {
             case .onPlaceOrderTap(let orderID):
                 eventHandler(.placeOrder(orderID))
             case .onPickupPointTap:
-                eventHandler(.selectPickupPoint)
+                eventHandler(.selectPickupPoint(self))
             }
         }
-        self.setViewControllers([rootViewController], animated: false)
-    }
-
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
+        router?.push(rootViewController, animated: false, completion: nil)
     }
 
     // MARK: - Private members
 
     private let composer: HomeComposing
+    private let eventHandler: (HomeEvent) -> Void
 }
 
-extension HomeCoordinator: HomeInput {
-    func presentPickupPointsViewController(_ viewController: UIViewController) {
-        pushViewController(viewController, animated: true)
+extension HomeCoordinatingLogic: HomeCoordinating {
+    func presentPickupPoints(module: UIViewController) {
+        router?.push(module, animated: true, completion: nil)
     }
 }

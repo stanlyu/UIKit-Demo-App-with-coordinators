@@ -6,15 +6,18 @@
 //
 
 import UIKit
+import Core
 
 @MainActor
 public func pickupPointsViewController(embeddedInNavigationStack: Bool = false) -> UIViewController {
-    let coordinator = DeliveryCoordinator(composer: DeliveryComposer())
     if embeddedInNavigationStack {
-        return coordinator
+        let coordinator = DeliveryInlineCoordinator(composer: DeliveryComposer())
+        let router = InlineRouter(coordinator: coordinator)
+        return router
     } else {
-        let navigationController = UINavigationController(rootViewController: coordinator)
-        navigationController.navigationBar.prefersLargeTitles = true
-        return navigationController
+        let coordinator = DeliveryStackCoordinator(composer: DeliveryComposer())
+        let router = StackRouter(coordinator: coordinator)
+        router.navigationBar.prefersLargeTitles = true
+        return router
     }
 }

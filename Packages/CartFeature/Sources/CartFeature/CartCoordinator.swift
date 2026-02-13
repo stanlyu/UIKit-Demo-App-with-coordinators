@@ -8,22 +8,23 @@
 import UIKit
 import Core
 
-final class CartCoordinator: UINavigationController {
+typealias CartCoordinator = CartCoordinatingLogic<StackRouter>
+
+final class CartCoordinatingLogic<Router: StackRouting>: Coordinator<Router> {
     init(composer: CartComposing, eventHandler: @escaping (CartEvent) -> Void) {
         self.composer = composer
         self.eventHandler = eventHandler
-        super.init(nibName: nil, bundle: nil)
+        super.init()
+    }
+
+    override func start() {
         let rootViewController = composer.makeCartViewController { [unowned self] event in
             switch event {
             case .onPlaceOrderTap(let orderID):
                 self.placeOrder(orderID)
             }
         }
-        self.setViewControllers([rootViewController], animated: false)
-    }
-
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
+        router?.push(rootViewController, animated: false, completion: nil)
     }
 
     // MARK: - Private members
@@ -32,28 +33,32 @@ final class CartCoordinator: UINavigationController {
     private let eventHandler: (CartEvent) -> Void
 }
 
-extension CartCoordinator: CartInput {
+extension CartCoordinatingLogic: CartInput {
     func placeOrder(_ orderID: Int) {
-        if viewControllers.count > 1 {
-            popToRootViewController(animated: false)
-        }
+        router?.popToRoot(animated: false, completion: nil)
 
         let placeOrderVC = composer.makePlaceOrderViewController(with: orderID) { [unowned self] event in
             switch event {
             case .onBackTap:
-                self.popViewController(animated: true)
+                self.router?.pop(animated: true, completion: nil)
             case .onChangePickupPointTap:
-                self.eventHandler(.changePickupPoint)
+                self.eventHandler(.changePickupPoint(self))
             case .onCompletion:
                 let orderConfirmationVC = self.composer.makeOrderConfirmationViewController { event in
                     switch event {
                     case .onReturnTap:
-                        self.popToRootViewController(animated: true)
+                        self.router?.popToRoot(animated: true , completion: nil)
                     }
                 }
-                self.pushViewController(orderConfirmationVC, animated: true)
+                self.router?.push(orderConfirmationVC, animated: true, completion: nil)
             }
         }
-        pushViewController(placeOrderVC, animated: true)
+        router?.push(placeOrderVC, animated: true, completion: nil)
+    }
+}
+
+extension CartCoordinatingLogic: CartCoordinating {
+    func presentPickupPoints(module: UIViewController) {
+        router?.present(module, animated: true, completion: nil)
     }
 }

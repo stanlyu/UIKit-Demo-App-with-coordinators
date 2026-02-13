@@ -6,20 +6,22 @@
 //
 
 import UIKit
+import Core
 
 @MainActor
-public protocol HomeInput {
-    func presentPickupPointsViewController(_ viewController: UIViewController)
+public protocol HomeCoordinating {
+    func presentPickupPoints(module: UIViewController)
 }
 
 public enum HomeEvent {
     case placeOrder(Int)
-    case selectPickupPoint
+    case selectPickupPoint(HomeCoordinating)
 }
 
 @MainActor
-public func homeViewController(with eventHandler: @escaping (HomeEvent) -> Void) -> UIViewController & HomeInput {
+public func homeViewController(with eventHandler: @escaping (HomeEvent) -> Void) -> UIViewController {
     let coordinator = HomeCoordinator(composer: HomeComposer(), eventHandler: eventHandler)
-    coordinator.navigationBar.prefersLargeTitles = true
-    return coordinator
+    let router = StackRouter(coordinator: coordinator)
+    router.navigationBar.prefersLargeTitles = true
+    return router
 }

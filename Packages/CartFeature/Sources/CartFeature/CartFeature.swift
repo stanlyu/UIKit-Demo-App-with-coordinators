@@ -6,9 +6,15 @@
 //
 
 import UIKit
+import Core
+
+@MainActor
+public protocol CartCoordinating {
+    func presentPickupPoints(module: UIViewController)
+}
 
 public enum CartEvent {
-    case changePickupPoint
+    case changePickupPoint(CartCoordinating)
 }
 
 @MainActor
@@ -16,9 +22,12 @@ public protocol CartInput {
     func placeOrder(_ orderID: Int)
 }
 
+public typealias CartModule = (viewController: UIViewController, coordinator: CartInput)
+
 @MainActor
-public func cartViewController(with eventHandler: @escaping (CartEvent) -> Void) -> UIViewController & CartInput {
+public func cartModule(with eventHandler: @escaping (CartEvent) -> Void) -> CartModule {
     let coordinator = CartCoordinator(composer: CartComposer(), eventHandler: eventHandler)
-    coordinator.navigationBar.prefersLargeTitles = true
-    return coordinator
+    let router = StackRouter(coordinator: coordinator)
+    router.navigationBar.prefersLargeTitles = true
+    return (router, coordinator)
 }

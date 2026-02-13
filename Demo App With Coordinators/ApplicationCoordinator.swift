@@ -8,7 +8,9 @@
 import UIKit
 import Core
 
-final class ApplicationCoordinator: Coordinator<WindowRouter> {
+typealias ApplicationCoordinator = ApplicationCoordinatingLogic<WindowRouter>
+
+final class ApplicationCoordinatingLogic<Router: WindowRouting>: Coordinator<Router> {
 
     init(composer: ApplicationComposing = ApplicationComposer()) {
         self.composer = composer

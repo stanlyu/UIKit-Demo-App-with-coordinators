@@ -8,19 +8,22 @@
 import UIKit
 import Core
 
-final class DeliveryCoordinator: ProxyViewController {
+typealias DeliveryStackCoordinator = DeliveryCoordinatingLogic<StackRouter>
+typealias DeliveryInlineCoordinator = DeliveryCoordinatingLogic<InlineRouter>
+
+final class DeliveryCoordinatingLogic<Router: StackRouting>: Coordinator<Router> {
 
     init(composer: DeliveryComposing) {
         self.composer = composer
-        super.init(nibName: nil, bundle: nil)
+        super.init()
+
+    }
+
+    override func start() {
         let pickupPointsVC = composer.makePickupPointsViewController { [unowned self] event in
             handle(event: event)
         }
-        setContent(pickupPointsVC)
-    }
-
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
+        router?.push(pickupPointsVC, animated: false, completion: nil)
     }
 
     // MARK: - Private members
@@ -33,10 +36,10 @@ final class DeliveryCoordinator: ProxyViewController {
             let addPickupPointViewController = composer.makeAddPickupPointViewController { [unowned self] event in
                 switch event {
                 case .onBackTap:
-                    navigationController?.popViewController(animated: true)
+                    router?.pop(animated: true, completion: nil)
                 }
             }
-            navigationController?.pushViewController(addPickupPointViewController, animated: true)
+            router?.push(addPickupPointViewController, animated: true, completion: nil)
         }
     }
 }

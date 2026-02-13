@@ -19,14 +19,26 @@ import UIKit
 ///   напрямую у экземпляра `ProxyViewController`. Эти настройки будут **перезаписаны** значениями
 ///   из `contentViewController` в момент вызова `setContent`.
 ///   Настраивайте эти свойства у самого контентного контроллера (в Factory/Composer).
-open class ProxyViewController: UIViewController {
+public class ProxyViewController: UIViewController {
 
     // MARK: - Private Properties
     private(set) var contentViewController: UIViewController?
     private var observations: [NSKeyValueObservation] = []
 
+    internal override init(nibName nibNameOrNil: String?, bundle nibBundleOrNil: Bundle?) {
+        super.init(nibName: nibNameOrNil, bundle: nibBundleOrNil)
+    }
+
+    internal required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    internal convenience init() {
+        self.init(nibName: nil, bundle: nil)
+    }
+
     // MARK: - Lifecycle
-    open override func viewDidLoad() {
+    public override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .systemBackground
 
@@ -39,7 +51,7 @@ open class ProxyViewController: UIViewController {
     // MARK: - Public Methods
 
     /// Устанавливает новый контент и синхронизирует состояние прокси с ним.
-    public func setContent(_ newContent: UIViewController) {
+    internal func setContent(_ newContent: UIViewController) {
         let oldContent = contentViewController
         contentViewController = newContent
         observations.removeAll()
@@ -68,7 +80,7 @@ open class ProxyViewController: UIViewController {
     /// Метод перехода от старого контроллера к новому.
     /// По умолчанию выполняет мгновенную замену.
     /// Переопредели этот метод для добавления анимаций (CrossDissolve, Slide и т.д.).
-    open func transition(from oldViewController: UIViewController?, to newViewController: UIViewController) {
+    internal func transition(from oldViewController: UIViewController?, to newViewController: UIViewController) {
         if let old = oldViewController {
             old.willMove(toParent: nil)
             old.view.removeFromSuperview()
@@ -172,48 +184,48 @@ private extension ProxyViewController {
 extension ProxyViewController {
 
     // --- Status Bar ---
-    open override var childForStatusBarStyle: UIViewController? {
+    public override var childForStatusBarStyle: UIViewController? {
         contentViewController
     }
 
-    open override var childForStatusBarHidden: UIViewController? {
+    public override var childForStatusBarHidden: UIViewController? {
         contentViewController
     }
     
-    open override var childForHomeIndicatorAutoHidden: UIViewController? {
+    public override var childForHomeIndicatorAutoHidden: UIViewController? {
         contentViewController
     }
 
-    open override var prefersHomeIndicatorAutoHidden: Bool {
+    public override var prefersHomeIndicatorAutoHidden: Bool {
         contentViewController?.prefersHomeIndicatorAutoHidden ?? super.prefersHomeIndicatorAutoHidden
     }
 
     // --- Orientation ---
-    open override var supportedInterfaceOrientations: UIInterfaceOrientationMask {
+    public override var supportedInterfaceOrientations: UIInterfaceOrientationMask {
         contentViewController?.supportedInterfaceOrientations ?? super.supportedInterfaceOrientations
     }
 
-    open override var preferredInterfaceOrientationForPresentation: UIInterfaceOrientation {
+    public override var preferredInterfaceOrientationForPresentation: UIInterfaceOrientation {
         contentViewController?.preferredInterfaceOrientationForPresentation
         ??
         super.preferredInterfaceOrientationForPresentation
     }
 
-    open override var shouldAutorotate: Bool {
+    public override var shouldAutorotate: Bool {
         contentViewController?.shouldAutorotate ?? super.shouldAutorotate
     }
 
     // --- System Gestures ---
-    open override var childForScreenEdgesDeferringSystemGestures: UIViewController? {
+    public override var childForScreenEdgesDeferringSystemGestures: UIViewController? {
         contentViewController
     }
 
-    open override var preferredScreenEdgesDeferringSystemGestures: UIRectEdge {
+    public override var preferredScreenEdgesDeferringSystemGestures: UIRectEdge {
         contentViewController?.preferredScreenEdgesDeferringSystemGestures ?? super.preferredScreenEdgesDeferringSystemGestures
     }
 
     // --- Transition ---
-    open override var transitioningDelegate: UIViewControllerTransitioningDelegate? {
+    public override var transitioningDelegate: UIViewControllerTransitioningDelegate? {
         get { contentViewController?.transitioningDelegate ?? super.transitioningDelegate }
         set { super.transitioningDelegate = newValue }
     }

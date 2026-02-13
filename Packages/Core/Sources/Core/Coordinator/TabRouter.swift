@@ -7,7 +7,7 @@
 
 import UIKit
 
-/// Роутер, владеющий **панелью вкладок** (`UITabBarController`).
+/// Роутер, владеющий **панелью вкладок Tab Bar** (`UITabBarController`).
 public final class TabRouter: UITabBarController {
 
     /// Инициализирует роутер с заданным координатором.
