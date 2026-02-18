@@ -38,13 +38,13 @@ public final class WindowRouter: ProxyViewController, WindowRouting {
 
     // MARK: - WindowRouting Implementation
 
-    public func setRoot(_ module: UIViewController, animated: Bool, completion: (() -> Void)?) {
+    public func setRoot(_ viewController: UIViewController, animated: Bool, completion: (() -> Void)?) {
         // Сохраняем флаги во временное состояние, так как setContent не принимает их.
         pendingAnimated = animated
         pendingCompletion = completion
 
         // Этот вызов триггерит метод transition(from:to:)
-        setContent(module)
+        setContent(viewController)
     }
 
     // MARK: - Transition Logic

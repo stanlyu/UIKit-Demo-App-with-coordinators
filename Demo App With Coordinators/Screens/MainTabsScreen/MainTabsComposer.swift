@@ -8,14 +8,16 @@
 import UIKit
 import HomeFeature
 import CartFeature
+import DeliveryFeature
 
 @MainActor
 protocol MainTabsComposing {
     func makeHomeViewController(with eventHandler: @escaping (HomeEvent) -> Void) -> UIViewController
     func makeCartViewController(with eventHandler: @escaping (CartEvent) -> Void) -> CartModule
+    func makePickupPointsViewController(embeddedInNavigationStack: Bool) -> UIViewController
 }
 
-struct MainTabsComposer: MainTabsComposing {
+final class MainTabsComposer: MainTabsComposing {
     func makeHomeViewController(with eventHandler: @escaping (HomeEvent) -> Void) -> UIViewController {
         let homeViewController = homeViewController(with: eventHandler)
         homeViewController.tabBarItem = UITabBarItem(
@@ -35,4 +37,15 @@ struct MainTabsComposer: MainTabsComposing {
         )
         return cartModule
     }
+
+    func makePickupPointsViewController(embeddedInNavigationStack: Bool) -> UIViewController {
+        DeliveryFeature.pickupPointsViewController(
+            embeddedInNavigationStack: embeddedInNavigationStack,
+            dependencies: DeliveryDependencies(pickupPointsManager: pickupPointsManager)
+        )
+    }
+
+    // MARK: - Private members
+
+    private lazy var pickupPointsManager: PickupPointsManaging = DeliveryFeature.pickupPointsManager()
 }

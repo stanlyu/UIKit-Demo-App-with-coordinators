@@ -36,16 +36,16 @@ public final class StackRouter: UINavigationController{
 }
 
 extension StackRouter: StackRouting {
-    /// Кладет модуль в навигационный стек.
+    /// Кладет viewController в навигационный стек.
     ///
     /// - Note: **Особенность поведения:** Если навигационный стек пуст (то есть устанавливается корневой контроллер),
     ///   параметр `animated` будет проигнорирован (принудительно `false`).
     ///   Это сделано для предотвращения визуальных глитчей при первичном появлении навигационного контроллера.
-    public func push(_ module: UIViewController, animated: Bool, completion: (() -> Void)?) {
+    public func push(_ viewController: UIViewController, animated: Bool, completion: (() -> Void)?) {
         if viewControllers.isEmpty {
-            pushViewController(module, animated: false, completion: completion)
+            pushViewController(viewController, animated: false, completion: completion)
         } else {
-            pushViewController(module, animated: animated, completion: completion)
+            pushViewController(viewController, animated: animated, completion: completion)
         }
     }
 
@@ -59,13 +59,13 @@ extension StackRouter: StackRouting {
         popToRootViewController(animated: animated, completion: completion)
     }
 
-    /// Возвращается к указанному модулю в стеке.
-    public func popTo(_ module: UIViewController, animated: Bool, completion: (() -> Void)?) {
-        popToViewController(module, animated: animated, completion: completion)
+    /// Возвращается к указанному viewController'у в стеке.
+    public func popTo(_ viewController: UIViewController, animated: Bool, completion: (() -> Void)?) {
+        popToViewController(viewController, animated: animated, completion: completion)
     }
 
     /// Заменяет весь стек на указанный массив контроллеров.
-    public func setStack(_ modules: [UIViewController], animated: Bool) {
-        setViewControllers(modules, animated: animated)
+    public func setStack(_ viewControllers: [UIViewController], animated: Bool) {
+        setViewControllers(viewControllers, animated: animated)
     }
 }

@@ -32,21 +32,18 @@ public final class TabRouter: UITabBarController {
 }
 
 extension TabRouter: TabRouting {
-    public var selectedModule: UIViewController? {
-        selectedViewController
-    }
 
-    public func setTabs(_ modules: [UIViewController], animated: Bool) {
-        setViewControllers(modules, animated: animated)
+    public func setViewControllers(_ viewControllers: [UIViewController], animated: Bool) {
+        super.setViewControllers(viewControllers, animated: animated)
     }
 
     public func selectTab(at index: Int) {
         selectedIndex = index
     }
 
-    public func selectModule(_ module: UIViewController) {
+    public func selectViewController(_ viewController: UIViewController) {
         if let viewControllers = viewControllers,
-           let index = viewControllers.firstIndex(of: module) {
+           let index = viewControllers.firstIndex(of: viewController) {
             selectedIndex = index
         }
     }

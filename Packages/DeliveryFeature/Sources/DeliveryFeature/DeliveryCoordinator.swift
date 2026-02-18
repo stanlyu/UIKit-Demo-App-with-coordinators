@@ -40,6 +40,14 @@ final class DeliveryCoordinatingLogic<Router: StackRouting>: Coordinator<Router>
                 }
             }
             router?.push(addPickupPointViewController, animated: true, completion: nil)
+
+        case let .onFavoriteDeleteRequested(pickupPoint, input):
+            let deleteConfirmationViewController = composer.makeFavoritePickupPointDeleteConfirmationViewController(
+                pickupPoint: pickupPoint
+            ) {
+                input.confirmDeleteFavoritePickupPoint(pickupPoint)
+            }
+            router?.present(deleteConfirmationViewController, animated: true, completion: nil)
         }
     }
 }

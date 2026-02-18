@@ -31,7 +31,7 @@ final class MainTabsCoordinatingLogic<Router: TabRouting>: Coordinator<Router> {
         }
 
         self.cartModule = cartModule
-        router.setTabs([homeViewController, cartModule.viewController], animated: false)
+        router.setViewControllers([homeViewController, cartModule.viewController], animated: false)
     }
 
     // MARK: - Private members
@@ -43,10 +43,12 @@ final class MainTabsCoordinatingLogic<Router: TabRouting>: Coordinator<Router> {
         switch homeEvent {
         case .placeOrder(let orderID):
             guard let cartModule else { return }
-            router?.selectModule(cartModule.viewController)
+            router?.selectViewController(cartModule.viewController)
             cartModule.coordinator.placeOrder(orderID)
         case .selectPickupPoint(let homeCoordinator):
-            let pickupPointsViewController = DeliveryFeature.pickupPointsViewController(embeddedInNavigationStack: true)
+            let pickupPointsViewController = composer.makePickupPointsViewController(
+                embeddedInNavigationStack: true
+            )
             homeCoordinator.presentPickupPoints(module: pickupPointsViewController)
         }
     }
@@ -54,7 +56,10 @@ final class MainTabsCoordinatingLogic<Router: TabRouting>: Coordinator<Router> {
     private func handle(cartEvent: CartEvent) {
         switch cartEvent {
         case .changePickupPoint(let cartCoordinator):
-            cartCoordinator.presentPickupPoints(module: DeliveryFeature.pickupPointsViewController())
+            let pickupPointsViewController = composer.makePickupPointsViewController(
+                embeddedInNavigationStack: false
+            )
+            cartCoordinator.presentPickupPoints(module: pickupPointsViewController)
         }
     }
 }

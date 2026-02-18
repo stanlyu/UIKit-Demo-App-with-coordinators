@@ -40,23 +40,23 @@ public final class InlineRouter: ProxyViewController {
 }
 
 extension InlineRouter: StackRouting {
-    /// Добавляет модуль во флоу.
+    /// Добавляет viewController во флоу.
     ///
     /// - Note: **Особенность поведения:**
-    ///   1. Если это **первый** модуль во флоу, он будет встроен внутрь самого `InlineRouter` (через `setContent`).
+    ///   1. Если это **первый** viewController во флоу, он будет встроен внутрь самого `InlineRouter` (через `setContent`).
     ///      Визуально переход не произойдет, так как `InlineRouter` уже находится в стеке.
-    ///   2. Если это **второй и последующие** модули, они будут стандартно запушены (`push`)
+    ///   2. Если это **второй и последующие** viewControllers, они будут стандартно запушены (`push`)
     ///      в навигационный стек родительского контейнера.
-    public func push(_ module: UIViewController, animated: Bool, completion: (() -> Void)?) {
+    public func push(_ viewController: UIViewController, animated: Bool, completion: (() -> Void)?) {
         if contentViewController == nil {
-            setContent(module)
+            setContent(viewController)
             completion?()
         } else {
             guard let nav = navigationController else {
                 assertionFailure("⚠️ InlineRouter: Попытка push, но роутер не находится в NavigationController.")
                 return
             }
-            nav.pushViewController(module, animated: animated, completion: completion)
+            nav.pushViewController(viewController, animated: animated, completion: completion)
         }
     }
 
@@ -93,12 +93,12 @@ extension InlineRouter: StackRouting {
         popTo(self, animated: animated, completion: completion)
     }
 
-    /// Возвращается к указанному модулю.
+    /// Возвращается к указанному viewController'у.
     ///
-    /// - Warning: **Ошибка логики:** Целевой модуль должен находиться в пределах "зоны ответственности" этого роутера.
+    /// - Warning: **Ошибка логики:** Целевой viewController должен находиться в пределах "зоны ответственности" этого роутера.
     ///   Попытка перейти к контроллеру, который находится в стеке **до** `InlineRouter` (экраны родителя),
     ///   вызовет `assertionFailure` в Debug-сборке.
-    public func popTo(_ module: UIViewController, animated: Bool, completion: (() -> Void)?) {
+    public func popTo(_ viewController: UIViewController, animated: Bool, completion: (() -> Void)?) {
         guard let nav = navigationController else {
             "⚠️ InlineRouter: Попытка popTo, но роутер не находится в NavigationController."
             return
@@ -107,7 +107,7 @@ extension InlineRouter: StackRouting {
         let stack = nav.viewControllers
 
         guard let selfIndex = stack.firstIndex(of: self),
-              let targetIndex = stack.firstIndex(of: module) else { return }
+              let targetIndex = stack.firstIndex(of: viewController) else { return }
 
         if targetIndex < selfIndex {
             let message = """
@@ -120,16 +120,16 @@ extension InlineRouter: StackRouting {
             return
         }
 
-        nav.popToViewController(module, animated: animated, completion: completion)
+        nav.popToViewController(viewController, animated: animated, completion: completion)
     }
 
-    /// Заменяет текущий стек флоу на новые модули.
+    /// Заменяет текущий стек флоу на новые viewControllers.
     ///
     /// - Note: Этот метод сохраняет все контроллеры в стеке **до** `InlineRouter` (родительские экраны),
-    ///   обновляет контент самого `InlineRouter` первым модулем из массива,
-    ///   и добавляет остальные модули поверх него.
-    public func setStack(_ modules: [UIViewController], animated: Bool) {
-        guard let first = modules.first else { return }
+    ///   обновляет контент самого `InlineRouter` первым viewController из массива,
+    ///   и добавляет остальные viewControllers поверх него.
+    public func setStack(_ viewControllers: [UIViewController], animated: Bool) {
+        guard let first = viewControllers.first else { return }
 
         setContent(first)
 
@@ -144,8 +144,8 @@ extension InlineRouter: StackRouting {
             currentStack = Array(currentStack.prefix(upTo: selfIndex + 1))
         }
 
-        if modules.count > 1 {
-            currentStack.append(contentsOf: modules.dropFirst())
+        if viewControllers.count > 1 {
+            currentStack.append(contentsOf: viewControllers.dropFirst())
         }
 
         nav.setViewControllers(currentStack, animated: animated)

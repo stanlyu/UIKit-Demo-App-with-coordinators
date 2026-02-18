@@ -7,6 +7,14 @@
 
 import UIKit
 
+public struct DeliveryDependencies {
+    let pickupPointsManager: PickupPointsManaging
+
+    public init(pickupPointsManager: PickupPointsManaging) {
+        self.pickupPointsManager = pickupPointsManager
+    }
+}
+
 typealias PickupPointsEventHandler = (PickupPointsPresenter.Event) -> Void
 typealias AddPickupPointEventHandler = (AddPickupPointsPresenter.Event) -> Void
 
@@ -21,19 +29,26 @@ protocol DeliveryComposing {
     ) -> UINavigationController
 
     func makeAddPickupPointViewController(with eventHandler: @escaping AddPickupPointEventHandler) -> UIViewController
+
+    func makeFavoritePickupPointDeleteConfirmationViewController(
+        pickupPoint: PickupPoint,
+        onConfirm: @escaping () -> Void
+    ) -> UIViewController
 }
 
 struct DeliveryComposer: DeliveryComposing {
+    init(dependencies: DeliveryDependencies) {
+        self.dependencies = dependencies
+    }
+
     func makePickupPointsViewController(
         with eventHandler: @escaping PickupPointsEventHandler
     ) -> UIViewController {
-        let service = PickupPointsService()
-        let interactor = PickupPointsInteractor(service: service)
+        let interactor = PickupPointsInteractor(manager: dependencies.pickupPointsManager)
         let presenter = PickupPointsPresenter(interactor: interactor, onEvent: eventHandler)
-        let viewController = PickupPointsViewController()
+        let viewController = PickupPointsViewController(viewOutput: presenter)
         presenter.view = viewController
-        viewController.viewOutput = presenter
-        viewController.hidesBottomBarWhenPushed = true
+//        viewController.hidesBottomBarWhenPushed = true
         return viewController
     }
 
@@ -47,8 +62,32 @@ struct DeliveryComposer: DeliveryComposing {
     }
 
     func makeAddPickupPointViewController(with eventHandler: @escaping AddPickupPointEventHandler) -> UIViewController {
-        let presenter = AddPickupPointsPresenter(onEvent: eventHandler)
+        let interactor = AddPickupPointsInteractor(manager: dependencies.pickupPointsManager)
+        let presenter = AddPickupPointsPresenter(interactor: interactor, onEvent: eventHandler)
         let viewController = AddPickupPointsViewController(viewOutput: presenter)
+        presenter.view = viewController
         return viewController
     }
+
+    func makeFavoritePickupPointDeleteConfirmationViewController(
+        pickupPoint: PickupPoint,
+        onConfirm: @escaping () -> Void
+    ) -> UIViewController {
+        let alert = UIAlertController(
+            title: "Удалить ПВЗ?",
+            message: "ПВЗ «\(pickupPoint.name)» будет удален из списка избранных и перемещен в список доступных ПВЗ.",
+            preferredStyle: .alert
+        )
+
+        alert.addAction(UIAlertAction(title: "Отмена", style: .cancel))
+        alert.addAction(UIAlertAction(title: "Удалить", style: .destructive) { _ in
+            onConfirm()
+        })
+
+        return alert
+    }
+
+    // MARK: - Private members
+
+    private let dependencies: DeliveryDependencies
 }
