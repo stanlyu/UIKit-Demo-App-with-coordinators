@@ -7,13 +7,7 @@
 
 import UIKit
 
-public struct DeliveryDependencies {
-    let pickupPointsManager: PickupPointsManaging
 
-    public init(pickupPointsManager: PickupPointsManaging) {
-        self.pickupPointsManager = pickupPointsManager
-    }
-}
 
 typealias PickupPointsEventHandler = (PickupPointsPresenter.Event) -> Void
 typealias AddPickupPointEventHandler = (AddPickupPointsPresenter.Event) -> Void

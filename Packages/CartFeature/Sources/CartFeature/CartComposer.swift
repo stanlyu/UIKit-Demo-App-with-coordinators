@@ -21,11 +21,16 @@ protocol CartComposing {
     ) -> UIViewController
 
     func makeOrderConfirmationViewController(
+        paymentResult: CartPaymentResult,
         with eventHandler: @escaping OrderConfirmationEventHandler
     ) -> UIViewController
 }
 
 struct CartComposer: CartComposing {
+    init(dependencies: CartDependencies) {
+        self.dependencies = dependencies
+    }
+
     func makeCartViewController(with eventHandler: @escaping CartEventHandler) -> UIViewController {
         let service = CartService()
         let interactor = CartInteractor(service: service)
@@ -41,7 +46,11 @@ struct CartComposer: CartComposing {
         eventHandler: @escaping PlaceOrderEventHandler
     ) -> UIViewController {
         let service = PlaceOrderService()
-        let interactor = PlaceOrderInteractor(orderID: orderID, service: service)
+        let interactor = PlaceOrderInteractor(
+            orderID: orderID,
+            service: service,
+            selectedPickupPointProvider: dependencies.selectedPickupPointProvider
+        )
         let presenter = PlaceOrderPresenter(interactor: interactor, onEvent: eventHandler)
         let viewController = PlaceOrderViewController()
         presenter.view = viewController
@@ -51,11 +60,17 @@ struct CartComposer: CartComposing {
     }
 
     func makeOrderConfirmationViewController(
+        paymentResult: CartPaymentResult,
         with eventHandler: @escaping OrderConfirmationEventHandler
     ) -> UIViewController {
-        let presenter = OrderConfirmationPresenter(onEvent: eventHandler)
+        let presenter = OrderConfirmationPresenter(paymentResult: paymentResult, onEvent: eventHandler)
         let viewController = OrderConfirmationViewController()
+        presenter.view = viewController
         viewController.viewOutput = presenter
         return viewController
     }
+
+    // MARK: - Private members
+
+    private let dependencies: CartDependencies
 }

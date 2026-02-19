@@ -9,13 +9,13 @@ import UIKit
 import Core
 
 @MainActor
-public protocol HomeCoordinating {
+public protocol HomeInput {
     func presentPickupPoints(module: UIViewController)
 }
 
 public enum HomeEvent {
     case placeOrder(Int)
-    case selectPickupPoint(HomeCoordinating)
+    case selectPickupPoint(HomeInput)
 }
 
 @MainActor

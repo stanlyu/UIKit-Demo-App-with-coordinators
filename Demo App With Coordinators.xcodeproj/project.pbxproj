@@ -11,6 +11,7 @@
 		F02186AA2EF5596F00C6E14A /* CartFeature in Frameworks */ = {isa = PBXBuildFile; productRef = F02186A92EF5596F00C6E14A /* CartFeature */; };
 		F05EEFEB2EF9449D00ECE500 /* DeliveryFeature in Frameworks */ = {isa = PBXBuildFile; productRef = F05EEFEA2EF9449D00ECE500 /* DeliveryFeature */; };
 		F05EEFEE2EF951B700ECE500 /* Core in Frameworks */ = {isa = PBXBuildFile; productRef = F05EEFED2EF951B700ECE500 /* Core */; };
+		F0C7A0012F0A000100A1B2C3 /* PaymentFeature in Frameworks */ = {isa = PBXBuildFile; productRef = F0C7A0032F0A000100A1B2C3 /* PaymentFeature */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -47,6 +48,7 @@
 				F05EEFEE2EF951B700ECE500 /* Core in Frameworks */,
 				F05EEFEB2EF9449D00ECE500 /* DeliveryFeature in Frameworks */,
 				F02186AA2EF5596F00C6E14A /* CartFeature in Frameworks */,
+				F0C7A0012F0A000100A1B2C3 /* PaymentFeature in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -93,6 +95,7 @@
 				F02186A92EF5596F00C6E14A /* CartFeature */,
 				F05EEFEA2EF9449D00ECE500 /* DeliveryFeature */,
 				F05EEFED2EF951B700ECE500 /* Core */,
+				F0C7A0032F0A000100A1B2C3 /* PaymentFeature */,
 			);
 			productName = "Demo App With Coordinators";
 			productReference = F0BFB2612EF1C21C006D4954 /* Demo App With Coordinators.app */;
@@ -127,6 +130,7 @@
 				F02186A82EF5596F00C6E14A /* XCLocalSwiftPackageReference "Packages/CartFeature" */,
 				F05EEFE92EF9449D00ECE500 /* XCLocalSwiftPackageReference "Packages/DeliveryFeature" */,
 				F05EEFEC2EF951B700ECE500 /* XCLocalSwiftPackageReference "Packages/Core" */,
+				F0C7A0022F0A000100A1B2C3 /* XCLocalSwiftPackageReference "Packages/PaymentFeature" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = F0BFB2622EF1C21C006D4954 /* Products */;
@@ -390,6 +394,10 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/Core;
 		};
+		F0C7A0022F0A000100A1B2C3 /* XCLocalSwiftPackageReference "Packages/PaymentFeature" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/PaymentFeature;
+		};
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -408,6 +416,10 @@
 		F05EEFED2EF951B700ECE500 /* Core */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = Core;
+		};
+		F0C7A0032F0A000100A1B2C3 /* PaymentFeature */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = PaymentFeature;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

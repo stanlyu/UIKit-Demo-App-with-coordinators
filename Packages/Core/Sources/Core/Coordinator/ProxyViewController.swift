@@ -71,7 +71,7 @@ public class ProxyViewController: UIViewController {
             UIViewController.attemptRotationToDeviceOrientation()
         }
 
-        // 3. Визуальный переход делаем ТОЛЬКО если view уже загружена.
+        // Визуальный переход делаем ТОЛЬКО если view уже загружена.
         // Если это вызов из init, то isViewLoaded == false, и мы пропускаем этот шаг.
         // Он выполнится автоматически во viewDidLoad.
         if isViewLoaded {

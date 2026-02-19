@@ -9,6 +9,7 @@ import UIKit
 import HomeFeature
 import CartFeature
 import DeliveryFeature
+import PaymentFeature
 import Core
 
 typealias MainTabsCoordinator = MainTabsCoordinatingLogic<TabRouter>
@@ -59,7 +60,20 @@ final class MainTabsCoordinatingLogic<Router: TabRouting>: Coordinator<Router> {
             let pickupPointsViewController = composer.makePickupPointsViewController(
                 embeddedInNavigationStack: false
             )
-            cartCoordinator.presentPickupPoints(module: pickupPointsViewController)
+            cartCoordinator.presentPickupPoints(viewController: pickupPointsViewController)
+        case .continueToPayment(let cartCoordinator):
+            let paymentViewController = composer.makePaymentViewController { [weak self, weak cartCoordinator] event in
+                guard let self, let cartCoordinator else { return }
+
+                switch event {
+                case .cancelled:
+                    cartCoordinator.closePayment()
+                case let .completed(paymentResult):
+                    let cartPaymentResult = self.composer.makeCartPaymentResult(from: paymentResult)
+                    cartCoordinator.completePayment(with: cartPaymentResult)
+                }
+            }
+            cartCoordinator.showPayment(viewController: paymentViewController)
         }
     }
 }

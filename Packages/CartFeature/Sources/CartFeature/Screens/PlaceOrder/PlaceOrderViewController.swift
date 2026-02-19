@@ -12,7 +12,8 @@ import Core
 protocol PlaceOrderView: AnyObject {
     func startLoading()
     func stopLoading()
-    func setNavigationSubtitle(_ subtitle: String)
+    func setOrderIDSubtitle(_ subtitle: String)
+    func setPickupPointText(_ text: String)
 }
 
 final class PlaceOrderViewController: UIViewController {
@@ -25,7 +26,8 @@ final class PlaceOrderViewController: UIViewController {
         title = "Оформление заказа"
         loadingIndicator.layout(in: view)
         setupContinueButton()
-        setupSubtitleLabel()
+        setupOrderIDLabel()
+        setupPickupPointLabel()
 
         let action = UIAction { [unowned self] _ in
             self.viewOutput?.changePickupPointButtonDidTap()
@@ -72,12 +74,22 @@ final class PlaceOrderViewController: UIViewController {
         return button
     }()
 
-    private lazy var subtitleLabel: UILabel = {
+    private lazy var orderIDLabel: UILabel = {
         let label = UILabel()
         label.textAlignment = .center
         label.font = UIFont.systemFont(ofSize: 18, weight: .regular)
         label.textColor = .secondaryLabel
         label.numberOfLines = 1
+        label.translatesAutoresizingMaskIntoConstraints = false
+        return label
+    }()
+
+    private lazy var pickupPointLabel: UILabel = {
+        let label = UILabel()
+        label.textAlignment = .center
+        label.font = UIFont.systemFont(ofSize: 18, weight: .semibold)
+        label.textColor = .label
+        label.numberOfLines = 0
         label.translatesAutoresizingMaskIntoConstraints = false
         return label
     }()
@@ -93,12 +105,22 @@ final class PlaceOrderViewController: UIViewController {
         ])
     }
 
-    private func setupSubtitleLabel() {
-        view.addSubview(subtitleLabel)
+    private func setupOrderIDLabel() {
+        view.addSubview(orderIDLabel)
 
         NSLayoutConstraint.activate([
-            subtitleLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            subtitleLabel.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 8)
+            orderIDLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            orderIDLabel.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 8)
+        ])
+    }
+
+    private func setupPickupPointLabel() {
+        view.addSubview(pickupPointLabel)
+
+        NSLayoutConstraint.activate([
+            pickupPointLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
+            pickupPointLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
+            pickupPointLabel.topAnchor.constraint(equalTo: orderIDLabel.bottomAnchor, constant: 8)
         ])
     }
 
@@ -118,9 +140,13 @@ extension PlaceOrderViewController: PlaceOrderView {
         activateNavigationRightBarButton()
     }
 
-    func setNavigationSubtitle(_ subtitle: String) {
-        subtitleLabel.text = subtitle
-        self.subtitleLabel.alpha = subtitle.isEmpty ? 0.0 : 1.0
+    func setOrderIDSubtitle(_ subtitle: String) {
+        orderIDLabel.text = subtitle
+        orderIDLabel.alpha = subtitle.isEmpty ? 0.0 : 1.0
+    }
+
+    func setPickupPointText(_ text: String) {
+        pickupPointLabel.text = text
     }
 }
 

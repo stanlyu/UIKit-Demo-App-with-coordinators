@@ -35,7 +35,7 @@ final class HomeCoordinatingLogic<Router: StackRouting>: Coordinator<StackRouter
     private let eventHandler: (HomeEvent) -> Void
 }
 
-extension HomeCoordinatingLogic: HomeCoordinating {
+extension HomeCoordinatingLogic: HomeInput {
     func presentPickupPoints(module: UIViewController) {
         router?.push(module, animated: true, completion: nil)
     }

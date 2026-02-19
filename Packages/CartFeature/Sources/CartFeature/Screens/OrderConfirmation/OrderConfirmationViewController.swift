@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import Core
 
 final class OrderConfirmationViewController: UIViewController {
 
@@ -15,8 +16,10 @@ final class OrderConfirmationViewController: UIViewController {
         super.viewDidLoad()
         view.backgroundColor = .systemOrange
         title = "Финиш"
-        setupReturnButton()
+        setupLayout()
         navigationItem.hidesBackButton = true
+
+        viewOutput?.viewDidLoad()
     }
 
     override func viewDidLayoutSubviews() {
@@ -25,6 +28,15 @@ final class OrderConfirmationViewController: UIViewController {
     }
 
     // MARK: - Private properties
+
+    private lazy var messageLabel: UILabel = {
+        let label = UILabel()
+        label.font = UIFont.systemFont(ofSize: 24, weight: .bold)
+        label.textAlignment = .center
+        label.numberOfLines = 0
+        label.translatesAutoresizingMaskIntoConstraints = false
+        return label
+    }()
 
     private lazy var returnButton: UIButton = {
         let button = UIButton.styledButton(
@@ -39,12 +51,24 @@ final class OrderConfirmationViewController: UIViewController {
 
     // MARK: - Private methods
 
-    private func setupReturnButton() {
+    private func setupLayout() {
+        view.addSubview(messageLabel)
         view.addSubview(returnButton)
 
         NSLayoutConstraint.activate([
+            messageLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
+            messageLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
+            messageLabel.centerYAnchor.constraint(equalTo: view.centerYAnchor),
+
             returnButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            returnButton.centerYAnchor.constraint(equalTo: view.centerYAnchor)
+            returnButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -20)
         ])
+    }
+}
+
+extension OrderConfirmationViewController: OrderConfirmationView {
+    func render(_ state: OrderConfirmationViewState) {
+        messageLabel.text = state.message
+        messageLabel.textColor = state.messageColor
     }
 }

@@ -7,28 +7,6 @@
 
 import Foundation
 
-public enum PickupPointsManagerEvent {
-    case pickupPointSelected(id: Int)
-    case pickupPointAddedToFavorites(id: Int)
-    case pickupPointRemovedFromFavorites(id: Int)
-}
-
-@MainActor
-public protocol PickupPointsManaging: AnyObject {
-    var availablePickupPoints: [PickupPoint] { get }
-    var favoritePickupPoints: [PickupPoint] { get }
-    var selectedPickupPoint: PickupPoint? { get }
-
-    func subscribe(_ listener: @escaping (PickupPointsManagerEvent) -> Void)
-
-    func addToFavorites(pickupPointID id: Int)
-
-    @discardableResult
-    func selectPickupPoint(pickupPointID id: Int) -> Bool
-
-    func removeFromFavorites(pickupPointID id: Int)
-}
-
 @MainActor
 final class PickupPointsManager: PickupPointsManaging {
     var availablePickupPoints: [PickupPoint] {

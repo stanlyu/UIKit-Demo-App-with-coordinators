@@ -17,7 +17,7 @@ final class PlaceOrderPresenter {
     enum Event {
         case onBackTap
         case onChangePickupPointTap
-        case onCompletion
+        case onContinueToPayment
     }
 
     weak var view: PlaceOrderView?
@@ -35,7 +35,11 @@ final class PlaceOrderPresenter {
 
 extension PlaceOrderPresenter: PlaceOrderViewOutput {
     func viewDidLoad() {
-        view?.setNavigationSubtitle("\(interactor.orderID)")
+        view?.setOrderIDSubtitle("\(interactor.orderID)")
+        updatePickupPoint(interactor.selectedPickupPoint)
+        interactor.subscribeToSelectedPickupPointChanges { [weak self] pickupPoint in
+            self?.updatePickupPoint(pickupPoint)
+        }
     }
 
     func backButtonDidTap() {
@@ -47,10 +51,18 @@ extension PlaceOrderPresenter: PlaceOrderViewOutput {
     }
     
     func continueButtonDidTap() {
-        view?.startLoading()
-        interactor.placeOrder { [weak self] in
-            self?.view?.stopLoading()
-            self?.onEvent(.onCompletion)
+        onEvent(.onContinueToPayment)
+    }
+}
+
+@MainActor
+private extension PlaceOrderPresenter {
+    func updatePickupPoint(_ pickupPoint: CartPickupPoint?) {
+        guard let pickupPoint else {
+            view?.setPickupPointText("ПВЗ: не выбран")
+            return
         }
+
+        view?.setPickupPointText("ПВЗ: \(pickupPoint.name)")
     }
 }

@@ -9,12 +9,14 @@ import UIKit
 import HomeFeature
 import CartFeature
 import DeliveryFeature
+import PaymentFeature
 
 @MainActor
-protocol MainTabsComposing {
+protocol MainTabsComposing: PaymentToCartTypeConverting {
     func makeHomeViewController(with eventHandler: @escaping (HomeEvent) -> Void) -> UIViewController
     func makeCartViewController(with eventHandler: @escaping (CartEvent) -> Void) -> CartModule
     func makePickupPointsViewController(embeddedInNavigationStack: Bool) -> UIViewController
+    func makePaymentViewController(with eventHandler: @escaping (PaymentEvent) -> Void) -> UIViewController
 }
 
 final class MainTabsComposer: MainTabsComposing {
@@ -29,7 +31,12 @@ final class MainTabsComposer: MainTabsComposing {
     }
 
     func makeCartViewController(with eventHandler: @escaping (CartEvent) -> Void) -> CartModule {
-        let cartModule = cartModule(with: eventHandler)
+        let cartModule = cartModule(
+            with: eventHandler,
+            dependencies: CartDependencies(
+                selectedPickupPointProvider: deliveryToCartSelectedPickupPointProvider
+            )
+        )
         cartModule.viewController.tabBarItem = UITabBarItem(
             title: "Корзина",
             image: nil,
@@ -45,7 +52,13 @@ final class MainTabsComposer: MainTabsComposing {
         )
     }
 
+    func makePaymentViewController(with eventHandler: @escaping (PaymentEvent) -> Void) -> UIViewController {
+        PaymentFeature.paymentViewController(with: eventHandler)
+    }
+
     // MARK: - Private members
 
     private lazy var pickupPointsManager: PickupPointsManaging = DeliveryFeature.pickupPointsManager()
+    private lazy var deliveryToCartSelectedPickupPointProvider: CartSelectedPickupPointProviding =
+        DeliveryToCartSelectedPickupPointProviderAdapter(pickupPointsManager: pickupPointsManager)
 }
