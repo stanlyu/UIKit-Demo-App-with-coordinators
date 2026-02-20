@@ -21,7 +21,7 @@ final class MainTabsCoordinatingLogic<Router: TabRouting>: Coordinator<Router> {
         super.init()
     }
 
-    override func start() {
+    override func start(_ capability: StartCapability) {
         guard let router else { return }
 
         let homeViewController = composer.makeHomeViewController { [unowned self] event in

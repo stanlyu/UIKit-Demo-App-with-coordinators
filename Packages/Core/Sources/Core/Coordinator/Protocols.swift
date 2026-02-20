@@ -19,6 +19,8 @@ public protocol Routing: UIViewController {}
 /// Возможности навигации в стеке (UINavigationController).
 @MainActor
 public protocol StackRouting: Routing {
+    /// Текущее состояние стека контроллеров в зоне ответственности роутера.
+    var viewControllers: [UIViewController] { get }
 
     /// Кладет viewController в навигационный стек (Push).
     func push(_ viewController: UIViewController, animated: Bool, completion: (() -> Void)?)

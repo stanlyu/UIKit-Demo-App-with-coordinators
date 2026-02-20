@@ -40,6 +40,19 @@ public final class InlineRouter: ProxyViewController {
 }
 
 extension InlineRouter: StackRouting {
+    /// Текущий стек контроллеров внутри флоу InlineRouter.
+    ///
+    /// - Note: В качестве первого элемента возвращается `contentViewController`,
+    ///   а не сам `InlineRouter`, чтобы координатор работал с реальными экранами своего флоу.
+    public var viewControllers: [UIViewController] {
+        guard let contentViewController else { return [] }
+        guard let navigationController else { return [contentViewController] }
+        guard let selfIndex = navigationController.viewControllers.firstIndex(of: self) else { return [contentViewController] }
+
+        let flowStack = Array(navigationController.viewControllers[selfIndex...])
+        return [contentViewController] + flowStack.dropFirst()
+    }
+
     /// Добавляет viewController во флоу.
     ///
     /// - Note: **Особенность поведения:**

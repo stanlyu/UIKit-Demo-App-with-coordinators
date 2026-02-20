@@ -17,14 +17,13 @@ final class CartCoordinatingLogic<Router: StackRouting>: Coordinator<Router> {
         super.init()
     }
 
-    override func start() {
+    override func start(_ capability: StartCapability) {
         let rootViewController = composer.makeCartViewController { [unowned self] event in
             switch event {
             case .onPlaceOrderTap(let orderID):
                 self.placeOrder(orderID)
             }
         }
-        cartRootViewController = rootViewController
         router?.push(rootViewController, animated: false, completion: nil)
     }
 
@@ -32,7 +31,6 @@ final class CartCoordinatingLogic<Router: StackRouting>: Coordinator<Router> {
 
     private let composer: CartComposing
     private let eventHandler: (CartEvent) -> Void
-    private weak var cartRootViewController: UIViewController?
 }
 
 extension CartCoordinatingLogic: CartInput {
@@ -65,7 +63,7 @@ extension CartCoordinatingLogic: CartInput {
     }
 
     func completePayment(with result: CartPaymentResult) {
-        guard let router, let cartRootViewController else { return }
+        guard let router, let cartRootViewController = router.viewControllers.first else { return }
 
         let orderConfirmationVC = composer.makeOrderConfirmationViewController(
             paymentResult: result

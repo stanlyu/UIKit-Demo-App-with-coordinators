@@ -19,7 +19,7 @@ final class DeliveryCoordinatingLogic<Router: StackRouting>: Coordinator<Router>
 
     }
 
-    override func start() {
+    override func start(_ capability: StartCapability) {
         let pickupPointsVC = composer.makePickupPointsViewController { [unowned self] event in
             handle(event: event)
         }

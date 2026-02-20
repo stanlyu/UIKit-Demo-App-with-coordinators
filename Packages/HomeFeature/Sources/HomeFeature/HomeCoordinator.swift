@@ -17,7 +17,7 @@ final class HomeCoordinatingLogic<Router: StackRouting>: Coordinator<StackRouter
         super.init()
     }
 
-    override func start() {
+    override func start(_ capability: StartCapability) {
         let rootViewController = composer.makeHomeViewController { [unowned self] event in
             switch event {
             case .onPlaceOrderTap(let orderID):

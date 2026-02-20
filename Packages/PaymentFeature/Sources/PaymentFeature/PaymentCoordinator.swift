@@ -18,7 +18,7 @@ final class PaymentCoordinatingLogic<Router: StackRouting>: Coordinator<Router> 
         super.init()
     }
 
-    override func start() {
+    override func start(_ capability: StartCapability) {
         let paymentViewController = composer.makePaymentViewController { [weak self] event in
             self?.handle(event: event)
         }

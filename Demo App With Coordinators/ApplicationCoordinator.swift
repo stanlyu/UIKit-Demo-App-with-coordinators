@@ -17,7 +17,7 @@ final class ApplicationCoordinatingLogic<Router: WindowRouting>: Coordinator<Rou
         super.init()
     }
 
-    override func start() {
+    override func start(_ capability: StartCapability) {
         let launchVC = composer.makeLaunchViewController { [unowned self] event in
             self.handleLaunchEvent(event)
         }
