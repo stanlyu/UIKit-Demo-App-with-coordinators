@@ -46,7 +46,7 @@ public func cartModule(
         composer: CartComposer(dependencies: dependencies),
         eventHandler: eventHandler
     )
-    let router = StackRouter(coordinator: coordinator)
-    router.navigationBar.prefersLargeTitles = true
-    return (router, coordinator)
+    let container = StackContainer(coordinator: coordinator)
+    container.navigationBar.prefersLargeTitles = true
+    return (container, coordinator)
 }

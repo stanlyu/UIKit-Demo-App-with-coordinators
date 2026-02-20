@@ -28,12 +28,12 @@ struct ApplicationComposer: ApplicationComposing {
     func makeMainTabsViewController() -> UIViewController {
         let mainTabsComposer = MainTabsComposer()
         let mainTabsCoordinator = MainTabsCoordinator(composer: mainTabsComposer)
-        let mainTabsRouter = TabRouter(coordinator: mainTabsCoordinator)
-        configureMainTabsRouter(mainTabsRouter)
-        return mainTabsRouter
+        let mainTabsContainer = TabContainer(coordinator: mainTabsCoordinator)
+        configureMainTabsContainer(mainTabsContainer)
+        return mainTabsContainer
     }
 
-    private func configureMainTabsRouter(_ router: TabRouter) {
+    private func configureMainTabsContainer(_ container: TabContainer) {
         let appearance = UITabBarAppearance()
         appearance.configureWithTransparentBackground()
 
@@ -55,7 +55,7 @@ struct ApplicationComposer: ApplicationComposing {
         appearance.inlineLayoutAppearance = itemAppearance
         appearance.compactInlineLayoutAppearance = itemAppearance
 
-        router.tabBar.standardAppearance = appearance
-        router.tabBar.scrollEdgeAppearance = appearance
+        container.tabBar.standardAppearance = appearance
+        container.tabBar.scrollEdgeAppearance = appearance
     }
 }

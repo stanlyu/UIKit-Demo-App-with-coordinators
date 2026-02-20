@@ -38,14 +38,17 @@ public protocol StackRouting: Routing {
     func setStack(_ viewControllers: [UIViewController], animated: Bool)
 }
 
-// MARK: - Window Routing
+// MARK: - Switch Routing
 
-/// Возможности смены корневого экрана приложения (например, Splash -> Auth -> Main).
+/// Возможности контейнера, который переключает один активный контент на другой.
+///
+/// Типичный кейс: смена корневого сценария приложения (например, Splash -> Main),
+/// но протокол не привязан только к `UIWindow`.
 @MainActor
-public protocol WindowRouting: Routing {
+public protocol SwitchRouting: Routing {
 
-    /// Полностью заменяет корневой viewController с анимацией (обычно Cross Dissolve).
-    /// Используется для переключения глобальных состояний приложения.
+    /// Полностью заменяет текущий контент контейнера новым контроллером.
+    /// При использовании в root-сценарии это эквивалентно смене корневого экрана.
     func setRoot(_ viewController: UIViewController, animated: Bool, completion: (() -> Void)?)
 }
 

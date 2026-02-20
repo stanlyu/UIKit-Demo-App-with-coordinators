@@ -16,6 +16,6 @@ public enum PaymentEvent {
 @MainActor
 public func paymentViewController(with eventHandler: @escaping (PaymentEvent) -> Void) -> UIViewController {
     let coordinator = PaymentInlineCoordinator(composer: PaymentComposer(), eventHandler: eventHandler)
-    let router = InlineRouter(coordinator: coordinator)
-    return router
+    let container = InlineContainer(coordinator: coordinator)
+    return container
 }

@@ -1,5 +1,5 @@
 //
-//  StackRouter.swift
+//  StackContainer.swift
 //  Core
 //
 //  Created by Любченко Станислав Валерьевич on 12.02.2026.
@@ -7,15 +7,15 @@
 
 import UIKit
 
-/// Роутер, который **владеет** навигационным стеком (`UINavigationController`).
+/// Контейнер, который **владеет** навигационным стеком (`UINavigationController`).
 ///
 /// Используется для создания независимых навигационных цепочек (например, каждая вкладка таббара,
 /// или модальный сценарий со своим навигационным баром).
-public final class StackRouter: UINavigationController{
+public final class StackContainer: UINavigationController {
 
-    /// Инициализирует роутер с заданным координатором.
-    /// - Parameter coordinator: Координатор, который будет управлять этим роутером.
-    public init(coordinator: Coordinator<StackRouter>) {
+    /// Инициализирует контейнер с заданным координатором.
+    /// - Parameter coordinator: Координатор, который будет управлять этим контейнером.
+    public init(coordinator: Coordinator<StackContainer>) {
         self.coordinator = coordinator
         super.init(nibName: nil, bundle: nil)
     }
@@ -32,10 +32,10 @@ public final class StackRouter: UINavigationController{
 
     // MARK: - Private members
 
-    private let coordinator: Coordinator<StackRouter>
+    private let coordinator: Coordinator<StackContainer>
 }
 
-extension StackRouter: StackRouting {
+extension StackContainer: StackRouting {
     /// Кладет viewController в навигационный стек.
     ///
     /// - Note: **Особенность поведения:** Если навигационный стек пуст (то есть устанавливается корневой контроллер),

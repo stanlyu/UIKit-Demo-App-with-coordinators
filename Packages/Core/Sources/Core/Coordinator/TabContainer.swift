@@ -1,5 +1,5 @@
 //
-//  TabRouter.swift
+//  TabContainer.swift
 //  Core
 //
 //  Created by Любченко Станислав Валерьевич on 12.02.2026.
@@ -7,12 +7,12 @@
 
 import UIKit
 
-/// Роутер, владеющий **панелью вкладок Tab Bar** (`UITabBarController`).
-public final class TabRouter: UITabBarController {
+/// Контейнер, владеющий **панелью вкладок Tab Bar** (`UITabBarController`).
+public final class TabContainer: UITabBarController {
 
-    /// Инициализирует роутер с заданным координатором.
-    /// - Parameter coordinator: Координатор, который будет управлять этим роутером.
-    public init(coordinator: Coordinator<TabRouter>) {
+    /// Инициализирует контейнер с заданным координатором.
+    /// - Parameter coordinator: Координатор, который будет управлять этим контейнером.
+    public init(coordinator: Coordinator<TabContainer>) {
         self.coordinator = coordinator
         super.init(nibName: nil, bundle: nil)
     }
@@ -28,10 +28,10 @@ public final class TabRouter: UITabBarController {
 
     // MARK: - Private members
 
-    private let coordinator: Coordinator<TabRouter>
+    private let coordinator: Coordinator<TabContainer>
 }
 
-extension TabRouter: TabRouting {
+extension TabContainer: TabRouting {
 
     public func setViewControllers(_ viewControllers: [UIViewController], animated: Bool) {
         super.setViewControllers(viewControllers, animated: animated)

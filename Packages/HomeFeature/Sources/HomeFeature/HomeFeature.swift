@@ -21,7 +21,7 @@ public enum HomeEvent {
 @MainActor
 public func homeViewController(with eventHandler: @escaping (HomeEvent) -> Void) -> UIViewController {
     let coordinator = HomeCoordinator(composer: HomeComposer(), eventHandler: eventHandler)
-    let router = StackRouter(coordinator: coordinator)
-    router.navigationBar.prefersLargeTitles = true
-    return router
+    let container = StackContainer(coordinator: coordinator)
+    container.navigationBar.prefersLargeTitles = true
+    return container
 }

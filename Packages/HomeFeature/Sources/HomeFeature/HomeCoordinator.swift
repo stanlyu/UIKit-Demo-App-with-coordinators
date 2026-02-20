@@ -10,7 +10,7 @@ import Core
 
 typealias HomeCoordinator = HomeCoordinatingLogic<StackRouter>
 
-final class HomeCoordinatingLogic<Router: StackRouting>: Coordinator<StackRouter> {
+final class HomeCoordinatingLogic<Router: StackRouting>: Coordinator<Router> {
     init(composer: HomeComposing, eventHandler: @escaping (HomeEvent) -> Void) {
         self.composer = composer
         self.eventHandler = eventHandler

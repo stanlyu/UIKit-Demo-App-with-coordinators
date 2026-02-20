@@ -24,7 +24,7 @@ open class Coordinator<R: Routing> {
     /// поэтому внешние модули не могут вручную вызвать `start(_:)`.
     ///
     /// - Note: Токен параметризован типом роутера, чтобы исключить смешивание прав
-    ///   запуска между координаторами разных типов (`StackRouter`, `TabRouter`, `WindowRouter` и т.д.).
+    ///   запуска между координаторами разных типов (`StackContainer`, `TabContainer`, `SwitchContainer` и т.д.).
     public struct Start<Router: Routing> {
         internal init() {}
     }

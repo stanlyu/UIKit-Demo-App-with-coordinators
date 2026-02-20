@@ -1,5 +1,5 @@
 //
-//  InlineRouter.swift
+//  InlineContainer.swift
 //  Core
 //
 //  Created by Любченко Станислав Валерьевич on 12.02.2026.
@@ -8,20 +8,20 @@
 import UIKit
 
 
-/// Роутер, который **встраивается** в существующий навигационный стек.
+/// Контейнер, который **встраивается** в существующий навигационный стек.
 ///
 /// Является `ProxyViewController`, то есть для системы выглядит как один экран,
 /// но на самом деле управляет сегментом стека родительского навигационного контроллера.
 ///
-/// - Note: **Конфигурация:** Этот роутер прозрачен. Если вам нужно настроить заголовок флоу,
+/// - Note: **Конфигурация:** Этот контейнер прозрачен. Если вам нужно настроить заголовок флоу,
 ///   скрыть таббар (`hidesBottomBarWhenPushed`) или изменить кнопки навигации,
-///   настраивайте эти свойства у **первого контроллера** (Root of Flow), который вы передаете в этот роутер.
-///   Настройка самого `InlineRouter` бесполезна, так как он зеркалирует свой контент.
-public final class InlineRouter: ProxyViewController {
+///   настраивайте эти свойства у **первого контроллера** (Root of Flow), который вы передаете в этот контейнер.
+///   Настройка самого `InlineContainer` бесполезна, так как он зеркалирует свой контент.
+public final class InlineContainer: ProxyViewController {
 
-    /// Инициализирует роутер с заданным координатором.
-    /// - Parameter coordinator: Координатор, который будет управлять этим роутером.
-    public init(coordinator: Coordinator<InlineRouter>) {
+    /// Инициализирует контейнер с заданным координатором.
+    /// - Parameter coordinator: Координатор, который будет управлять этим контейнером.
+    public init(coordinator: Coordinator<InlineContainer>) {
         self.coordinator = coordinator
         super.init(nibName: nil, bundle: nil)
         // Запускаем поток сразу, чтобы Proxy получил контент и синхронизировал
@@ -36,14 +36,14 @@ public final class InlineRouter: ProxyViewController {
 
     // MARK: - Private members
 
-    private let coordinator: Coordinator<InlineRouter>
+    private let coordinator: Coordinator<InlineContainer>
 }
 
-extension InlineRouter: StackRouting {
-    /// Текущий стек контроллеров внутри флоу InlineRouter.
+extension InlineContainer: StackRouting {
+    /// Текущий стек контроллеров внутри флоу InlineContainer.
     ///
     /// - Note: В качестве первого элемента возвращается `contentViewController`,
-    ///   а не сам `InlineRouter`, чтобы координатор работал с реальными экранами своего флоу.
+    ///   а не сам `InlineContainer`, чтобы координатор работал с реальными экранами своего флоу.
     public var viewControllers: [UIViewController] {
         guard let contentViewController else { return [] }
         guard let navigationController else { return [contentViewController] }
@@ -56,8 +56,8 @@ extension InlineRouter: StackRouting {
     /// Добавляет viewController во флоу.
     ///
     /// - Note: **Особенность поведения:**
-    ///   1. Если это **первый** viewController во флоу, он будет встроен внутрь самого `InlineRouter` (через `setContent`).
-    ///      Визуально переход не произойдет, так как `InlineRouter` уже находится в стеке.
+    ///   1. Если это **первый** viewController во флоу, он будет встроен внутрь самого `InlineContainer` (через `setContent`).
+    ///      Визуально переход не произойдет, так как `InlineContainer` уже находится в стеке.
     ///   2. Если это **второй и последующие** viewControllers, они будут стандартно запушены (`push`)
     ///      в навигационный стек родительского контейнера.
     public func push(_ viewController: UIViewController, animated: Bool, completion: (() -> Void)?) {
@@ -66,7 +66,7 @@ extension InlineRouter: StackRouting {
             completion?()
         } else {
             guard let nav = navigationController else {
-                assertionFailure("⚠️ InlineRouter: Попытка push, но роутер не находится в NavigationController.")
+                assertionFailure("⚠️ InlineContainer: Попытка push, но контейнер не находится в NavigationController.")
                 return
             }
             nav.pushViewController(viewController, animated: animated, completion: completion)
@@ -75,20 +75,20 @@ extension InlineRouter: StackRouting {
 
     /// Возвращается на один экран назад.
     ///
-    /// - Warning: **Ошибка логики:** Запрещено вызывать этот метод, если `InlineRouter` является верхним контроллером в стеке
+    /// - Warning: **Ошибка логики:** Запрещено вызывать этот метод, если `InlineContainer` является верхним контроллером в стеке
     ///   (то есть вы пытаетесь закрыть сам флоу изнутри). В Debug-сборке это вызовет `assertionFailure`.
     ///   Для закрытия всего флоу используйте делегирование к родительскому координатору.
     public func pop(animated: Bool, completion: (() -> Void)?) {
         guard let nav = navigationController else {
-            assertionFailure("⚠️ InlineRouter: Попытка pop, но роутер не находится в NavigationController.")
+            assertionFailure("⚠️ InlineContainer: Попытка pop, но контейнер не находится в NavigationController.")
             return
         }
 
         if nav.topViewController === self {
             let message = """
-            ⚠️ ОШИБКА ЛОГИКИ InlineRouter:
+            ⚠️ ОШИБКА ЛОГИКИ InlineContainer:
             Вы пытаетесь вызвать pop() для корневого контроллера этого флоу.
-            InlineRouter не может удалить сам себя из стека родителя.
+            InlineContainer не может удалить сам себя из стека родителя.
             РЕШЕНИЕ: Координатор должен вызвать делегат (например, onFinish), а родительский координатор \
             должен сделать router.pop().
             """
@@ -101,19 +101,19 @@ extension InlineRouter: StackRouting {
 
     /// Возвращается к началу текущего флоу.
     ///
-    /// - Note: Этот метод вернет стек к состоянию, когда `InlineRouter` находится на вершине.
+    /// - Note: Этот метод вернет стек к состоянию, когда `InlineContainer` находится на вершине.
     public func popToRoot(animated: Bool, completion: (() -> Void)?) {
         popTo(self, animated: animated, completion: completion)
     }
 
     /// Возвращается к указанному viewController'у.
     ///
-    /// - Warning: **Ошибка логики:** Целевой viewController должен находиться в пределах "зоны ответственности" этого роутера.
-    ///   Попытка перейти к контроллеру, который находится в стеке **до** `InlineRouter` (экраны родителя),
+    /// - Warning: **Ошибка логики:** Целевой viewController должен находиться в пределах "зоны ответственности" этого контейнера.
+    ///   Попытка перейти к контроллеру, который находится в стеке **до** `InlineContainer` (экраны родителя),
     ///   вызовет `assertionFailure` в Debug-сборке.
     public func popTo(_ viewController: UIViewController, animated: Bool, completion: (() -> Void)?) {
         guard let nav = navigationController else {
-            "⚠️ InlineRouter: Попытка popTo, но роутер не находится в NavigationController."
+            assertionFailure("⚠️ InlineContainer: Попытка popTo, но контейнер не находится в NavigationController.")
             return
         }
 
@@ -124,8 +124,8 @@ extension InlineRouter: StackRouting {
 
         if targetIndex < selfIndex {
             let message = """
-            ⚠️ ОШИБКА ЛОГИКИ InlineRouter:
-            Попытка перехода (popTo) к контроллеру, который находится ВНЕ зоны ответственности этого роутера.
+            ⚠️ ОШИБКА ЛОГИКИ InlineContainer:
+            Попытка перехода (popTo) к контроллеру, который находится ВНЕ зоны ответственности этого контейнера.
             Вы пытаетесь вернуться к экрану родительского координатора.
             РЕШЕНИЕ: Используйте делегирование для управления родительским потоком.
             """
@@ -138,8 +138,8 @@ extension InlineRouter: StackRouting {
 
     /// Заменяет текущий стек флоу на новые viewControllers.
     ///
-    /// - Note: Этот метод сохраняет все контроллеры в стеке **до** `InlineRouter` (родительские экраны),
-    ///   обновляет контент самого `InlineRouter` первым viewController из массива,
+    /// - Note: Этот метод сохраняет все контроллеры в стеке **до** `InlineContainer` (родительские экраны),
+    ///   обновляет контент самого `InlineContainer` первым viewController из массива,
     ///   и добавляет остальные viewControllers поверх него.
     public func setStack(_ viewControllers: [UIViewController], animated: Bool) {
         guard let first = viewControllers.first else { return }
@@ -147,7 +147,7 @@ extension InlineRouter: StackRouting {
         setContent(first)
 
         guard let nav = navigationController else {
-            "⚠️ InlineRouter: Попытка setStack, но роутер не находится в NavigationController."
+            assertionFailure("⚠️ InlineContainer: Попытка setStack, но контейнер не находится в NavigationController.")
             return
         }
 

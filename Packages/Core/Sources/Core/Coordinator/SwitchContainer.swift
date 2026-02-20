@@ -1,5 +1,5 @@
 //
-//  WindowRouter.swift
+//  SwitchContainer.swift
 //  Core
 //
 //  Created by Любченко Станислав Валерьевич on 12.02.2026.
@@ -7,17 +7,21 @@
 
 import UIKit
 
-/// Роутер для управления **корневым** контейнером окна.
+/// Контейнер переключения контента с поддержкой анимированных переходов.
 ///
-/// Используется для глобальных переключений контекста (например: Splash -> Onboarding -> Main App).
+/// Контейнер держит **ровно один** активный дочерний контроллер и умеет безопасно
+/// заменять его на новый (с анимацией или без).
 ///
-/// - Note: **Конфигурация:** Этот роутер проксирует свойства (ориентация экрана, статус бар) от своего текущего контента.
+/// Чаще всего используется как root-контроллер окна приложения, но не ограничен этим сценарием:
+/// его можно применять в любом месте, где нужен хост для последовательной смены одного контента другим.
+///
+/// - Note: **Конфигурация:** Этот контейнер проксирует свойства (ориентация экрана, статус бар) от своего текущего контента.
 ///   Настраивайте эти параметры в контроллерах, которые вы передаете в `setRoot`.
-public final class WindowRouter: ProxyViewController, WindowRouting {
+public final class SwitchContainer: ProxyViewController, SwitchRouting {
 
-    /// Инициализирует роутер с заданным координатором.
-    /// - Parameter coordinator: Координатор, который будет управлять этим роутером.
-    public init(coordinator: Coordinator<WindowRouter>) {
+    /// Инициализирует контейнер с заданным координатором.
+    /// - Parameter coordinator: Координатор, который будет управлять этим контейнером.
+    public init(coordinator: Coordinator<SwitchContainer>) {
         self.coordinator = coordinator
         super.init(nibName: nil, bundle: nil)
     }
@@ -32,11 +36,11 @@ public final class WindowRouter: ProxyViewController, WindowRouting {
     }
 
     // MARK: - Private members
-    private let coordinator: Coordinator<WindowRouter>
+    private let coordinator: Coordinator<SwitchContainer>
     private var pendingAnimated: Bool = false
     private var pendingCompletion: (() -> Void)?
 
-    // MARK: - WindowRouting Implementation
+    // MARK: - Switch Logic
 
     public func setRoot(_ viewController: UIViewController, animated: Bool, completion: (() -> Void)?) {
         // Сохраняем флаги во временное состояние, так как setContent не принимает их.

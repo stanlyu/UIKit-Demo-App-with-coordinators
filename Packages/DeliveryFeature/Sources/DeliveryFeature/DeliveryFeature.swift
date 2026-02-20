@@ -15,13 +15,13 @@ public func pickupPointsViewController(
 ) -> UIViewController {
     if embeddedInNavigationStack {
         let coordinator = DeliveryInlineCoordinator(composer: DeliveryComposer(dependencies: dependencies))
-        let router = InlineRouter(coordinator: coordinator)
-        return router
+        let container = InlineContainer(coordinator: coordinator)
+        return container
     } else {
         let coordinator = DeliveryStackCoordinator(composer: DeliveryComposer(dependencies: dependencies))
-        let router = StackRouter(coordinator: coordinator)
-        router.navigationBar.prefersLargeTitles = true
-        return router
+        let container = StackContainer(coordinator: coordinator)
+        container.navigationBar.prefersLargeTitles = true
+        return container
     }
 }
 
