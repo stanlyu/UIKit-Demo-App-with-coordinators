@@ -7,6 +7,13 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		F1D000052F21000100A1B2C3 /* ApplicationCoordinatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1D000032F21000100A1B2C3 /* ApplicationCoordinatorTests.swift */; };
+		F1D000062F21000100A1B2C3 /* MainTabsCoordinatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1D000042F21000100A1B2C3 /* MainTabsCoordinatorTests.swift */; };
+		F1D000072F21000100A1B2C3 /* Core in Frameworks */ = {isa = PBXBuildFile; productRef = F05EEFED2EF951B700ECE500 /* Core */; };
+		F1D000082F21000100A1B2C3 /* HomeFeature in Frameworks */ = {isa = PBXBuildFile; productRef = F02186A62EF5592A00C6E14A /* HomeFeature */; };
+		F1D000092F21000100A1B2C3 /* CartFeature in Frameworks */ = {isa = PBXBuildFile; productRef = F02186A92EF5596F00C6E14A /* CartFeature */; };
+		F1D0000A2F21000100A1B2C3 /* DeliveryFeature in Frameworks */ = {isa = PBXBuildFile; productRef = F05EEFEA2EF9449D00ECE500 /* DeliveryFeature */; };
+		F1D0000B2F21000100A1B2C3 /* PaymentFeature in Frameworks */ = {isa = PBXBuildFile; productRef = F0C7A0032F0A000100A1B2C3 /* PaymentFeature */; };
 		F02186A72EF5592A00C6E14A /* HomeFeature in Frameworks */ = {isa = PBXBuildFile; productRef = F02186A62EF5592A00C6E14A /* HomeFeature */; };
 		F02186AA2EF5596F00C6E14A /* CartFeature in Frameworks */ = {isa = PBXBuildFile; productRef = F02186A92EF5596F00C6E14A /* CartFeature */; };
 		F05EEFEB2EF9449D00ECE500 /* DeliveryFeature in Frameworks */ = {isa = PBXBuildFile; productRef = F05EEFEA2EF9449D00ECE500 /* DeliveryFeature */; };
@@ -14,7 +21,20 @@
 		F0C7A0012F0A000100A1B2C3 /* PaymentFeature in Frameworks */ = {isa = PBXBuildFile; productRef = F0C7A0032F0A000100A1B2C3 /* PaymentFeature */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		F1D000102F21000100A1B2C3 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = F0BFB2592EF1C21C006D4954 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = F0BFB2602EF1C21C006D4954;
+			remoteInfo = "Demo App With Coordinators";
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
+		F1D000012F21000100A1B2C3 /* Demo App With CoordinatorsTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Demo App With CoordinatorsTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		F1D000032F21000100A1B2C3 /* ApplicationCoordinatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplicationCoordinatorTests.swift; sourceTree = "<group>"; };
+		F1D000042F21000100A1B2C3 /* MainTabsCoordinatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabsCoordinatorTests.swift; sourceTree = "<group>"; };
 		F0BFB2612EF1C21C006D4954 /* Demo App With Coordinators.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Demo App With Coordinators.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -40,6 +60,18 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		F1D0000D2F21000100A1B2C3 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F1D000092F21000100A1B2C3 /* CartFeature in Frameworks */,
+				F1D000082F21000100A1B2C3 /* HomeFeature in Frameworks */,
+				F1D0000B2F21000100A1B2C3 /* PaymentFeature in Frameworks */,
+				F1D0000A2F21000100A1B2C3 /* DeliveryFeature in Frameworks */,
+				F1D000072F21000100A1B2C3 /* Core in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		F0BFB25E2EF1C21C006D4954 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -55,10 +87,20 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		F1D000022F21000100A1B2C3 /* Demo App With CoordinatorsTests */ = {
+			isa = PBXGroup;
+			children = (
+				F1D000032F21000100A1B2C3 /* ApplicationCoordinatorTests.swift */,
+				F1D000042F21000100A1B2C3 /* MainTabsCoordinatorTests.swift */,
+			);
+			path = "Demo App With CoordinatorsTests";
+			sourceTree = "<group>";
+		};
 		F0BFB2582EF1C21C006D4954 = {
 			isa = PBXGroup;
 			children = (
 				F0BFB2632EF1C21C006D4954 /* Demo App With Coordinators */,
+				F1D000022F21000100A1B2C3 /* Demo App With CoordinatorsTests */,
 				F0BFB2622EF1C21C006D4954 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -67,6 +109,7 @@
 			isa = PBXGroup;
 			children = (
 				F0BFB2612EF1C21C006D4954 /* Demo App With Coordinators.app */,
+				F1D000012F21000100A1B2C3 /* Demo App With CoordinatorsTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -74,6 +117,31 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		F1D0000F2F21000100A1B2C3 /* Demo App With CoordinatorsTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F1D000142F21000100A1B2C3 /* Build configuration list for PBXNativeTarget "Demo App With CoordinatorsTests" */;
+			buildPhases = (
+				F1D0000C2F21000100A1B2C3 /* Sources */,
+				F1D0000D2F21000100A1B2C3 /* Frameworks */,
+				F1D0000E2F21000100A1B2C3 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				F1D000112F21000100A1B2C3 /* PBXTargetDependency */,
+			);
+			name = "Demo App With CoordinatorsTests";
+			packageProductDependencies = (
+				F05EEFED2EF951B700ECE500 /* Core */,
+				F02186A62EF5592A00C6E14A /* HomeFeature */,
+				F02186A92EF5596F00C6E14A /* CartFeature */,
+				F05EEFEA2EF9449D00ECE500 /* DeliveryFeature */,
+				F0C7A0032F0A000100A1B2C3 /* PaymentFeature */,
+			);
+			productName = "Demo App With CoordinatorsTests";
+			productReference = F1D000012F21000100A1B2C3 /* Demo App With CoordinatorsTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 		F0BFB2602EF1C21C006D4954 /* Demo App With Coordinators */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = F0BFB2742EF1C21D006D4954 /* Build configuration list for PBXNativeTarget "Demo App With Coordinators" */;
@@ -111,6 +179,10 @@
 				LastSwiftUpdateCheck = 2600;
 				LastUpgradeCheck = 2600;
 				TargetAttributes = {
+					F1D0000F2F21000100A1B2C3 = {
+						CreatedOnToolsVersion = 26.3;
+						TestTargetID = F0BFB2602EF1C21C006D4954;
+					};
 					F0BFB2602EF1C21C006D4954 = {
 						CreatedOnToolsVersion = 26.0.1;
 					};
@@ -138,11 +210,19 @@
 			projectRoot = "";
 			targets = (
 				F0BFB2602EF1C21C006D4954 /* Demo App With Coordinators */,
+				F1D0000F2F21000100A1B2C3 /* Demo App With CoordinatorsTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		F1D0000E2F21000100A1B2C3 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		F0BFB25F2EF1C21C006D4954 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -153,6 +233,15 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		F1D0000C2F21000100A1B2C3 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F1D000052F21000100A1B2C3 /* ApplicationCoordinatorTests.swift in Sources */,
+				F1D000062F21000100A1B2C3 /* MainTabsCoordinatorTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		F0BFB25D2EF1C21C006D4954 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -162,7 +251,65 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		F1D000112F21000100A1B2C3 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = F0BFB2602EF1C21C006D4954 /* Demo App With Coordinators */;
+			targetProxy = F1D000102F21000100A1B2C3 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		F1D000122F21000100A1B2C3 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = RGTYV87Q2P;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "com.lyubchenko.stanislav.Demo-App-With-CoordinatorsTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Demo App With Coordinators.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Demo App With Coordinators";
+				TEST_TARGET_NAME = "Demo App With Coordinators";
+			};
+			name = Debug;
+		};
+		F1D000132F21000100A1B2C3 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = RGTYV87Q2P;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "com.lyubchenko.stanislav.Demo-App-With-CoordinatorsTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Demo App With Coordinators.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Demo App With Coordinators";
+				TEST_TARGET_NAME = "Demo App With Coordinators";
+			};
+			name = Release;
+		};
 		F0BFB2752EF1C21D006D4954 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -357,6 +504,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		F1D000142F21000100A1B2C3 /* Build configuration list for PBXNativeTarget "Demo App With CoordinatorsTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F1D000122F21000100A1B2C3 /* Debug */,
+				F1D000132F21000100A1B2C3 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		F0BFB25C2EF1C21C006D4954 /* Build configuration list for PBXProject "Demo App With Coordinators" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

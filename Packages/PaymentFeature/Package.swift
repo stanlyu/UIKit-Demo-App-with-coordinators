@@ -20,5 +20,15 @@ let package = Package(
                 .swiftLanguageMode(.v6)
             ]
         ),
+        .testTarget(
+            name: "PaymentFeatureTests",
+            dependencies: [
+                "PaymentFeature",
+                "Core"
+            ],
+            swiftSettings: [
+                .swiftLanguageMode(.v6)
+            ]
+        )
     ]
 )

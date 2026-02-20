@@ -14,11 +14,21 @@ let package = Package(
         .target(
             name: "DeliveryFeature",
             dependencies: [
-                "Core"
+                .product(name: "Core", package: "Core")
             ],
             swiftSettings: [
                 .swiftLanguageMode(.v6)
             ]
         ),
+        .testTarget(
+            name: "DeliveryFeatureTests",
+            dependencies: [
+                "DeliveryFeature",
+                .product(name: "Core", package: "Core")
+            ],
+            swiftSettings: [
+                .swiftLanguageMode(.v6)
+            ]
+        )
     ]
 )
