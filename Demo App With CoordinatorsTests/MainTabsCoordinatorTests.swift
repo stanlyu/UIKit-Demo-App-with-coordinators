@@ -236,8 +236,8 @@ private final class MockMainTabsComposer: MainTabsComposing {
 private final class MockHomeInput: HomeInput {
     private(set) var presentCalls: [UIViewController] = []
 
-    func presentPickupPoints(module: UIViewController) {
-        presentCalls.append(module)
+    func presentPickupPoints(viewController: UIViewController) {
+        presentCalls.append(viewController)
     }
 }
 

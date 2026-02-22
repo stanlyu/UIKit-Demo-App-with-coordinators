@@ -10,7 +10,7 @@ import Core
 
 @MainActor
 public protocol HomeInput {
-    func presentPickupPoints(module: UIViewController)
+    func presentPickupPoints(viewController: UIViewController)
 }
 
 public enum HomeEvent {

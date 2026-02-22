@@ -50,7 +50,7 @@ final class MainTabsCoordinatingLogic<Router: TabRouting>: Coordinator<Router> {
             let pickupPointsViewController = composer.makePickupPointsViewController(
                 embeddedInNavigationStack: true
             )
-            homeCoordinator.presentPickupPoints(module: pickupPointsViewController)
+            homeCoordinator.presentPickupPoints(viewController: pickupPointsViewController)
         }
     }
 
