@@ -8,17 +8,28 @@
 import UIKit
 import Core
 
+public enum DeliveryFlowEvent {
+    case closed
+}
+
 @MainActor
 public func pickupPointsViewController(
     embeddedInNavigationStack: Bool = false,
-    dependencies: DeliveryDependencies
+    dependencies: DeliveryDependencies,
+    eventHandler: ((DeliveryFlowEvent) -> Void)? = nil
 ) -> UIViewController {
     if embeddedInNavigationStack {
-        let coordinator = DeliveryInlineCoordinator(composer: DeliveryComposer(dependencies: dependencies))
+        let coordinator = DeliveryInlineCoordinator(
+            composer: DeliveryComposer(dependencies: dependencies, showsBackButtonOnRoot: true),
+            flowEventHandler: eventHandler
+        )
         let container = InlineContainer(coordinator: coordinator)
         return container
     } else {
-        let coordinator = DeliveryStackCoordinator(composer: DeliveryComposer(dependencies: dependencies))
+        let coordinator = DeliveryStackCoordinator(
+            composer: DeliveryComposer(dependencies: dependencies, showsBackButtonOnRoot: false),
+            flowEventHandler: eventHandler
+        )
         let container = StackContainer(coordinator: coordinator)
         container.navigationBar.prefersLargeTitles = true
         return container

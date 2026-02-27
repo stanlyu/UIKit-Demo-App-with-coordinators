@@ -9,8 +9,12 @@ import UIKit
 
 @MainActor
 final class PickupPointsViewController: UIViewController {
-    init(viewOutput: PickupPointsViewOutput) {
+    init(
+        viewOutput: PickupPointsViewOutput,
+        showsBackButtonOnRoot: Bool
+    ) {
         self.viewOutput = viewOutput
+        self.showsBackButtonOnRoot = showsBackButtonOnRoot
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -42,6 +46,7 @@ final class PickupPointsViewController: UIViewController {
     }
 
     private let viewOutput: PickupPointsViewOutput
+    private let showsBackButtonOnRoot: Bool
 
     private var rowsByID: [PickupPointsRow.ID: PickupPointsRow] = [:]
     private var sectionTitlesByKind: [PickupPointsSectionKind: String] = [:]
@@ -75,6 +80,19 @@ final class PickupPointsViewController: UIViewController {
     private let cellReuseIdentifier = "pickup-point-cell"
 
     private func setupNavigation() {
+        if showsBackButtonOnRoot {
+            if navigationController?.viewControllers.first !== self {
+                navigationItem.leftBarButtonItem = UIBarButtonItem(
+                    image: UIImage(systemName: "chevron.left"),
+                    style: .plain,
+                    target: self,
+                    action: #selector(handleBackButtonTap)
+                )
+            }
+        } else {
+            navigationItem.hidesBackButton = true
+        }
+
         let addButtonAction = UIAction { [weak self] _ in
             self?.viewOutput.addButtonDidTap()
         }
@@ -83,6 +101,11 @@ final class PickupPointsViewController: UIViewController {
             title: "Добавить",
             primaryAction: addButtonAction
         )
+    }
+
+    @objc
+    private func handleBackButtonTap() {
+        viewOutput.backButtonDidTap()
     }
 
     private func setupLayout() {

@@ -24,6 +24,9 @@ protocol CartComposing {
         paymentResult: CartPaymentResult,
         with eventHandler: @escaping OrderConfirmationEventHandler
     ) -> UIViewController
+
+    func makePickupPointsViewController() -> UIViewController
+    func makePaymentViewController(onComplete: @escaping (CartPaymentResult?) -> Void) -> UIViewController
 }
 
 struct CartComposer: CartComposing {
@@ -68,6 +71,22 @@ struct CartComposer: CartComposing {
         presenter.view = viewController
         viewController.viewOutput = presenter
         return viewController
+    }
+
+    func makePickupPointsViewController() -> UIViewController {
+        guard let externalModulesFactory = dependencies.externalModulesFactory else {
+            assertionFailure("External modules factory is missing")
+            return UIViewController()
+        }
+        return externalModulesFactory.makePickupPointsViewController()
+    }
+
+    func makePaymentViewController(onComplete: @escaping (CartPaymentResult?) -> Void) -> UIViewController {
+        guard let externalModulesFactory = dependencies.externalModulesFactory else {
+            assertionFailure("External modules factory is missing")
+            return UIViewController()
+        }
+        return externalModulesFactory.makePaymentViewController(onComplete: onComplete)
     }
 
     // MARK: - Private members

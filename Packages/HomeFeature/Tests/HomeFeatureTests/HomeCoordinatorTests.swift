@@ -36,35 +36,47 @@ struct HomeCoordinatorTests {
     }
 
     @Test
-    func pickupPointTap_forwardsSelectPickupPointEventToModuleOutput() {
-        var receivedEvents: [HomeEvent] = []
-        let sut = makeSUT(eventHandler: { receivedEvents.append($0) })
+    func pickupPointTap_requestsExternalPickupPointsViewController() {
+        let sut = makeSUT()
         sut.coordinator.start(with: sut.router)
 
         sut.composer.homeEventHandler?(.onPickupPointTap)
 
-        guard let event = receivedEvents.last else {
-            Issue.record("Не получено событие .selectPickupPoint")
-            return
-        }
-        guard case let .selectPickupPoint(input) = event else {
-            Issue.record("Ожидалось событие .selectPickupPoint")
-            return
-        }
-        #expect(input as AnyObject === sut.coordinator)
+        #expect(sut.composer.makePickupPointsViewControllerCallsCount == 1)
     }
 
     @Test
-    func presentPickupPoints_pushesModuleAnimated() {
+    func pickupPointTap_pushesPickupPointsViewControllerAnimated() {
         let sut = makeSUT()
-        let module = UIViewController()
-
         sut.coordinator.start(with: sut.router)
-        sut.coordinator.presentPickupPoints(module: module)
+
+        sut.composer.homeEventHandler?(.onPickupPointTap)
 
         #expect(sut.router.pushCalls.count == 2)
-        #expect(sut.router.pushCalls[1].viewController === module)
+        #expect(sut.router.pushCalls[1].viewController === sut.composer.pickupPointsViewController)
         #expect(sut.router.pushCalls[1].animated == true)
+    }
+
+    @Test
+    func pickupPointsOnCloseCallback_popsCurrentScreen() {
+        let sut = makeSUT()
+        sut.coordinator.start(with: sut.router)
+        sut.composer.homeEventHandler?(.onPickupPointTap)
+
+        sut.composer.pickupPointsOnClose?()
+
+        #expect(sut.router.popCalls.last == true)
+    }
+
+    @Test
+    func pickupPointTap_doesNothingWhenFactoryReturnsNil() {
+        let sut = makeSUT()
+        sut.composer.shouldReturnPickupPointsViewController = false
+        sut.coordinator.start(with: sut.router)
+
+        sut.composer.homeEventHandler?(.onPickupPointTap)
+
+        #expect(sut.router.pushCalls.count == 1)
     }
 }
 
@@ -87,11 +99,23 @@ private extension HomeCoordinatorTests {
 @MainActor
 private final class MockHomeComposer: HomeComposing {
     let homeViewController = UIViewController()
+    let pickupPointsViewController = UIViewController()
+
+    private(set) var makePickupPointsViewControllerCallsCount = 0
+    var shouldReturnPickupPointsViewController = true
+
     var homeEventHandler: HomeEventHandler?
+    var pickupPointsOnClose: (() -> Void)?
 
     func makeHomeViewController(with eventHandler: @escaping HomeEventHandler) -> UIViewController {
         homeEventHandler = eventHandler
         return homeViewController
+    }
+
+    func makePickupPointsViewController(onClose: @escaping () -> Void) -> UIViewController? {
+        makePickupPointsViewControllerCallsCount += 1
+        pickupPointsOnClose = onClose
+        return shouldReturnPickupPointsViewController ? pickupPointsViewController : nil
     }
 }
 
@@ -104,6 +128,7 @@ private final class MockStackRouter: UIViewController, StackRouting {
 
     var viewControllers: [UIViewController] = []
     private(set) var pushCalls: [PushCall] = []
+    private(set) var popCalls: [Bool] = []
 
     func push(_ viewController: UIViewController, animated: Bool, completion: (() -> Void)?) {
         pushCalls.append(PushCall(viewController: viewController, animated: animated))
@@ -112,6 +137,10 @@ private final class MockStackRouter: UIViewController, StackRouting {
     }
 
     func pop(animated: Bool, completion: (() -> Void)?) {
+        popCalls.append(animated)
+        if viewControllers.isEmpty == false {
+            _ = viewControllers.removeLast()
+        }
         completion?()
     }
 

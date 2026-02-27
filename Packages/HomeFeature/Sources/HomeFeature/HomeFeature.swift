@@ -8,19 +8,19 @@
 import UIKit
 import Core
 
-@MainActor
-public protocol HomeInput {
-    func presentPickupPoints(viewController: UIViewController)
-}
-
 public enum HomeEvent {
     case placeOrder(Int)
-    case selectPickupPoint(HomeInput)
 }
 
 @MainActor
-public func homeViewController(with eventHandler: @escaping (HomeEvent) -> Void) -> UIViewController {
-    let coordinator = HomeCoordinator(composer: HomeComposer(), eventHandler: eventHandler)
+public func homeViewController(
+    with eventHandler: @escaping (HomeEvent) -> Void,
+    dependencies: HomeDependencies
+) -> UIViewController {
+    let coordinator = HomeCoordinator(
+        composer: HomeComposer(dependencies: dependencies),
+        eventHandler: eventHandler
+    )
     let container = StackContainer(coordinator: coordinator)
     container.navigationBar.prefersLargeTitles = true
     return container

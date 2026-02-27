@@ -8,8 +8,6 @@
 import UIKit
 import HomeFeature
 import CartFeature
-import DeliveryFeature
-import PaymentFeature
 import Core
 
 typealias MainTabsCoordinator = MainTabsCoordinatingLogic<TabRouter>
@@ -27,9 +25,7 @@ final class MainTabsCoordinatingLogic<Router: TabRouting>: Coordinator<Router> {
         let homeViewController = composer.makeHomeViewController { [unowned self] event in
             self.handle(homeEvent: event)
         }
-        let cartModule = composer.makeCartViewController { [unowned self] event in
-            self.handle(cartEvent: event)
-        }
+        let cartModule = composer.makeCartViewController()
 
         self.cartModule = cartModule
         router.setViewControllers([homeViewController, cartModule.viewController], animated: false)
@@ -46,34 +42,6 @@ final class MainTabsCoordinatingLogic<Router: TabRouting>: Coordinator<Router> {
             guard let cartModule else { return }
             router?.selectViewController(cartModule.viewController)
             cartModule.coordinator.placeOrder(orderID)
-        case .selectPickupPoint(let homeCoordinator):
-            let pickupPointsViewController = composer.makePickupPointsViewController(
-                embeddedInNavigationStack: true
-            )
-            homeCoordinator.presentPickupPoints(viewController: pickupPointsViewController)
-        }
-    }
-
-    private func handle(cartEvent: CartEvent) {
-        switch cartEvent {
-        case .changePickupPoint(let cartCoordinator):
-            let pickupPointsViewController = composer.makePickupPointsViewController(
-                embeddedInNavigationStack: false
-            )
-            cartCoordinator.presentPickupPoints(viewController: pickupPointsViewController)
-        case .continueToPayment(let cartCoordinator):
-            let paymentViewController = composer.makePaymentViewController { [weak self, weak cartCoordinator] event in
-                guard let self, let cartCoordinator else { return }
-
-                switch event {
-                case .cancelled:
-                    cartCoordinator.closePayment()
-                case let .completed(paymentResult):
-                    let cartPaymentResult = self.composer.makeCartPaymentResult(from: paymentResult)
-                    cartCoordinator.completePayment(with: cartPaymentResult)
-                }
-            }
-            cartCoordinator.showPayment(viewController: paymentViewController)
         }
     }
 }

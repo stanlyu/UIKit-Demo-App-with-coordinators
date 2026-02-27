@@ -31,8 +31,9 @@ protocol DeliveryComposing {
 }
 
 struct DeliveryComposer: DeliveryComposing {
-    init(dependencies: DeliveryDependencies) {
+    init(dependencies: DeliveryDependencies, showsBackButtonOnRoot: Bool) {
         self.dependencies = dependencies
+        self.showsBackButtonOnRoot = showsBackButtonOnRoot
     }
 
     func makePickupPointsViewController(
@@ -40,7 +41,10 @@ struct DeliveryComposer: DeliveryComposing {
     ) -> UIViewController {
         let interactor = PickupPointsInteractor(manager: dependencies.pickupPointsManager)
         let presenter = PickupPointsPresenter(interactor: interactor, onEvent: eventHandler)
-        let viewController = PickupPointsViewController(viewOutput: presenter)
+        let viewController = PickupPointsViewController(
+            viewOutput: presenter,
+            showsBackButtonOnRoot: showsBackButtonOnRoot
+        )
         presenter.view = viewController
 //        viewController.hidesBottomBarWhenPushed = true
         return viewController
@@ -84,4 +88,5 @@ struct DeliveryComposer: DeliveryComposing {
     // MARK: - Private members
 
     private let dependencies: DeliveryDependencies
+    private let showsBackButtonOnRoot: Bool
 }

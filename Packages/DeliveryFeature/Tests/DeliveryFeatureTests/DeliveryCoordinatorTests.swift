@@ -89,7 +89,9 @@ private extension DeliveryCoordinatorTests {
     func makeSUT() -> SUT {
         let composer = MockDeliveryComposer()
         let router = MockStackRouter()
-        let coordinator = DeliveryCoordinatingLogic<MockStackRouter>(composer: composer)
+        let coordinator = DeliveryCoordinatingLogic<MockStackRouter>(
+            composer: composer
+        )
         return SUT(coordinator: coordinator, composer: composer, router: router)
     }
 }
@@ -106,12 +108,16 @@ private final class MockDeliveryComposer: DeliveryComposing {
     private(set) var deleteConfirmationRequestedPickupPoint: PickupPoint?
     var deleteConfirmationOnConfirm: (() -> Void)?
 
-    func makePickupPointsViewController(with eventHandler: @escaping PickupPointsEventHandler) -> UIViewController {
+    func makePickupPointsViewController(
+        with eventHandler: @escaping PickupPointsEventHandler
+    ) -> UIViewController {
         pickupPointsEventHandler = eventHandler
         return pickupPointsViewController
     }
 
-    func makePickupPointsNavigationController(with eventHandler: @escaping PickupPointsEventHandler) -> UINavigationController {
+    func makePickupPointsNavigationController(
+        with eventHandler: @escaping PickupPointsEventHandler
+    ) -> UINavigationController {
         pickupPointsEventHandler = eventHandler
         return UINavigationController(rootViewController: pickupPointsViewController)
     }

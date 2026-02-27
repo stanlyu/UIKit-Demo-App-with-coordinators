@@ -13,8 +13,12 @@ typealias DeliveryInlineCoordinator = DeliveryCoordinatingLogic<InlineRouter>
 
 final class DeliveryCoordinatingLogic<Router: StackRouting>: Coordinator<Router> {
 
-    init(composer: DeliveryComposing) {
+    init(
+        composer: DeliveryComposing,
+        flowEventHandler: ((DeliveryFlowEvent) -> Void)? = nil
+    ) {
         self.composer = composer
+        self.flowEventHandler = flowEventHandler
         super.init()
 
     }
@@ -29,6 +33,7 @@ final class DeliveryCoordinatingLogic<Router: StackRouting>: Coordinator<Router>
     // MARK: - Private members
 
     private let composer: DeliveryComposing
+    private let flowEventHandler: ((DeliveryFlowEvent) -> Void)?
 
     private func handle(event: PickupPointsPresenter.Event) {
         switch event {
@@ -48,6 +53,9 @@ final class DeliveryCoordinatingLogic<Router: StackRouting>: Coordinator<Router>
                 input.confirmDeleteFavoritePickupPoint(pickupPoint)
             }
             router?.present(deleteConfirmationViewController, animated: true, completion: nil)
+
+        case .onCloseRequested:
+            flowEventHandler?(.closed)
         }
     }
 }

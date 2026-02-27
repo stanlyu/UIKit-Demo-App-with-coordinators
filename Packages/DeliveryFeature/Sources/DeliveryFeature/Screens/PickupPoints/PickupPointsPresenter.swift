@@ -63,6 +63,7 @@ protocol PickupPointsView: AnyObject {
 @MainActor
 protocol PickupPointsViewOutput: AnyObject {
     func viewDidLoad()
+    func backButtonDidTap()
     func addButtonDidTap()
     func favoritePickupPointDidTap(_ row: PickupPointsRow)
     func confirmSelectionButtonDidTap()
@@ -74,6 +75,7 @@ final class PickupPointsPresenter {
     enum Event {
         case onAddPickupPoint
         case onFavoriteDeleteRequested(pickupPoint: PickupPoint, input: PickupPointsInput)
+        case onCloseRequested
     }
 
     weak var view: PickupPointsView?
@@ -139,6 +141,10 @@ extension PickupPointsPresenter: PickupPointsViewOutput {
         }
 
         interactor.activate()
+    }
+
+    func backButtonDidTap() {
+        onEvent(.onCloseRequested)
     }
 
     func addButtonDidTap() {

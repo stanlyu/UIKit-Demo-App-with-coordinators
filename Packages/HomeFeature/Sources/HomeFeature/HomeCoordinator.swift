@@ -23,7 +23,7 @@ final class HomeCoordinatingLogic<Router: StackRouting>: Coordinator<Router> {
             case .onPlaceOrderTap(let orderID):
                 eventHandler(.placeOrder(orderID))
             case .onPickupPointTap:
-                eventHandler(.selectPickupPoint(self))
+                showPickupPoints()
             }
         }
         router?.push(rootViewController, animated: false, completion: nil)
@@ -33,10 +33,11 @@ final class HomeCoordinatingLogic<Router: StackRouting>: Coordinator<Router> {
 
     private let composer: HomeComposing
     private let eventHandler: (HomeEvent) -> Void
-}
 
-extension HomeCoordinatingLogic: HomeInput {
-    func presentPickupPoints(viewController: UIViewController) {
-        router?.push(viewController, animated: true, completion: nil)
+    private func showPickupPoints() {
+        let pickupPointsViewController = composer.makePickupPointsViewController { [weak self] in
+            self?.router?.pop(animated: true, completion: nil)
+        }
+        router?.push(pickupPointsViewController, animated: true, completion: nil)
     }
 }

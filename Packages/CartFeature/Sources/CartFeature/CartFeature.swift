@@ -21,30 +21,17 @@ public enum CartPaymentResult: Sendable {
     case failure(amount: Int, error: CartPaymentError)
 }
 
-public enum CartEvent {
-    case changePickupPoint(CartInput)
-    case continueToPayment(CartInput)
-}
-
 @MainActor
 public protocol CartInput: AnyObject {
-    func presentPickupPoints(viewController: UIViewController)
-    func showPayment(viewController: UIViewController)
-    func closePayment()
     func placeOrder(_ orderID: Int)
-    func completePayment(with result: CartPaymentResult)
 }
 
 public typealias CartModule = (viewController: UIViewController, coordinator: CartInput)
 
 @MainActor
-public func cartModule(
-    with eventHandler: @escaping (CartEvent) -> Void,
-    dependencies: CartDependencies
-) -> CartModule {
+public func cartModule(dependencies: CartDependencies) -> CartModule {
     let coordinator = CartCoordinator(
-        composer: CartComposer(dependencies: dependencies),
-        eventHandler: eventHandler
+        composer: CartComposer(dependencies: dependencies)
     )
     let container = StackContainer(coordinator: coordinator)
     container.navigationBar.prefersLargeTitles = true

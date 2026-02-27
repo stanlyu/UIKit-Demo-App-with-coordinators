@@ -9,19 +9,21 @@ import UIKit
 import HomeFeature
 import CartFeature
 import DeliveryFeature
-import PaymentFeature
 
 @MainActor
-protocol MainTabsComposing: PaymentToCartTypeConverting {
+protocol MainTabsComposing {
     func makeHomeViewController(with eventHandler: @escaping (HomeEvent) -> Void) -> UIViewController
-    func makeCartViewController(with eventHandler: @escaping (CartEvent) -> Void) -> CartModule
-    func makePickupPointsViewController(embeddedInNavigationStack: Bool) -> UIViewController
-    func makePaymentViewController(with eventHandler: @escaping (PaymentEvent) -> Void) -> UIViewController
+    func makeCartViewController() -> CartModule
 }
 
 final class MainTabsComposer: MainTabsComposing {
     func makeHomeViewController(with eventHandler: @escaping (HomeEvent) -> Void) -> UIViewController {
-        let homeViewController = homeViewController(with: eventHandler)
+        let dependencies = HomeDependencies(externalModulesFactory: self)
+
+        let homeViewController = homeViewController(
+            with: eventHandler,
+            dependencies: dependencies
+        )
         homeViewController.tabBarItem = UITabBarItem(
             title: "Главная",
             image: nil,
@@ -30,13 +32,12 @@ final class MainTabsComposer: MainTabsComposing {
         return homeViewController
     }
 
-    func makeCartViewController(with eventHandler: @escaping (CartEvent) -> Void) -> CartModule {
-        let cartModule = cartModule(
-            with: eventHandler,
-            dependencies: CartDependencies(
-                selectedPickupPointProvider: deliveryToCartSelectedPickupPointProvider
-            )
+    func makeCartViewController() -> CartModule {
+        let dependencies = CartDependencies(
+            selectedPickupPointProvider: deliveryToCartSelectedPickupPointProvider,
+            externalModulesFactory: self
         )
+        let cartModule = cartModule(dependencies: dependencies)
         cartModule.viewController.tabBarItem = UITabBarItem(
             title: "Корзина",
             image: nil,
@@ -45,15 +46,16 @@ final class MainTabsComposer: MainTabsComposing {
         return cartModule
     }
 
-    func makePickupPointsViewController(embeddedInNavigationStack: Bool) -> UIViewController {
+    // Используется bridge-слоем для сборки внешних экранов.
+    func makePickupPointsViewController(
+        embeddedInNavigationStack: Bool,
+        eventHandler: ((DeliveryFlowEvent) -> Void)?
+    ) -> UIViewController {
         DeliveryFeature.pickupPointsViewController(
             embeddedInNavigationStack: embeddedInNavigationStack,
-            dependencies: DeliveryDependencies(pickupPointsManager: pickupPointsManager)
+            dependencies: DeliveryDependencies(pickupPointsManager: pickupPointsManager),
+            eventHandler: eventHandler
         )
-    }
-
-    func makePaymentViewController(with eventHandler: @escaping (PaymentEvent) -> Void) -> UIViewController {
-        PaymentFeature.paymentViewController(with: eventHandler)
     }
 
     // MARK: - Private members
