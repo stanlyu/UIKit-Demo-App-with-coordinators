@@ -69,14 +69,13 @@ struct HomeCoordinatorTests {
     }
 
     @Test
-    func pickupPointTap_doesNothingWhenFactoryReturnsNil() {
+    func pickupPointTap_pushesPickupPointsScreen() {
         let sut = makeSUT()
-        sut.composer.shouldReturnPickupPointsViewController = false
         sut.coordinator.start(with: sut.router)
 
         sut.composer.homeEventHandler?(.onPickupPointTap)
 
-        #expect(sut.router.pushCalls.count == 1)
+        #expect(sut.router.pushCalls.count == 2)
     }
 }
 
@@ -102,7 +101,6 @@ private final class MockHomeComposer: HomeComposing {
     let pickupPointsViewController = UIViewController()
 
     private(set) var makePickupPointsViewControllerCallsCount = 0
-    var shouldReturnPickupPointsViewController = true
 
     var homeEventHandler: HomeEventHandler?
     var pickupPointsOnClose: (() -> Void)?
@@ -112,10 +110,10 @@ private final class MockHomeComposer: HomeComposing {
         return homeViewController
     }
 
-    func makePickupPointsViewController(onClose: @escaping () -> Void) -> UIViewController? {
+    func makePickupPointsViewController(onClose: @escaping () -> Void) -> UIViewController {
         makePickupPointsViewControllerCallsCount += 1
         pickupPointsOnClose = onClose
-        return shouldReturnPickupPointsViewController ? pickupPointsViewController : nil
+        return pickupPointsViewController
     }
 }
 

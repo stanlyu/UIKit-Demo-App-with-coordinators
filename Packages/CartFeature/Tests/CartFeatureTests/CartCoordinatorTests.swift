@@ -175,29 +175,6 @@ struct CartCoordinatorTests {
         #expect(sut.router.popToRootCalls.last == true)
     }
 
-    @Test
-    func changePickupPointEvent_doesNotPushWhenFactoryReturnsNil() {
-        let sut = makeSUT()
-        sut.composer.shouldReturnPickupPointsScreen = false
-        sut.coordinator.start(with: sut.router)
-        sut.coordinator.placeOrder(42)
-
-        sut.composer.placeOrderEventHandler?(.onChangePickupPointTap)
-
-        #expect(sut.router.pushCalls.count == 2)
-    }
-
-    @Test
-    func continueToPaymentEvent_doesNotPushWhenFactoryReturnsNil() {
-        let sut = makeSUT()
-        sut.composer.shouldReturnPaymentScreen = false
-        sut.coordinator.start(with: sut.router)
-        sut.coordinator.placeOrder(42)
-
-        sut.composer.placeOrderEventHandler?(.onContinueToPayment)
-
-        #expect(sut.router.pushCalls.count == 2)
-    }
 }
 
 @MainActor
@@ -230,9 +207,6 @@ private final class MockCartComposer: CartComposing {
     private(set) var makePickupPointsViewControllerCallsCount = 0
     private(set) var makePaymentViewControllerCallsCount = 0
 
-    var shouldReturnPickupPointsScreen = true
-    var shouldReturnPaymentScreen = true
-
     var placeOrderEventHandler: PlaceOrderEventHandler?
     var orderConfirmationEventHandler: OrderConfirmationEventHandler?
 
@@ -260,15 +234,15 @@ private final class MockCartComposer: CartComposing {
         return orderConfirmationViewController
     }
 
-    func makePickupPointsViewController() -> UIViewController? {
+    func makePickupPointsViewController() -> UIViewController {
         makePickupPointsViewControllerCallsCount += 1
-        return shouldReturnPickupPointsScreen ? pickupPointsViewController : nil
+        return pickupPointsViewController
     }
 
-    func makePaymentViewController(onComplete: @escaping (CartPaymentResult?) -> Void) -> UIViewController? {
+    func makePaymentViewController(onComplete: @escaping (CartPaymentResult?) -> Void) -> UIViewController {
         makePaymentViewControllerCallsCount += 1
         paymentOnComplete = onComplete
-        return shouldReturnPaymentScreen ? paymentViewController : nil
+        return paymentViewController
     }
 }
 
