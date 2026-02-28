@@ -12,7 +12,7 @@ struct PaymentCoordinatorTests {
         sut.coordinator.start(with: sut.router)
 
         #expect(sut.router.pushCalls.count == 1)
-        #expect(sut.router.pushCalls[0].viewController === sut.composer.paymentViewController)
+        #expect(sut.router.pushCalls[0].item.viewController === sut.composer.paymentViewController)
         #expect(sut.router.pushCalls[0].animated == false)
     }
 
@@ -81,25 +81,31 @@ private final class MockPaymentComposer: PaymentComposing {
     let paymentViewController = UIViewController()
     var paymentEventHandler: PaymentEventHandler?
 
-    func makePaymentViewController(with eventHandler: @escaping PaymentEventHandler) -> UIViewController {
-        paymentEventHandler = eventHandler
-        return paymentViewController
+    func makeViewController(
+        for route: PaymentRoute,
+        capability: ComposeCapability
+    ) -> UIViewController {
+        switch route {
+        case .payment(let eventHandler):
+            paymentEventHandler = eventHandler
+            return paymentViewController
+        }
     }
 }
 
 @MainActor
 private final class MockStackRouter: UIViewController, StackRouting {
     struct PushCall {
-        let viewController: UIViewController
+        let item: ContainerItem
         let animated: Bool
     }
 
-    var viewControllers: [UIViewController] = []
+    var items: [ContainerItem] = []
     private(set) var pushCalls: [PushCall] = []
 
-    func push(_ viewController: UIViewController, animated: Bool, completion: (() -> Void)?) {
-        pushCalls.append(PushCall(viewController: viewController, animated: animated))
-        viewControllers.append(viewController)
+    func push(_ item: ContainerItem, animated: Bool, completion: (() -> Void)?) {
+        pushCalls.append(PushCall(item: item, animated: animated))
+        items.append(item)
         completion?()
     }
 
@@ -111,11 +117,11 @@ private final class MockStackRouter: UIViewController, StackRouting {
         completion?()
     }
 
-    func popTo(_ viewController: UIViewController, animated: Bool, completion: (() -> Void)?) {
+    func popTo(_ item: ContainerItem, animated: Bool, completion: (() -> Void)?) {
         completion?()
     }
 
-    func setStack(_ viewControllers: [UIViewController], animated: Bool) {
-        self.viewControllers = viewControllers
+    func setStack(_ items: [ContainerItem], animated: Bool) {
+        self.items = items
     }
 }

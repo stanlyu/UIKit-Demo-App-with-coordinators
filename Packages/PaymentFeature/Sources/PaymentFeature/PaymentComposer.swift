@@ -6,20 +6,29 @@
 //
 
 import UIKit
+import Core
 
 typealias PaymentEventHandler = (PaymentPresenter.Event) -> Void
 
-@MainActor
-protocol PaymentComposing {
-    func makePaymentViewController(with eventHandler: @escaping PaymentEventHandler) -> UIViewController
+enum PaymentRoute {
+    case payment(eventHandler: PaymentEventHandler)
 }
 
+@MainActor
+protocol PaymentComposing: Composing where Route == PaymentRoute {}
+
 struct PaymentComposer: PaymentComposing {
-    func makePaymentViewController(with eventHandler: @escaping PaymentEventHandler) -> UIViewController {
-        let interactor = PaymentInteractor(service: PaymentService())
-        let presenter = PaymentPresenter(interactor: interactor, onEvent: eventHandler)
-        let viewController = PaymentViewController(viewOutput: presenter)
-        presenter.view = viewController
-        return viewController
+    func makeViewController(
+        for route: PaymentRoute,
+        capability: ComposeCapability
+    ) -> UIViewController {
+        switch route {
+        case .payment(let eventHandler):
+            let interactor = PaymentInteractor(service: PaymentService())
+            let presenter = PaymentPresenter(interactor: interactor, onEvent: eventHandler)
+            let viewController = PaymentViewController(viewOutput: presenter)
+            presenter.view = viewController
+            return viewController
+        }
     }
 }

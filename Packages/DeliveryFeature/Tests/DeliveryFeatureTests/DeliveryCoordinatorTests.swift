@@ -12,7 +12,7 @@ struct DeliveryCoordinatorTests {
         sut.coordinator.start(with: sut.router)
 
         #expect(sut.router.pushCalls.count == 1)
-        #expect(sut.router.pushCalls[0].viewController === sut.composer.pickupPointsViewController)
+        #expect(sut.router.pushCalls[0].item.viewController === sut.composer.pickupPointsViewController)
         #expect(sut.router.pushCalls[0].animated == false)
     }
 
@@ -24,7 +24,7 @@ struct DeliveryCoordinatorTests {
         sut.composer.pickupPointsEventHandler?(.onAddPickupPoint)
 
         #expect(sut.router.pushCalls.count == 2)
-        #expect(sut.router.pushCalls[1].viewController === sut.composer.addPickupPointViewController)
+        #expect(sut.router.pushCalls[1].item.viewController === sut.composer.addPickupPointViewController)
         #expect(sut.router.pushCalls[1].animated == true)
     }
 
@@ -48,7 +48,7 @@ struct DeliveryCoordinatorTests {
         sut.coordinator.start(with: sut.router)
         sut.composer.pickupPointsEventHandler?(.onFavoriteDeleteRequested(pickupPoint: pickupPoint, input: input))
 
-        #expect(sut.router.presentedController === sut.composer.deleteConfirmationViewController)
+        #expect(sut.router.presentedItem?.viewController === sut.composer.deleteConfirmationViewController)
         #expect(sut.router.presentedAnimated == true)
     }
 
@@ -108,32 +108,19 @@ private final class MockDeliveryComposer: DeliveryComposing {
     private(set) var deleteConfirmationRequestedPickupPoint: PickupPoint?
     var deleteConfirmationOnConfirm: (() -> Void)?
 
-    func makePickupPointsViewController(
-        with eventHandler: @escaping PickupPointsEventHandler
-    ) -> UIViewController {
-        pickupPointsEventHandler = eventHandler
-        return pickupPointsViewController
-    }
-
-    func makePickupPointsNavigationController(
-        with eventHandler: @escaping PickupPointsEventHandler
-    ) -> UINavigationController {
-        pickupPointsEventHandler = eventHandler
-        return UINavigationController(rootViewController: pickupPointsViewController)
-    }
-
-    func makeAddPickupPointViewController(with eventHandler: @escaping AddPickupPointEventHandler) -> UIViewController {
-        addPickupPointEventHandler = eventHandler
-        return addPickupPointViewController
-    }
-
-    func makeFavoritePickupPointDeleteConfirmationViewController(
-        pickupPoint: PickupPoint,
-        onConfirm: @escaping () -> Void
-    ) -> UIViewController {
-        deleteConfirmationRequestedPickupPoint = pickupPoint
-        deleteConfirmationOnConfirm = onConfirm
-        return deleteConfirmationViewController
+    func makeViewController(for route: DeliveryRoute, capability: ComposeCapability) -> UIViewController {
+        switch route {
+        case .pickupPoints(let eventHandler):
+            pickupPointsEventHandler = eventHandler
+            return pickupPointsViewController
+        case .addPickupPoint(let eventHandler):
+            addPickupPointEventHandler = eventHandler
+            return addPickupPointViewController
+        case .deleteConfirmation(let pickupPoint, let onConfirm):
+            deleteConfirmationRequestedPickupPoint = pickupPoint
+            deleteConfirmationOnConfirm = onConfirm
+            return deleteConfirmationViewController
+        }
     }
 }
 
@@ -149,28 +136,28 @@ private final class MockPickupPointsInput: PickupPointsInput {
 @MainActor
 private final class MockStackRouter: UIViewController, StackRouting {
     struct PushCall {
-        let viewController: UIViewController
+        let item: ContainerItem
         let animated: Bool
     }
 
-    var viewControllers: [UIViewController] = []
+    var items: [ContainerItem] = []
 
     private(set) var pushCalls: [PushCall] = []
     private(set) var popCalls: [Bool] = []
 
-    private(set) var presentedController: UIViewController?
+    private(set) var presentedItem: ContainerItem?
     private(set) var presentedAnimated: Bool = false
 
-    func push(_ viewController: UIViewController, animated: Bool, completion: (() -> Void)?) {
-        pushCalls.append(PushCall(viewController: viewController, animated: animated))
-        viewControllers.append(viewController)
+    func push(_ item: ContainerItem, animated: Bool, completion: (() -> Void)?) {
+        pushCalls.append(PushCall(item: item, animated: animated))
+        items.append(item)
         completion?()
     }
 
     func pop(animated: Bool, completion: (() -> Void)?) {
         popCalls.append(animated)
-        if viewControllers.isEmpty == false {
-            _ = viewControllers.removeLast()
+        if items.isEmpty == false {
+            _ = items.removeLast()
         }
         completion?()
     }
@@ -179,17 +166,17 @@ private final class MockStackRouter: UIViewController, StackRouting {
         completion?()
     }
 
-    func popTo(_ viewController: UIViewController, animated: Bool, completion: (() -> Void)?) {
+    func popTo(_ item: ContainerItem, animated: Bool, completion: (() -> Void)?) {
         completion?()
     }
 
-    func setStack(_ viewControllers: [UIViewController], animated: Bool) {
-        self.viewControllers = viewControllers
+    func setStack(_ items: [ContainerItem], animated: Bool) {
+        self.items = items
     }
 
-    override func present(_ viewControllerToPresent: UIViewController, animated flag: Bool, completion: (() -> Void)? = nil) {
-        presentedController = viewControllerToPresent
-        presentedAnimated = flag
+    func present(_ item: ContainerItem, animated: Bool, completion: (() -> Void)?) {
+        presentedItem = item
+        presentedAnimated = animated
         completion?()
     }
 }

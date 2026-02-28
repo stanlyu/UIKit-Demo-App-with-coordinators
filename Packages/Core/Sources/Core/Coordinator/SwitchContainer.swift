@@ -16,13 +16,15 @@ import UIKit
 /// его можно применять в любом месте, где нужен хост для последовательной смены одного контента другим.
 ///
 /// - Note: **Конфигурация:** Этот контейнер проксирует свойства (ориентация экрана, статус бар) от своего текущего контента.
-///   Настраивайте эти параметры в контроллерах, которые вы передаете в `setRoot`.
+///   Настраивайте эти параметры в контроллерах, которые инкапсулируются в `ContainerItem`.
 public final class SwitchContainer: ProxyViewController, SwitchRouting {
 
     /// Инициализирует контейнер с заданным координатором.
     /// - Parameter coordinator: Координатор, который будет управлять этим контейнером.
-    public init(coordinator: Coordinator<SwitchContainer>) {
-        self.coordinator = coordinator
+    public init(coordinator: BaseCoordinator<SwitchContainer>) {
+        self.startFlow = { container in
+            coordinator.start(with: container)
+        }
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -32,23 +34,24 @@ public final class SwitchContainer: ProxyViewController, SwitchRouting {
 
     public override func viewDidLoad() {
         super.viewDidLoad()
-        coordinator.start(with: self)
+        startFlow(self)
     }
 
     // MARK: - Private members
-    private let coordinator: Coordinator<SwitchContainer>
+
+    private let startFlow: (SwitchContainer) -> Void
     private var pendingAnimated: Bool = false
     private var pendingCompletion: (() -> Void)?
 
     // MARK: - Switch Logic
 
-    public func setRoot(_ viewController: UIViewController, animated: Bool, completion: (() -> Void)?) {
+    public func setRoot(_ item: ContainerItem, animated: Bool, completion: (() -> Void)?) {
         // Сохраняем флаги во временное состояние, так как setContent не принимает их.
         pendingAnimated = animated
         pendingCompletion = completion
 
         // Этот вызов триггерит метод transition(from:to:)
-        setContent(viewController)
+        setContent(item.viewController)
     }
 
     // MARK: - Transition Logic

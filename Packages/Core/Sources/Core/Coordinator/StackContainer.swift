@@ -15,8 +15,10 @@ public final class StackContainer: UINavigationController {
 
     /// Инициализирует контейнер с заданным координатором.
     /// - Parameter coordinator: Координатор, который будет управлять этим контейнером.
-    public init(coordinator: Coordinator<StackContainer>) {
-        self.coordinator = coordinator
+    public init(coordinator: BaseCoordinator<StackContainer>) {
+        self.startFlow = { container in
+            coordinator.start(with: container)
+        }
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -27,25 +29,30 @@ public final class StackContainer: UINavigationController {
     public override func viewDidLoad() {
         super.viewDidLoad()
         // Автоматический запуск логики при загрузке View.
-        coordinator.start(with: self)
+        startFlow(self)
     }
 
     // MARK: - Private members
 
-    private let coordinator: Coordinator<StackContainer>
+    private let startFlow: (StackContainer) -> Void
 }
 
 extension StackContainer: StackRouting {
-    /// Кладет viewController в навигационный стек.
+    /// Текущее состояние стека элементов в зоне ответственности контейнера.
+    public var items: [ContainerItem] {
+        viewControllers.map(ContainerItem.init)
+    }
+
+    /// Кладет элемент в навигационный стек.
     ///
     /// - Note: **Особенность поведения:** Если навигационный стек пуст (то есть устанавливается корневой контроллер),
     ///   параметр `animated` будет проигнорирован (принудительно `false`).
     ///   Это сделано для предотвращения визуальных глитчей при первичном появлении навигационного контроллера.
-    public func push(_ viewController: UIViewController, animated: Bool, completion: (() -> Void)?) {
+    public func push(_ item: ContainerItem, animated: Bool, completion: (() -> Void)?) {
         if viewControllers.isEmpty {
-            pushViewController(viewController, animated: false, completion: completion)
+            pushViewController(item.viewController, animated: false, completion: completion)
         } else {
-            pushViewController(viewController, animated: animated, completion: completion)
+            pushViewController(item.viewController, animated: animated, completion: completion)
         }
     }
 
@@ -59,13 +66,13 @@ extension StackContainer: StackRouting {
         popToRootViewController(animated: animated, completion: completion)
     }
 
-    /// Возвращается к указанному viewController'у в стеке.
-    public func popTo(_ viewController: UIViewController, animated: Bool, completion: (() -> Void)?) {
-        popToViewController(viewController, animated: animated, completion: completion)
+    /// Возвращается к указанному элементу в стеке.
+    public func popTo(_ item: ContainerItem, animated: Bool, completion: (() -> Void)?) {
+        popToViewController(item.viewController, animated: animated, completion: completion)
     }
 
-    /// Заменяет весь стек на указанный массив контроллеров.
-    public func setStack(_ viewControllers: [UIViewController], animated: Bool) {
-        setViewControllers(viewControllers, animated: animated)
+    /// Заменяет весь стек на указанный массив элементов.
+    public func setStack(_ items: [ContainerItem], animated: Bool) {
+        setViewControllers(items.map(\.viewController), animated: animated)
     }
 }

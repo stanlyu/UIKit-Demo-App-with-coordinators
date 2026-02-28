@@ -7,7 +7,6 @@
 
 import UIKit
 
-
 /// Контейнер, который **встраивается** в существующий навигационный стек.
 ///
 /// Является `ProxyViewController`, то есть для системы выглядит как один экран,
@@ -21,13 +20,15 @@ public final class InlineContainer: ProxyViewController {
 
     /// Инициализирует контейнер с заданным координатором.
     /// - Parameter coordinator: Координатор, который будет управлять этим контейнером.
-    public init(coordinator: Coordinator<InlineContainer>) {
-        self.coordinator = coordinator
+    public init(coordinator: BaseCoordinator<InlineContainer>) {
+        self.startFlow = { container in
+            coordinator.start(with: container)
+        }
         super.init(nibName: nil, bundle: nil)
         // Запускаем поток сразу, чтобы Proxy получил контент и синхронизировал
         // системные флаги (hidesBottomBar, navigationItem) до того,
         // как этот контроллер попадет в стек навигации.
-        coordinator.start(with: self)
+        startFlow(self)
     }
 
     public required init?(coder: NSCoder) {
@@ -36,40 +37,42 @@ public final class InlineContainer: ProxyViewController {
 
     // MARK: - Private members
 
-    private let coordinator: Coordinator<InlineContainer>
+    private let startFlow: (InlineContainer) -> Void
 }
 
 extension InlineContainer: StackRouting {
-    /// Текущий стек контроллеров внутри флоу InlineContainer.
+    /// Текущий стек элементов внутри флоу InlineContainer.
     ///
     /// - Note: В качестве первого элемента возвращается `contentViewController`,
     ///   а не сам `InlineContainer`, чтобы координатор работал с реальными экранами своего флоу.
-    public var viewControllers: [UIViewController] {
+    public var items: [ContainerItem] {
         guard let contentViewController else { return [] }
-        guard let navigationController else { return [contentViewController] }
-        guard let selfIndex = navigationController.viewControllers.firstIndex(of: self) else { return [contentViewController] }
+        guard let navigationController else { return [ContainerItem(contentViewController)] }
+        guard let selfIndex = navigationController.viewControllers.firstIndex(of: self) else {
+            return [ContainerItem(contentViewController)]
+        }
 
         let flowStack = Array(navigationController.viewControllers[selfIndex...])
-        return [contentViewController] + flowStack.dropFirst()
+        return [ContainerItem(contentViewController)] + flowStack.dropFirst().map(ContainerItem.init)
     }
 
-    /// Добавляет viewController во флоу.
+    /// Добавляет элемент во флоу.
     ///
     /// - Note: **Особенность поведения:**
-    ///   1. Если это **первый** viewController во флоу, он будет встроен внутрь самого `InlineContainer` (через `setContent`).
+    ///   1. Если это **первый** элемент во флоу, он будет встроен внутрь самого `InlineContainer` (через `setContent`).
     ///      Визуально переход не произойдет, так как `InlineContainer` уже находится в стеке.
-    ///   2. Если это **второй и последующие** viewControllers, они будут стандартно запушены (`push`)
+    ///   2. Если это **второй и последующие** элементы, они будут стандартно запушены (`push`)
     ///      в навигационный стек родительского контейнера.
-    public func push(_ viewController: UIViewController, animated: Bool, completion: (() -> Void)?) {
+    public func push(_ item: ContainerItem, animated: Bool, completion: (() -> Void)?) {
         if contentViewController == nil {
-            setContent(viewController)
+            setContent(item.viewController)
             completion?()
         } else {
             guard let nav = navigationController else {
                 assertionFailure("⚠️ InlineContainer: Попытка push, но контейнер не находится в NavigationController.")
                 return
             }
-            nav.pushViewController(viewController, animated: animated, completion: completion)
+            nav.pushViewController(item.viewController, animated: animated, completion: completion)
         }
     }
 
@@ -103,15 +106,16 @@ extension InlineContainer: StackRouting {
     ///
     /// - Note: Этот метод вернет стек к состоянию, когда `InlineContainer` находится на вершине.
     public func popToRoot(animated: Bool, completion: (() -> Void)?) {
-        popTo(self, animated: animated, completion: completion)
+        // ИСПРАВЛЕНО ЗДЕСЬ: оборачиваем self в ContainerItem
+        popTo(ContainerItem(self), animated: animated, completion: completion)
     }
 
-    /// Возвращается к указанному viewController'у.
+    /// Возвращается к указанному элементу.
     ///
-    /// - Warning: **Ошибка логики:** Целевой viewController должен находиться в пределах "зоны ответственности" этого контейнера.
+    /// - Warning: **Ошибка логики:** Целевой элемент должен находиться в пределах "зоны ответственности" этого контейнера.
     ///   Попытка перейти к контроллеру, который находится в стеке **до** `InlineContainer` (экраны родителя),
     ///   вызовет `assertionFailure` в Debug-сборке.
-    public func popTo(_ viewController: UIViewController, animated: Bool, completion: (() -> Void)?) {
+    public func popTo(_ item: ContainerItem, animated: Bool, completion: (() -> Void)?) {
         guard let nav = navigationController else {
             assertionFailure("⚠️ InlineContainer: Попытка popTo, но контейнер не находится в NavigationController.")
             return
@@ -120,7 +124,7 @@ extension InlineContainer: StackRouting {
         let stack = nav.viewControllers
 
         guard let selfIndex = stack.firstIndex(of: self),
-              let targetIndex = stack.firstIndex(of: viewController) else { return }
+              let targetIndex = stack.firstIndex(of: item.viewController) else { return }
 
         if targetIndex < selfIndex {
             let message = """
@@ -133,19 +137,19 @@ extension InlineContainer: StackRouting {
             return
         }
 
-        nav.popToViewController(viewController, animated: animated, completion: completion)
+        nav.popToViewController(item.viewController, animated: animated, completion: completion)
     }
 
-    /// Заменяет текущий стек флоу на новые viewControllers.
+    /// Заменяет текущий стек флоу на новые элементы.
     ///
     /// - Note: Этот метод сохраняет все контроллеры в стеке **до** `InlineContainer` (родительские экраны),
-    ///   обновляет контент самого `InlineContainer` первым viewController из массива,
-    ///   и добавляет остальные viewControllers поверх него.
-    public func setStack(_ viewControllers: [UIViewController], animated: Bool) {
-        guard let first = viewControllers.first else { return }
+    ///   обновляет контент самого `InlineContainer` первым элементом из массива,
+    ///   и добавляет остальные элементы поверх него.
+    public func setStack(_ items: [ContainerItem], animated: Bool) {
+        guard let first = items.first else { return }
 
-        setContent(first)
-
+        setContent(first.viewController)
+        
         guard let nav = navigationController else {
             assertionFailure("⚠️ InlineContainer: Попытка setStack, но контейнер не находится в NavigationController.")
             return
@@ -157,8 +161,8 @@ extension InlineContainer: StackRouting {
             currentStack = Array(currentStack.prefix(upTo: selfIndex + 1))
         }
 
-        if viewControllers.count > 1 {
-            currentStack.append(contentsOf: viewControllers.dropFirst())
+        if items.count > 1 {
+            currentStack.append(contentsOf: items.dropFirst().map(\.viewController))
         }
 
         nav.setViewControllers(currentStack, animated: animated)

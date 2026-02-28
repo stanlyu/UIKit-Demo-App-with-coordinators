@@ -8,23 +8,23 @@ struct ApplicationCoordinatorTests {
     @Test
     func start_setsLaunchScreenAsRootWithoutAnimation() {
         let sut = makeSUT()
-
+        
         sut.coordinator.start(with: sut.router)
-
+        
         #expect(sut.router.setRootCalls.count == 1)
-        #expect(sut.router.setRootCalls[0].viewController === sut.composer.launchViewController)
+        #expect(sut.router.setRootCalls[0].item.viewController === sut.composer.launchViewController)
         #expect(sut.router.setRootCalls[0].animated == false)
     }
-
+    
     @Test
     func launchMainFlowEvent_replacesRootWithMainTabsAnimated() {
         let sut = makeSUT()
         sut.coordinator.start(with: sut.router)
-
+        
         sut.composer.launchEventHandler?(.mainFlowStarted)
-
+        
         #expect(sut.router.setRootCalls.count == 2)
-        #expect(sut.router.setRootCalls[1].viewController === sut.composer.mainTabsViewController)
+        #expect(sut.router.setRootCalls[1].item.viewController === sut.composer.mainTabsViewController)
         #expect(sut.router.setRootCalls[1].animated == true)
     }
 }
@@ -36,7 +36,7 @@ private extension ApplicationCoordinatorTests {
         let composer: MockApplicationComposer
         let router: MockSwitchRouter
     }
-
+    
     func makeSUT() -> SUT {
         let composer = MockApplicationComposer()
         let router = MockSwitchRouter()
@@ -49,30 +49,33 @@ private extension ApplicationCoordinatorTests {
 private final class MockApplicationComposer: ApplicationComposing {
     let launchViewController = UIViewController()
     let mainTabsViewController = UIViewController()
-
+    
     var launchEventHandler: ((LaunchScreenEvent) -> Void)?
-
-    func makeLaunchViewController(with eventHandler: @escaping (LaunchScreenEvent) -> Void) -> UIViewController {
-        launchEventHandler = eventHandler
-        return launchViewController
-    }
-
-    func makeMainTabsViewController() -> UIViewController {
-        mainTabsViewController
+    
+    func makeViewController(for route: ApplicationRoute, capability: ComposeCapability) -> UIViewController {
+        switch route {
+        case .launch(let eventHandler):
+            launchEventHandler = eventHandler
+            return launchViewController
+        case .mainFlow:
+            return mainTabsViewController
+        }
     }
 }
 
 @MainActor
 private final class MockSwitchRouter: UIViewController, SwitchRouting {
     struct SetRootCall {
-        let viewController: UIViewController
+        let item: ContainerItem
         let animated: Bool
     }
-
+    
     private(set) var setRootCalls: [SetRootCall] = []
-
-    func setRoot(_ viewController: UIViewController, animated: Bool, completion: (() -> Void)?) {
-        setRootCalls.append(SetRootCall(viewController: viewController, animated: animated))
+    
+    func setRoot(_ item: ContainerItem, animated: Bool, completion: (() -> Void)?) {
+        setRootCalls.append(SetRootCall(item: item, animated: animated))
         completion?()
     }
+    
+    func present(_ item: ContainerItem, animated: Bool, completion: (() -> Void)?) {}
 }

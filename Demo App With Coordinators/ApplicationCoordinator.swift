@@ -1,37 +1,26 @@
-//
-//  ApplicationCoordinator.swift
-//  Demo App With Coordinators
-//
-//  Created by Любченко Станислав Валерьевич on 17.12.2025.
-//
-
 import UIKit
 import Core
 
 typealias ApplicationCoordinator = ApplicationCoordinatingLogic<SwitchRouter>
 
-final class ApplicationCoordinatingLogic<Router: SwitchRouting>: Coordinator<Router> {
+final class ApplicationCoordinatingLogic<Router: SwitchRouting>: Coordinator<Router, ApplicationRoute> {
 
-    init(composer: ApplicationComposing = ApplicationComposer()) {
-        self.composer = composer
-        super.init()
+    init<C: ApplicationComposing>(composer: C) {
+        super.init(composer: composer)
     }
 
     override func start(_ capability: StartCapability) {
-        let launchVC = composer.makeLaunchViewController { [unowned self] event in
+        let item = composer.makeItem(for: .launch(eventHandler: { [unowned self] event in
             self.handleLaunchEvent(event)
-        }
-        router?.setRoot(launchVC, animated: false, completion: nil)
+        }))
+        router?.setRoot(item, animated: false, completion: nil)
     }
-
-    // MARK: - Private members
-
-    private let composer: ApplicationComposing
 
     private func handleLaunchEvent(_ event: LaunchScreenEvent) {
         switch event {
         case .mainFlowStarted:
-            router?.setRoot(composer.makeMainTabsViewController(), animated: true, completion: nil)
+            let item = composer.makeItem(for: .mainFlow)
+            router?.setRoot(item, animated: true, completion: nil)
         }
     }
 }

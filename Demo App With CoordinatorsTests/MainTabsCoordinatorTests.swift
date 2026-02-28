@@ -13,11 +13,11 @@ struct MainTabsCoordinatorTests {
 
         sut.coordinator.start(with: sut.router)
 
-        #expect(sut.router.setViewControllersCalls.count == 1)
-        #expect(sut.router.setViewControllersCalls[0].viewControllers.count == 2)
-        #expect(sut.router.setViewControllersCalls[0].viewControllers[0] === sut.composer.homeViewController)
-        #expect(sut.router.setViewControllersCalls[0].viewControllers[1] === sut.composer.cartViewController)
-        #expect(sut.router.setViewControllersCalls[0].animated == false)
+        #expect(sut.router.setItemsCalls.count == 1)
+        #expect(sut.router.setItemsCalls[0].items.count == 2)
+        #expect(sut.router.setItemsCalls[0].items[0].viewController === sut.composer.homeViewController)
+        #expect(sut.router.setItemsCalls[0].items[1].viewController === sut.composer.cartViewController)
+        #expect(sut.router.setItemsCalls[0].animated == false)
     }
 
     @Test
@@ -27,7 +27,7 @@ struct MainTabsCoordinatorTests {
 
         sut.composer.homeEventHandler?(.placeOrder(42))
 
-        #expect(sut.router.selectViewControllerCalls.last === sut.composer.cartViewController)
+        #expect(sut.router.selectItemCalls.last?.viewController === sut.composer.cartViewController)
     }
 
     @Test
@@ -37,7 +37,7 @@ struct MainTabsCoordinatorTests {
 
         sut.composer.homeEventHandler?(.placeOrder(42))
 
-        #expect(sut.composer.cartInput.placeOrderCalls == [42])
+        #expect(sut.composer.mockCartInput.placeOrderCalls == [42])
     }
 }
 
@@ -61,18 +61,19 @@ private extension MainTabsCoordinatorTests {
 private final class MockMainTabsComposer: MainTabsComposing {
     let homeViewController = UIViewController()
     let cartViewController = UIViewController()
-
-    let cartInput = MockCartInput()
+    let mockCartInput = MockCartInput()
 
     var homeEventHandler: ((HomeEvent) -> Void)?
 
-    func makeHomeViewController(with eventHandler: @escaping (HomeEvent) -> Void) -> UIViewController {
-        homeEventHandler = eventHandler
-        return homeViewController
-    }
-
-    func makeCartViewController() -> CartModule {
-        (cartViewController, cartInput)
+    func makeViewController(for route: MainTabsRoute, capability: ComposeCapability) -> UIViewController {
+        switch route {
+        case .home(let eventHandler):
+            homeEventHandler = eventHandler
+            return homeViewController
+        case .cart(let onCreated):
+            onCreated(mockCartInput)
+            return cartViewController
+        }
     }
 }
 
@@ -87,20 +88,20 @@ private final class MockCartInput: CartInput {
 
 @MainActor
 private final class MockTabRouter: UIViewController, TabRouting {
-    struct SetViewControllersCall {
-        let viewControllers: [UIViewController]
+    struct SetItemsCall {
+        let items: [ContainerItem]
         let animated: Bool
     }
 
     var selectedIndex: Int = 0
-    var selectedViewController: UIViewController?
+    var selectedItem: ContainerItem?
 
-    private(set) var setViewControllersCalls: [SetViewControllersCall] = []
+    private(set) var setItemsCalls: [SetItemsCall] = []
     private(set) var selectTabCalls: [Int] = []
-    private(set) var selectViewControllerCalls: [UIViewController] = []
+    private(set) var selectItemCalls: [ContainerItem] = []
 
-    func setViewControllers(_ viewControllers: [UIViewController], animated: Bool) {
-        setViewControllersCalls.append(SetViewControllersCall(viewControllers: viewControllers, animated: animated))
+    func setItems(_ items: [ContainerItem], animated: Bool) {
+        setItemsCalls.append(SetItemsCall(items: items, animated: animated))
     }
 
     func selectTab(at index: Int) {
@@ -108,8 +109,10 @@ private final class MockTabRouter: UIViewController, TabRouting {
         selectedIndex = index
     }
 
-    func selectViewController(_ viewController: UIViewController) {
-        selectViewControllerCalls.append(viewController)
-        selectedViewController = viewController
+    func selectItem(_ item: ContainerItem) {
+        selectItemCalls.append(item)
+        selectedItem = item
     }
+
+    func present(_ item: ContainerItem, animated: Bool, completion: (() -> Void)?) {}
 }

@@ -1,67 +1,53 @@
-//
-//  CartCoordinator.swift
-//  Demo App With Coordinators
-//
-//  Created by Любченко Станислав Валерьевич on 18.12.2025.
-//
-
 import UIKit
 import Core
 
 typealias CartCoordinator = CartCoordinatingLogic<StackRouter>
 
-final class CartCoordinatingLogic<Router: StackRouting>: Coordinator<Router> {
-    init(composer: CartComposing) {
-        self.composer = composer
-        super.init()
+final class CartCoordinatingLogic<Router: StackRouting>: Coordinator<Router, CartRoute> {
+    init<C: CartComposing>(composer: C) {
+        super.init(composer: composer)
     }
 
     override func start(_ capability: StartCapability) {
-        let rootViewController = composer.makeCartViewController { [unowned self] event in
+        let item = composer.makeItem(for: .cart(eventHandler: { [weak self] event in
             switch event {
             case .onPlaceOrderTap(let orderID):
-                self.placeOrder(orderID)
+                self?.placeOrder(orderID)
             }
-        }
-        router?.push(rootViewController, animated: false, completion: nil)
+        }))
+        router?.push(item, animated: false, completion: nil)
     }
 
-    // MARK: - Private members
-
-    private let composer: CartComposing
-    
     private func showPickupPoints() {
-        let pickupPointsVC = composer.makePickupPointsViewController()
-        router?.present(pickupPointsVC, animated: true, completion: nil)
+        let item = composer.makeItem(for: .pickupPoints)
+        router?.present(item, animated: true, completion: nil)
     }
 
     private func showPayment() {
-        let paymentVC = composer.makePaymentViewController { [weak self] result in
+        let item = composer.makeItem(for: .payment(onComplete: { [weak self] result in
             guard let self else { return }
 
             if let result {
-                completePayment(with: result)
+                self.completePayment(with: result)
             } else {
-                router?.pop(animated: true, completion: nil)
+                self.router?.pop(animated: true, completion: nil)
             }
-        }
-        router?.push(paymentVC, animated: true, completion: nil)
+        }))
+        router?.push(item, animated: true, completion: nil)
     }
 
     private func completePayment(with result: CartPaymentResult) {
-        guard let router, let cartRootViewController = router.viewControllers.first else { return }
+        guard let router, let cartRootItem = router.items.first else { return }
 
-        let orderConfirmationVC = composer.makeOrderConfirmationViewController(
-            paymentResult: result
-        ) { [weak self] event in
+        let item = composer.makeItem(for: .orderConfirmation(paymentResult: result, eventHandler: { [weak self] event in
             switch event {
             case .onReturnTap:
                 self?.router?.popToRoot(animated: true, completion: nil)
             }
-        }
+        }))
 
-        router.push(orderConfirmationVC, animated: true) { [weak self] in
-            self?.router?.setStack([cartRootViewController, orderConfirmationVC], animated: false)
+        router.push(item, animated: true) { [weak self] in
+            self?.router?.setStack([cartRootItem, item], animated: false)
         }
     }
 }
@@ -70,16 +56,16 @@ extension CartCoordinatingLogic: CartInput {
     func placeOrder(_ orderID: Int) {
         router?.popToRoot(animated: false, completion: nil)
 
-        let placeOrderVC = composer.makePlaceOrderViewController(with: orderID) { [unowned self] event in
+        let item = composer.makeItem(for: .placeOrder(orderID: orderID, eventHandler: { [weak self] event in
             switch event {
             case .onBackTap:
-                self.router?.pop(animated: true, completion: nil)
+                self?.router?.pop(animated: true, completion: nil)
             case .onChangePickupPointTap:
-                self.showPickupPoints()
+                self?.showPickupPoints()
             case .onContinueToPayment:
-                self.showPayment()
+                self?.showPayment()
             }
-        }
-        router?.push(placeOrderVC, animated: true, completion: nil)
+        }))
+        router?.push(item, animated: true, completion: nil)
     }
 }

@@ -7,23 +7,30 @@
 
 import UIKit
 
-
 // MARK: - Routing (Base)
 
 /// Базовый протокол для всех роутеров (контейнеров).
 @MainActor
-public protocol Routing: UIViewController {}
+public protocol Routing: UIViewController {
+    func present(_ item: ContainerItem, animated: Bool, completion: (() -> Void)?)
+}
+
+public extension Routing {
+    func present(_ item: ContainerItem, animated: Bool, completion: (() -> Void)?) {
+        present(item.viewController, animated: animated, completion: completion)
+    }
+}
 
 // MARK: - Stack Routing
 
 /// Возможности навигации в стеке (UINavigationController).
 @MainActor
 public protocol StackRouting: Routing {
-    /// Текущее состояние стека контроллеров в зоне ответственности роутера.
-    var viewControllers: [UIViewController] { get }
+    /// Текущее состояние стека элементов в зоне ответственности роутера.
+    var items: [ContainerItem] { get }
 
-    /// Кладет viewController в навигационный стек (Push).
-    func push(_ viewController: UIViewController, animated: Bool, completion: (() -> Void)?)
+    /// Кладет элемент в навигационный стек (Push).
+    func push(_ item: ContainerItem, animated: Bool, completion: (() -> Void)?)
 
     /// Возвращается на один экран назад (Pop).
     func pop(animated: Bool, completion: (() -> Void)?)
@@ -31,11 +38,11 @@ public protocol StackRouting: Routing {
     /// Возвращается к корню текущего флоу (Pop To Root).
     func popToRoot(animated: Bool, completion: (() -> Void)?)
 
-    /// Возвращается к конкретному viewController'у в стеке.
-    func popTo(_ viewController: UIViewController, animated: Bool, completion: (() -> Void)?)
+    /// Возвращается к конкретному элементу в стеке.
+    func popTo(_ item: ContainerItem, animated: Bool, completion: (() -> Void)?)
 
-    /// Заменяет текущий стек на новый массив контроллеров.
-    func setStack(_ viewControllers: [UIViewController], animated: Bool)
+    /// Заменяет текущий стек на новый массив элементов.
+    func setStack(_ items: [ContainerItem], animated: Bool)
 }
 
 // MARK: - Switch Routing
@@ -47,9 +54,9 @@ public protocol StackRouting: Routing {
 @MainActor
 public protocol SwitchRouting: Routing {
 
-    /// Полностью заменяет текущий контент контейнера новым контроллером.
+    /// Полностью заменяет текущий контент контейнера новым элементом.
     /// При использовании в root-сценарии это эквивалентно смене корневого экрана.
-    func setRoot(_ viewController: UIViewController, animated: Bool, completion: (() -> Void)?)
+    func setRoot(_ item: ContainerItem, animated: Bool, completion: (() -> Void)?)
 }
 
 // MARK: - Tab Routing
@@ -61,15 +68,15 @@ public protocol TabRouting: Routing {
     /// Индекс текущей выбранной вкладки.
     var selectedIndex: Int { get }
 
-    /// Текущий выбранный viewController (корневой контроллер вкладки).
-    var selectedViewController: UIViewController? { get }
+    /// Текущий выбранный элемент вкладки.
+    var selectedItem: ContainerItem? { get }
 
-    /// Устанавливает контроллеры для вкладок.
-    func setViewControllers(_ viewControllers: [UIViewController], animated: Bool)
+    /// Устанавливает элементы для вкладок.
+    func setItems(_ items: [ContainerItem], animated: Bool)
 
     /// Переключает вкладку по индексу.
     func selectTab(at index: Int)
 
-    /// Переключает вкладку, соответствующую переданному viewController.
-    func selectViewController(_ viewController: UIViewController)
+    /// Переключает вкладку, соответствующую переданному элементу.
+    func selectItem(_ item: ContainerItem)
 }

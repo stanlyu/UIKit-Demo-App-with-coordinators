@@ -12,7 +12,7 @@ struct HomeCoordinatorTests {
         sut.coordinator.start(with: sut.router)
 
         #expect(sut.router.pushCalls.count == 1)
-        #expect(sut.router.pushCalls[0].viewController === sut.composer.homeViewController)
+        #expect(sut.router.pushCalls[0].item.viewController === sut.composer.homeViewController)
         #expect(sut.router.pushCalls[0].animated == false)
     }
 
@@ -53,7 +53,7 @@ struct HomeCoordinatorTests {
         sut.composer.homeEventHandler?(.onPickupPointTap)
 
         #expect(sut.router.pushCalls.count == 2)
-        #expect(sut.router.pushCalls[1].viewController === sut.composer.pickupPointsViewController)
+        #expect(sut.router.pushCalls[1].item.viewController === sut.composer.pickupPointsViewController)
         #expect(sut.router.pushCalls[1].animated == true)
     }
 
@@ -105,39 +105,40 @@ private final class MockHomeComposer: HomeComposing {
     var homeEventHandler: HomeEventHandler?
     var pickupPointsOnClose: (() -> Void)?
 
-    func makeHomeViewController(with eventHandler: @escaping HomeEventHandler) -> UIViewController {
-        homeEventHandler = eventHandler
-        return homeViewController
-    }
-
-    func makePickupPointsViewController(onClose: @escaping () -> Void) -> UIViewController {
-        makePickupPointsViewControllerCallsCount += 1
-        pickupPointsOnClose = onClose
-        return pickupPointsViewController
+    func makeViewController(for route: HomeRoute, capability: ComposeCapability) -> UIViewController {
+        switch route {
+        case .home(let eventHandler):
+            homeEventHandler = eventHandler
+            return homeViewController
+        case .pickupPoints(let onClose):
+            makePickupPointsViewControllerCallsCount += 1
+            pickupPointsOnClose = onClose
+            return pickupPointsViewController
+        }
     }
 }
 
 @MainActor
 private final class MockStackRouter: UIViewController, StackRouting {
     struct PushCall {
-        let viewController: UIViewController
+        let item: ContainerItem
         let animated: Bool
     }
 
-    var viewControllers: [UIViewController] = []
+    var items: [ContainerItem] = []
     private(set) var pushCalls: [PushCall] = []
     private(set) var popCalls: [Bool] = []
 
-    func push(_ viewController: UIViewController, animated: Bool, completion: (() -> Void)?) {
-        pushCalls.append(PushCall(viewController: viewController, animated: animated))
-        viewControllers.append(viewController)
+    func push(_ item: ContainerItem, animated: Bool, completion: (() -> Void)?) {
+        pushCalls.append(PushCall(item: item, animated: animated))
+        items.append(item)
         completion?()
     }
 
     func pop(animated: Bool, completion: (() -> Void)?) {
         popCalls.append(animated)
-        if viewControllers.isEmpty == false {
-            _ = viewControllers.removeLast()
+        if items.isEmpty == false {
+            _ = items.removeLast()
         }
         completion?()
     }
@@ -146,11 +147,11 @@ private final class MockStackRouter: UIViewController, StackRouting {
         completion?()
     }
 
-    func popTo(_ viewController: UIViewController, animated: Bool, completion: (() -> Void)?) {
+    func popTo(_ item: ContainerItem, animated: Bool, completion: (() -> Void)?) {
         completion?()
     }
 
-    func setStack(_ viewControllers: [UIViewController], animated: Bool) {
-        self.viewControllers = viewControllers
+    func setStack(_ items: [ContainerItem], animated: Bool) {
+        self.items = items
     }
 }

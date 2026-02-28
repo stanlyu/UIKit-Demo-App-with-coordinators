@@ -7,6 +7,51 @@
 
 import UIKit
 
+/// Базовый нетипизированный по Route координатор.
+///
+/// Введен для решения проблемы статической линковки дженериков с Objective-C классами
+/// (`UINavigationController`, `UITabBarController`), которые лежат в других модулях.
+/// Хранит ссылку на роутер и обеспечивает базовый механизм запуска.
+@MainActor
+open class BaseCoordinator<R: Routing> {
+
+    /// Роутер, через который осуществляется навигация.
+    ///
+    /// - Warning: Не обращайтесь к этому свойству в методе `init`.
+    ///   В момент инициализации роутер еще не привязан.
+    ///   Безопасный доступ гарантирован только внутри метода `start(_:)` и после него.
+    public var router: R? {
+        return _router
+    }
+
+    public init() {}
+
+    /// Служебная точка входа для связывания Роутера и Координатора.
+    ///
+    /// Этот метод выполняет критические функции: Dependency Injection роутера,
+    /// управление жизненным циклом и автоматический запуск пользовательской логики.
+    ///
+    /// - Parameter router: Роутер, который инициирует запуск. Обычно передается `self` из `viewDidLoad` или `init` роутера.
+    ///
+    /// - Note: **Ограничение доступа (`internal`):**
+    ///   Этот метод доступен только внутри пакета `Core`. Это архитектурная защита, предотвращающая
+    ///   ручной запуск координатора из Фабрик, Компоузеров или других модулей.
+    internal final func start(with router: R) {
+        // Защита от повторного связывания
+        guard _router == nil else { return }
+        _router = router
+        _internalStart()
+    }
+
+    internal func _internalStart() {
+        fatalError("Must be overridden")
+    }
+
+    // MARK: - Private members
+
+    private weak var _router: R?
+}
+
 /// Базовый абстрактный класс координатора.
 ///
 /// Является связующим звеном между инфраструктурой навигации (Роутером) и навигационной логикой (Координатором).
@@ -15,8 +60,9 @@ import UIKit
 /// - Generic Parameter R: Тип роутера (`Routing`), с которым работает данный координатор.
 ///   Это обеспечивает строгую типизацию: например, координатор авторизации будет иметь доступ
 ///   только к методам `StackRouting`, но не `TabRouting`.
+/// - Generic Parameter Route: Тип маршрута, который использует компоузер координатора.
 @MainActor
-open class Coordinator<R: Routing> {
+open class Coordinator<R: Routing, Route>: BaseCoordinator<R> {
 
     /// Capability-токен, подтверждающий право запустить координатор.
     ///
@@ -35,36 +81,25 @@ open class Coordinator<R: Routing> {
     /// читаемый контракт запуска (`override func start(_ capability: StartCapability)`).
     public typealias StartCapability = Start<R>
 
-    /// Роутер, через который осуществляется навигация.
+    /// Компоузер-обертка, связанная с этим координатором.
     ///
-    /// - Warning: Не обращайтесь к этому свойству в методе `init`. В момент инициализации роутер еще не привязан.
-    ///   Безопасный доступ гарантирован только внутри метода `start(_:)` и после него.
-    public var router: R? {
-        return _router
+    /// Координатор работает только с этой оберткой и, соответственно, только
+    /// с тем компоузером, который был передан при инициализации.
+    public private(set) var composer: ComposerBox<Route>
+
+    /// Основной инициализатор.
+    ///
+    /// - Parameter composer: Конкретный компоузер, собирающий `UIViewController`
+    ///   для данного `Route`.
+    public init<C: Composing>(composer: C) where C.Route == Route {
+        self.composer = ComposerBox(
+            wrappedComposer: composer,
+            capability: ComposeCapability()
+        )
+        super.init()
     }
 
-    public init() {}
-
-    // MARK: - Internal Infrastructure Logic
-
-    /// Служебная точка входа для связывания Роутера и Координатора.
-    ///
-    /// Этот метод выполняет три критические функции:
-    /// 1. **Dependency Injection:** Принимает и сохраняет ссылку на роутер (`R`), с которым будет работать координатор.
-    /// 2. **Lifecycle Management:** Гарантирует, что координатор начнет работу только тогда, когда роутер полностью готов (инициализирован или загружен).
-    /// 3. **Flow Trigger:** Автоматически запускает пользовательскую логику переопределенного метода `start(_:)`.
-    ///
-    /// - Parameter router: Роутер, который инициирует запуск. Обычно передается `self` из `viewDidLoad` или `init` роутера.
-    ///
-    /// - Note: **Ограничение доступа (`internal`):**
-    ///   Этот метод доступен только внутри пакета `Core`. Это архитектурная защита, предотвращающая
-    ///   ручной запуск координатора из Фабрик, Компоузеров или других модулей.
-    ///   Разработчик фичи не должен заботиться о связывании — это происходит автоматически внутри инфраструктуры Роутера.
-    internal func start(with router: R) {
-        // Защита от повторного связывания
-        guard _router == nil else { return }
-
-        _router = router
+    override internal func _internalStart() {
         start(.init())
     }
 
@@ -86,8 +121,4 @@ open class Coordinator<R: Routing> {
     open func start(_ capability: StartCapability) {
         fatalError("Метод start(_:) должен быть переопределен в наследнике \(String(describing: self))")
     }
-
-    // MARK: - Private members
-
-    private weak var _router: R?
 }

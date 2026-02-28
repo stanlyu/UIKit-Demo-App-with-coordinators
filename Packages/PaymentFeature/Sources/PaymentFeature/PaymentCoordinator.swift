@@ -11,23 +11,21 @@ import Core
 typealias PaymentInlineCoordinator = PaymentCoordinatingLogic<InlineRouter>
 
 @MainActor
-final class PaymentCoordinatingLogic<Router: StackRouting>: Coordinator<Router> {
-    init(composer: PaymentComposing, eventHandler: @escaping (PaymentEvent) -> Void) {
-        self.composer = composer
+final class PaymentCoordinatingLogic<Router: StackRouting>: Coordinator<Router, PaymentRoute> {
+    init<C: PaymentComposing>(composer: C, eventHandler: @escaping (PaymentEvent) -> Void) {
         self.eventHandler = eventHandler
-        super.init()
+        super.init(composer: composer)
     }
 
     override func start(_ capability: StartCapability) {
-        let paymentViewController = composer.makePaymentViewController { [weak self] event in
+        let paymentItem = composer.makeItem(for: .payment(eventHandler: { [weak self] event in
             self?.handle(event: event)
-        }
-        router?.push(paymentViewController, animated: false, completion: nil)
+        }))
+        router?.push(paymentItem, animated: false, completion: nil)
     }
 
     // MARK: - Private members
 
-    private let composer: PaymentComposing
     private let eventHandler: (PaymentEvent) -> Void
 
     private func handle(event: PaymentPresenter.Event) {

@@ -1,36 +1,34 @@
-//
-//  ApplicationComposer.swift
-//  Demo App With Coordinators
-//
-//  Created by Любченко Станислав Валерьевич on 17.12.2025.
-//
-
 import UIKit
 import Core
 
-protocol ApplicationComposing {
-    func makeLaunchViewController(with eventHandler: @escaping (LaunchScreenEvent) -> Void) -> UIViewController
-    func makeMainTabsViewController() -> UIViewController
+enum ApplicationRoute {
+    case launch(eventHandler: (LaunchScreenEvent) -> Void)
+    case mainFlow
 }
 
-struct ApplicationComposer: ApplicationComposing {
-    func makeLaunchViewController(with eventHandler: @escaping (LaunchScreenEvent) -> Void) -> UIViewController {
-        let viewController = LaunchViewController()
-        let presenter = LaunchPresenter(
-            interactor: LaunchInteractor(service: LaunchService()),
-            onEvent: eventHandler
-        )
-        viewController.output = presenter
-        presenter.view = viewController
-        return viewController
-    }
+@MainActor
+protocol ApplicationComposing: Composing where Route == ApplicationRoute {}
 
-    func makeMainTabsViewController() -> UIViewController {
-        let mainTabsComposer = MainTabsComposer()
-        let mainTabsCoordinator = MainTabsCoordinator(composer: mainTabsComposer)
-        let mainTabsContainer = TabContainer(coordinator: mainTabsCoordinator)
-        configureMainTabsContainer(mainTabsContainer)
-        return mainTabsContainer
+struct ApplicationComposer: ApplicationComposing {
+    func makeViewController(for route: ApplicationRoute, capability: ComposeCapability) -> UIViewController {
+        switch route {
+        case .launch(let eventHandler):
+            let viewController = LaunchViewController()
+            let presenter = LaunchPresenter(
+                interactor: LaunchInteractor(service: LaunchService()),
+                onEvent: eventHandler
+            )
+            viewController.output = presenter
+            presenter.view = viewController
+            return viewController
+
+        case .mainFlow:
+            let mainTabsComposer = MainTabsComposer()
+            let mainTabsCoordinator = MainTabsCoordinator(composer: mainTabsComposer)
+            let mainTabsContainer = TabContainer(coordinator: mainTabsCoordinator)
+            configureMainTabsContainer(mainTabsContainer)
+            return mainTabsContainer
+        }
     }
 
     private func configureMainTabsContainer(_ container: TabContainer) {
