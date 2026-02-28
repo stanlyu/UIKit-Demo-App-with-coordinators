@@ -7,32 +7,29 @@
 
 import UIKit
 
-/// Контейнер, который **владеет** навигационным стеком (`UINavigationController`).
-///
-/// Используется для создания независимых навигационных цепочек (например, каждая вкладка таббара,
-/// или модальный сценарий со своим навигационным баром).
+import UIKit
+
+/// Контейнер, управляющий стеком контроллеров (UINavigationController).
+@MainActor
 public final class StackContainer: UINavigationController {
 
     /// Инициализирует контейнер с заданным координатором.
     /// - Parameter coordinator: Координатор, который будет управлять этим контейнером.
-    public init(coordinator: BaseCoordinator<StackContainer>) {
+    public init<C: Coordinating>(coordinator: C) where C.R == StackContainer {
         self.startFlow = { container in
             coordinator.start(with: container)
         }
         super.init(nibName: nil, bundle: nil)
     }
 
-    public required init?(coder aDecoder: NSCoder) {
+    public required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
 
     public override func viewDidLoad() {
         super.viewDidLoad()
-        // Автоматический запуск логики при загрузке View.
         startFlow(self)
     }
-
-    // MARK: - Private members
 
     private let startFlow: (StackContainer) -> Void
 }

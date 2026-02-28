@@ -20,7 +20,7 @@ public final class InlineContainer: ProxyViewController {
 
     /// Инициализирует контейнер с заданным координатором.
     /// - Parameter coordinator: Координатор, который будет управлять этим контейнером.
-    public init(coordinator: BaseCoordinator<InlineContainer>) {
+    public init<C: Coordinating>(coordinator: C) where C.R == InlineContainer {
         self.startFlow = { container in
             coordinator.start(with: container)
         }

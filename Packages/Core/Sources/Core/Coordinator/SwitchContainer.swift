@@ -21,7 +21,7 @@ public final class SwitchContainer: ProxyViewController, SwitchRouting {
 
     /// Инициализирует контейнер с заданным координатором.
     /// - Parameter coordinator: Координатор, который будет управлять этим контейнером.
-    public init(coordinator: BaseCoordinator<SwitchContainer>) {
+    public init<C: Coordinating>(coordinator: C) where C.R == SwitchContainer {
         self.startFlow = { container in
             coordinator.start(with: container)
         }

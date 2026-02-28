@@ -7,18 +7,19 @@
 
 import UIKit
 
-/// Контейнер, владеющий **панелью вкладок Tab Bar** (`UITabBarController`).
+/// Контейнер, управляющий вкладками (UITabBarController).
+@MainActor
 public final class TabContainer: UITabBarController {
 
     /// Инициализирует контейнер с заданным координатором.
     /// - Parameter coordinator: Координатор, который будет управлять этим контейнером.
-    public init(coordinator: BaseCoordinator<TabContainer>) {
+    public init<C: Coordinating>(coordinator: C) where C.R == TabContainer {
         self.startFlow = { container in
             coordinator.start(with: container)
         }
         super.init(nibName: nil, bundle: nil)
     }
-    
+
     public required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
@@ -27,8 +28,6 @@ public final class TabContainer: UITabBarController {
         super.viewDidLoad()
         startFlow(self)
     }
-
-    // MARK: - Private members
 
     private let startFlow: (TabContainer) -> Void
 }
