@@ -92,17 +92,17 @@ private final class MockPaymentComposer: PaymentComposing {
 
 @MainActor
 private final class MockStackRouter: StackRouting {
-    func extractContent() -> UIViewController { return UIViewController() }
+    func extractRootUI() -> UIViewController { return UIViewController() }
 
     struct PushCall {
-        let item: ContainerItem
+        let item: RouterItem
         let animated: Bool
     }
 
-    var items: [ContainerItem] = []
+    var items: [RouterItem] = []
     private(set) var pushCalls: [PushCall] = []
 
-    func push(_ item: ContainerItem, animated: Bool, completion: (() -> Void)?) {
+    func push(_ item: RouterItem, animated: Bool, completion: (() -> Void)?) {
         pushCalls.append(PushCall(item: item, animated: animated))
         items.append(item)
         completion?()
@@ -116,14 +116,14 @@ private final class MockStackRouter: StackRouting {
         completion?()
     }
 
-    func popTo(_ item: ContainerItem, animated: Bool, completion: (() -> Void)?) {
+    func popTo(_ item: RouterItem, animated: Bool, completion: (() -> Void)?) {
         completion?()
     }
 
-    func setStack(_ items: [ContainerItem], animated: Bool) {
+    func setStack(_ items: [RouterItem], animated: Bool) {
         self.items = items
     }
     
-    func present(_ item: ContainerItem, animated: Bool, completion: (() -> Void)?) {}
+    func present(_ item: RouterItem, animated: Bool, completion: (() -> Void)?) {}
     func dismiss(animated: Bool, completion: (() -> Void)?) {}
 }

@@ -35,6 +35,6 @@ public func cartModule(dependencies: CartDependencies) -> CartModule {
     )
     let nav = UINavigationController()
     nav.navigationBar.prefersLargeTitles = true
-    let container = StackContainer(coordinator: coordinator, navigationController: nav)
-    return (container.extractContent(), coordinator)
+    let router = StackRouter(coordinator: coordinator, navigationController: nav)
+    return (router.extractRootUI(), coordinator)
 }

@@ -23,6 +23,6 @@ public func homeViewController(
     )
     let nav = UINavigationController()
     nav.navigationBar.prefersLargeTitles = true
-    let container = StackContainer(coordinator: coordinator, navigationController: nav)
-    return container.extractContent()
+    let router = StackRouter(coordinator: coordinator, navigationController: nav)
+    return router.extractRootUI()
 }

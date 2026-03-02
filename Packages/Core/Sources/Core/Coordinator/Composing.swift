@@ -10,7 +10,7 @@ import UIKit
 /// Контракт для компоузеров, которые собирают `UIViewController` по route.
 ///
 /// Внешний модуль реализует только этот протокол. Конвертация в
-/// `ContainerItem` выполняется инфраструктурой `Core`.
+/// `RouterItem` выполняется инфраструктурой `Core`.
 @MainActor
 public protocol Composing {
     associatedtype Route

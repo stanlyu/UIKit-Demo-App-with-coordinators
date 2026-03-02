@@ -1,5 +1,5 @@
 //
-//  SwitchContainer.swift
+//  SwitchRouter.swift
 //  Core
 //
 //  Created by Любченко Станислав Валерьевич on 12.02.2026.
@@ -9,26 +9,26 @@ import UIKit
 
 import ObjectiveC
 
-/// Контейнер переключения контента с поддержкой анимированных переходов.
+/// Роутер переключения контента с поддержкой анимированных переходов.
 @MainActor
-public final class SwitchContainer: SwitchRouting {
+public final class SwitchRouter: SwitchRouting {
     private let coordinator: any Coordinating
     private weak var currentContent: UIViewController?
     private var oldContentRetainer: UIViewController?
     private var unextractedContent: UIViewController?
 
-    public init<C: Coordinating>(coordinator: C) where C.R == SwitchContainer {
+    public init<C: Coordinating>(coordinator: C) where C.R == SwitchRouter {
         self.coordinator = coordinator
         coordinator.start(with: self)
     }
 
-    /// Возвращает текущий UIViewController, которым управляет контейнер.
+    /// Возвращает текущий UIViewController, которым управляет роутер.
     ///
     /// - Returns: Корневой `UIViewController` для отображения в окне или иерархии вью.
     /// - Warning: Приводит к fatalError, если контент не был установлен перед вызовом.
-    public func extractContent() -> UIViewController {
+    public func extractRootUI() -> UIViewController {
         guard let vc = currentContent ?? unextractedContent else {
-            fatalError("SwitchContainer has no content.")
+            fatalError("SwitchRouter has no content.")
         }
         unextractedContent = nil
         return vc
@@ -37,15 +37,15 @@ public final class SwitchContainer: SwitchRouting {
     /// Переключает на новый корневой контроллер с возможностью анимации.
     ///
     /// - Parameters:
-    ///   - item: `ContainerItem`, оборачивающий новый `UIViewController`.
+    ///   - item: `RouterItem`, оборачивающий новый `UIViewController`.
     ///   - animated: Использовать ли переходы при замене контента.
     ///   - completion: Замыкание, вызываемое после окончания анимации.
-    public func setRoot(_ item: ContainerItem, animated: Bool, completion: (() -> Void)?) {
+    public func setRoot(_ item: RouterItem, animated: Bool, completion: (() -> Void)?) {
         let newVC = item.viewController
         
         guard let oldVC = currentContent else {
             currentContent = newVC
-            unextractedContent = newVC // Сохраняем сильную ссылку до момента вызова extractContent
+            unextractedContent = newVC // Сохраняем сильную ссылку до момента вызова extractRootUI
             bindLifecycle(to: newVC)
             completion?()
             return

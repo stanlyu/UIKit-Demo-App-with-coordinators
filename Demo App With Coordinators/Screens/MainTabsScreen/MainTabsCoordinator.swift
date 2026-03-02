@@ -30,7 +30,7 @@ final class MainTabsCoordinatingLogic<Router: TabRouting>: Coordinator<Router, M
         router.setItems([homeItem, cartItem], animated: false)
     }
 
-    private var cartItem: ContainerItem?
+    private var cartItem: RouterItem?
     private var cartInput: CartInput?
 
     private func handle(homeEvent: HomeEvent) {

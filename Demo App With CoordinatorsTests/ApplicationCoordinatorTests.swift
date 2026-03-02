@@ -65,20 +65,20 @@ private final class MockApplicationComposer: ApplicationComposing {
 
 @MainActor
 private final class MockSwitchRouter: SwitchRouting {
-    func extractContent() -> UIViewController { return UIViewController() }
+    func extractRootUI() -> UIViewController { return UIViewController() }
 
     struct SetRootCall {
-        let item: ContainerItem
+        let item: RouterItem
         let animated: Bool
     }
     
     private(set) var setRootCalls: [SetRootCall] = []
     
-    func setRoot(_ item: ContainerItem, animated: Bool, completion: (() -> Void)?) {
+    func setRoot(_ item: RouterItem, animated: Bool, completion: (() -> Void)?) {
         setRootCalls.append(SetRootCall(item: item, animated: animated))
         completion?()
     }
     
-    func present(_ item: ContainerItem, animated: Bool, completion: (() -> Void)?) {}
+    func present(_ item: RouterItem, animated: Bool, completion: (() -> Void)?) {}
     func dismiss(animated: Bool, completion: (() -> Void)?) {}
 }

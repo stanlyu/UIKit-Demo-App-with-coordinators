@@ -9,7 +9,7 @@ import UIKit
 
 /// Type-erasure обертка над конкретным `Composing`.
 ///
-/// Предоставляет координатору безопасный API для получения `ContainerItem` по route.
+/// Предоставляет координатору безопасный API для получения `RouterItem` по route.
 @MainActor
 public final class ComposerBox<Route> {
     internal init<C: Composing>(wrappedComposer: C) where C.Route == Route {
@@ -18,8 +18,8 @@ public final class ComposerBox<Route> {
         }
     }
 
-    public final func makeItem(for route: Route) -> ContainerItem {
-        ContainerItem(makeViewController(route))
+    public final func makeItem(for route: Route) -> RouterItem {
+        RouterItem(makeViewController(route))
     }
 
     // MARK: - Private members

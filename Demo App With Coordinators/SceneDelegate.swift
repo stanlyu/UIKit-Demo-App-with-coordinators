@@ -16,10 +16,10 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         guard let windowScene = (scene as? UIWindowScene) else { return }
         let applicationComposer = ApplicationComposer()
         let coordinator = ApplicationCoordinator(composer: applicationComposer)
-        let rootContainer = SwitchContainer(coordinator: coordinator)
+        let rootRouter = SwitchRouter(coordinator: coordinator)
         
         let window = UIWindow(windowScene: windowScene)
-        window.rootViewController = rootContainer.extractContent()
+        window.rootViewController = rootRouter.extractRootUI()
         self.window = window
         window.makeKeyAndVisible()
     }

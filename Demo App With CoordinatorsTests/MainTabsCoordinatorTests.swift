@@ -88,21 +88,21 @@ private final class MockCartInput: CartInput {
 
 @MainActor
 private final class MockTabRouter: TabRouting {
-    func extractContent() -> UIViewController { return UIViewController() }
+    func extractRootUI() -> UIViewController { return UIViewController() }
 
     struct SetItemsCall {
-        let items: [ContainerItem]
+        let items: [RouterItem]
         let animated: Bool
     }
 
     var selectedIndex: Int = 0
-    var selectedItem: ContainerItem?
+    var selectedItem: RouterItem?
 
     private(set) var setItemsCalls: [SetItemsCall] = []
     private(set) var selectTabCalls: [Int] = []
-    private(set) var selectItemCalls: [ContainerItem] = []
+    private(set) var selectItemCalls: [RouterItem] = []
 
-    func setItems(_ items: [ContainerItem], animated: Bool) {
+    func setItems(_ items: [RouterItem], animated: Bool) {
         setItemsCalls.append(SetItemsCall(items: items, animated: animated))
     }
 
@@ -111,11 +111,11 @@ private final class MockTabRouter: TabRouting {
         selectedIndex = index
     }
 
-    func selectItem(_ item: ContainerItem) {
+    func selectItem(_ item: RouterItem) {
         selectItemCalls.append(item)
         selectedItem = item
     }
 
-    func present(_ item: ContainerItem, animated: Bool, completion: (() -> Void)?) {}
+    func present(_ item: RouterItem, animated: Bool, completion: (() -> Void)?) {}
     func dismiss(animated: Bool, completion: (() -> Void)?) {}
 }

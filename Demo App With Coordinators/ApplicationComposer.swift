@@ -27,8 +27,8 @@ struct ApplicationComposer: ApplicationComposing {
             let mainTabsCoordinator = MainTabsCoordinator(composer: mainTabsComposer)
             let tabBarController = UITabBarController()
             configureMainTabsController(tabBarController)
-            let mainTabsContainer = TabContainer(coordinator: mainTabsCoordinator, tabBarController: tabBarController)
-            return mainTabsContainer.extractContent()
+            let mainTabsRouter = TabRouter(coordinator: mainTabsCoordinator, tabBarController: tabBarController)
+            return mainTabsRouter.extractRootUI()
         }
     }
 

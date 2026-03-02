@@ -1,5 +1,5 @@
 //
-//  TabContainer.swift
+//  TabRouter.swift
 //  Core
 //
 //  Created by Любченко Станислав Валерьевич on 12.02.2026.
@@ -9,13 +9,13 @@ import UIKit
 
 import ObjectiveC
 
-/// Контейнер, управляющий вкладками (UITabBarController).
+/// Роутер, управляющий вкладками (UITabBarController).
 @MainActor
-public final class TabContainer: TabRouting {
+public final class TabRouter: TabRouting {
     private weak var tabBarController: UITabBarController!
     private let coordinator: any Coordinating
 
-    public init<C: Coordinating>(coordinator: C, tabBarController: UITabBarController = UITabBarController()) where C.R == TabContainer {
+    public init<C: Coordinating>(coordinator: C, tabBarController: UITabBarController = UITabBarController()) where C.R == TabRouter {
         self.tabBarController = tabBarController
         self.coordinator = coordinator
         
@@ -26,9 +26,9 @@ public final class TabContainer: TabRouting {
     /// Извлекает корневой `UITabBarController`, которым управляет вкладка.
     ///
     /// - Returns: `UIViewController` кастованый как корневой таб бар контроллер.
-    public func extractContent() -> UIViewController {
+    public func extractRootUI() -> UIViewController {
         guard let tab = tabBarController else {
-            fatalError("TabContainer's tab bar controller was deallocated or not set.")
+            fatalError("TabRouter's tab bar controller was deallocated or not set.")
         }
         return tab
     }
@@ -37,17 +37,17 @@ public final class TabContainer: TabRouting {
         tabBarController.selectedIndex
     }
 
-    public var selectedItem: ContainerItem? {
+    public var selectedItem: RouterItem? {
         guard let selected = tabBarController.selectedViewController else { return nil }
-        return ContainerItem(selected)
+        return RouterItem(selected)
     }
 
-    /// Заполняет контейнер новыми элементами экранов.
+    /// Заполняет роутер новыми элементами экранов.
     ///
     /// - Parameters:
     ///   - items: Массив экранов, которые должны стать вкладками `UITabBarController`.
     ///   - animated: Использовать ли UI-анимации для переустановки вкладок.
-    public func setItems(_ items: [ContainerItem], animated: Bool) {
+    public func setItems(_ items: [RouterItem], animated: Bool) {
         tabBarController.setViewControllers(items.map(\.viewController), animated: animated)
     }
 
@@ -58,12 +58,12 @@ public final class TabContainer: TabRouting {
         tabBarController.selectedIndex = index
     }
 
-    /// Выбирает определенную вкладку по переданному объекту `ContainerItem`.
+    /// Выбирает определенную вкладку по переданному объекту `RouterItem`.
     ///
     /// Ищет совпадение переданного контроллера во внутреннем массиве.
     ///
     /// - Parameter item: Объект вью контроллера, который нужно сделать выделенным.
-    public func selectItem(_ item: ContainerItem) {
+    public func selectItem(_ item: RouterItem) {
         if let viewControllers = tabBarController.viewControllers,
            let index = viewControllers.firstIndex(where: { $0 === item.viewController }) {
             tabBarController.selectedIndex = index
