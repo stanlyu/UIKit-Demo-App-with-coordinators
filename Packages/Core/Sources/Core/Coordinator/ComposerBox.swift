@@ -9,14 +9,12 @@ import UIKit
 
 /// Type-erasure обертка над конкретным `Composing`.
 ///
-/// Хранит capability внутри `Core` и предоставляет координатору безопасный API
-/// для получения `ContainerItem` по route.
+/// Предоставляет координатору безопасный API для получения `ContainerItem` по route.
 @MainActor
 public final class ComposerBox<Route> {
-    internal init<C: Composing>(wrappedComposer: C, capability: ComposeCapability) where C.Route == Route {
-        self.capability = capability
+    internal init<C: Composing>(wrappedComposer: C) where C.Route == Route {
         self.makeViewController = { route in
-            wrappedComposer.makeViewController(for: route, capability: capability)
+            wrappedComposer.makeViewController(for: route)
         }
     }
 
@@ -26,6 +24,5 @@ public final class ComposerBox<Route> {
 
     // MARK: - Private members
 
-    private let capability: ComposeCapability
     private let makeViewController: @MainActor (Route) -> UIViewController
 }

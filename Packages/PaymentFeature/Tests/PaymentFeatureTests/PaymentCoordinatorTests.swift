@@ -81,10 +81,7 @@ private final class MockPaymentComposer: PaymentComposing {
     let paymentViewController = UIViewController()
     var paymentEventHandler: PaymentEventHandler?
 
-    func makeViewController(
-        for route: PaymentRoute,
-        capability: ComposeCapability
-    ) -> UIViewController {
+    func makeViewController(for route: PaymentRoute) -> UIViewController {
         switch route {
         case .payment(let eventHandler):
             paymentEventHandler = eventHandler
@@ -94,7 +91,9 @@ private final class MockPaymentComposer: PaymentComposing {
 }
 
 @MainActor
-private final class MockStackRouter: UIViewController, StackRouting {
+private final class MockStackRouter: StackRouting {
+    func extractContent() -> UIViewController { return UIViewController() }
+
     struct PushCall {
         let item: ContainerItem
         let animated: Bool
@@ -124,4 +123,7 @@ private final class MockStackRouter: UIViewController, StackRouting {
     func setStack(_ items: [ContainerItem], animated: Bool) {
         self.items = items
     }
+    
+    func present(_ item: ContainerItem, animated: Bool, completion: (() -> Void)?) {}
+    func dismiss(animated: Bool, completion: (() -> Void)?) {}
 }

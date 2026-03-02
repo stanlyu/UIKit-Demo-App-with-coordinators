@@ -13,7 +13,7 @@ enum MainTabsRoute {
 protocol MainTabsComposing: Composing where Route == MainTabsRoute {}
 
 final class MainTabsComposer: MainTabsComposing {
-    func makeViewController(for route: MainTabsRoute, capability: ComposeCapability) -> UIViewController {
+    func makeViewController(for route: MainTabsRoute) -> UIViewController {
         switch route {
         case .home(let eventHandler):
             let dependencies = HomeDependencies(externalModulesFactory: self)

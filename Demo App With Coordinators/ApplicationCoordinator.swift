@@ -10,8 +10,8 @@ final class ApplicationCoordinatingLogic<Router: SwitchRouting>: Coordinator<Rou
     }
 
     override func start(_ capability: StartCapability) {
-        let item = composer.makeItem(for: .launch(eventHandler: { [unowned self] event in
-            self.handleLaunchEvent(event)
+        let item = composer.makeItem(for: .launch(eventHandler: { [weak self] event in
+            self?.handleLaunchEvent(event)
         }))
         router?.setRoot(item, animated: false, completion: nil)
     }

@@ -33,7 +33,8 @@ public func cartModule(dependencies: CartDependencies) -> CartModule {
     let coordinator = CartCoordinator(
         composer: CartComposer(dependencies: dependencies)
     )
-    let container = StackContainer(coordinator: coordinator)
-    container.navigationBar.prefersLargeTitles = true
-    return (container, coordinator)
+    let nav = UINavigationController()
+    nav.navigationBar.prefersLargeTitles = true
+    let container = StackContainer(coordinator: coordinator, navigationController: nav)
+    return (container.extractContent(), coordinator)
 }

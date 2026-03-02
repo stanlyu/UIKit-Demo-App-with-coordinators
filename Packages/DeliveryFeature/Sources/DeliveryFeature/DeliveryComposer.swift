@@ -19,7 +19,7 @@ struct DeliveryComposer: DeliveryComposing {
         self.showsBackButtonOnRoot = showsBackButtonOnRoot
     }
 
-    func makeViewController(for route: DeliveryRoute, capability: ComposeCapability) -> UIViewController {
+    func makeViewController(for route: DeliveryRoute) -> UIViewController {
         switch route {
         case .pickupPoints(let eventHandler):
             let interactor = PickupPointsInteractor(manager: dependencies.pickupPointsManager)

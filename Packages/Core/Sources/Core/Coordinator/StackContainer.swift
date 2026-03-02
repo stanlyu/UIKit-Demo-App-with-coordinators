@@ -7,69 +7,84 @@
 
 import UIKit
 
-import UIKit
+import ObjectiveC
 
 /// Контейнер, управляющий стеком контроллеров (UINavigationController).
 @MainActor
-public final class StackContainer: UINavigationController {
+public final class StackContainer: StackRouting {
+    private weak var navigationController: UINavigationController!
+    private let coordinator: any Coordinating
 
-    /// Инициализирует контейнер с заданным координатором.
-    /// - Parameter coordinator: Координатор, который будет управлять этим контейнером.
-    public init<C: Coordinating>(coordinator: C) where C.R == StackContainer {
-        self.startFlow = { container in
-            coordinator.start(with: container)
-        }
-        super.init(nibName: nil, bundle: nil)
+    public init<C: Coordinating>(coordinator: C, navigationController: UINavigationController = UINavigationController()) where C.R == StackContainer {
+        self.navigationController = navigationController
+        self.coordinator = coordinator
+        
+        self.bindLifecycle(to: navigationController)
+        coordinator.start(with: self)
     }
 
-    public required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-
-    public override func viewDidLoad() {
-        super.viewDidLoad()
-        startFlow(self)
-    }
-
-    private let startFlow: (StackContainer) -> Void
-}
-
-extension StackContainer: StackRouting {
-    /// Текущее состояние стека элементов в зоне ответственности контейнера.
-    public var items: [ContainerItem] {
-        viewControllers.map(ContainerItem.init)
-    }
-
-    /// Кладет элемент в навигационный стек.
+    /// Извлекает корневой `UINavigationController`, которым управляет стек.
     ///
-    /// - Note: **Особенность поведения:** Если навигационный стек пуст (то есть устанавливается корневой контроллер),
-    ///   параметр `animated` будет проигнорирован (принудительно `false`).
-    ///   Это сделано для предотвращения визуальных глитчей при первичном появлении навигационного контроллера.
+    /// - Returns: `UIViewController` кастованый как корневой навигационный контроллер.
+    public func extractContent() -> UIViewController {
+        guard let nav = navigationController else {
+            fatalError("StackContainer's navigation controller was deallocated or not set.")
+        }
+        return nav
+    }
+
+    public var items: [ContainerItem] {
+        navigationController.viewControllers.map(ContainerItem.init) ?? []
+    }
+
+    /// Осуществляет переход к новому экрану с добавлением в стек.
+    ///
+    /// - Parameters:
+    ///   - item: `ContainerItem`, который содержит новый экран.
+    ///   - animated: Использовать ли переходы при добавлении контента.
+    ///   - completion: Замыкание, вызываемое после окончания перехода.
     public func push(_ item: ContainerItem, animated: Bool, completion: (() -> Void)?) {
-        if viewControllers.isEmpty {
-            pushViewController(item.viewController, animated: false, completion: completion)
+        if navigationController.viewControllers.isEmpty {
+            navigationController.pushViewController(item.viewController, animated: false, completion: completion)
         } else {
-            pushViewController(item.viewController, animated: animated, completion: completion)
+            navigationController.pushViewController(item.viewController, animated: animated, completion: completion)
         }
     }
 
-    /// Возвращается на один экран назад.
+    /// Возвращает навигацию на один уровень назад.
+    ///
+    /// - Parameters:
+    ///   - animated: Следует ли анимировать возвращение назад.
+    ///   - completion: Вызывается по окончанию перехода на предыдущий контроллер.
     public func pop(animated: Bool, completion: (() -> Void)?) {
-        popViewController(animated: animated, completion: completion)
+        navigationController.popViewController(animated: animated, completion: completion)
     }
 
-    /// Возвращается к первому контроллеру в стеке.
+    /// Возвращает навигацию до корневого контроллера, сбрасывая все промежуточные экраны стека.
+    ///
+    /// - Parameters:
+    ///   - animated: Следует ли анимировать возврат к корню.
+    ///   - completion: Замыкание по завершению процесса сброса экрана стека.
     public func popToRoot(animated: Bool, completion: (() -> Void)?) {
-        popToRootViewController(animated: animated, completion: completion)
+        navigationController.popToRootViewController(animated: animated, completion: completion)
     }
 
-    /// Возвращается к указанному элементу в стеке.
+    /// Возвращает навигацию на определенный контроллер внутри стека, если этот контроллер найден.
+    ///
+    /// - Parameters:
+    ///   - item: Объект вью контроллера, до которого нужно вернуться.
+    ///   - animated: Анимировать ли процесс до целевого роутера.
+    ///   - completion: Вызов завершения.
     public func popTo(_ item: ContainerItem, animated: Bool, completion: (() -> Void)?) {
-        popToViewController(item.viewController, animated: animated, completion: completion)
+        navigationController.popToViewController(item.viewController, animated: animated, completion: completion)
     }
 
-    /// Заменяет весь стек на указанный массив элементов.
+    /// Заменяет полностью массив текущего навигационного стека новым массивом экранов.
+    ///
+    /// - Parameters:
+    ///   - items: Массив экранов, которые должны стать новым стеком `navigationController`.
+    ///   - animated: Использовать ли UI-анимации для переустановки экранов.
     public func setStack(_ items: [ContainerItem], animated: Bool) {
-        setViewControllers(items.map(\.viewController), animated: animated)
+        navigationController.setViewControllers(items.map(\.viewController), animated: animated)
     }
 }

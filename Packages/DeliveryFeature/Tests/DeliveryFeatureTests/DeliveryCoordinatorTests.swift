@@ -134,7 +134,9 @@ private final class MockPickupPointsInput: PickupPointsInput {
 }
 
 @MainActor
-private final class MockStackRouter: UIViewController, StackRouting {
+private final class MockStackRouter: StackRouting {
+    func extractContent() -> UIViewController { return UIViewController() }
+
     struct PushCall {
         let item: ContainerItem
         let animated: Bool
@@ -179,4 +181,6 @@ private final class MockStackRouter: UIViewController, StackRouting {
         presentedAnimated = animated
         completion?()
     }
+    
+    func dismiss(animated: Bool, completion: (() -> Void)?) {}
 }

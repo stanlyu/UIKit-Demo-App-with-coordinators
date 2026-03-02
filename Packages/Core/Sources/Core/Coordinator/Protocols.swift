@@ -6,19 +6,51 @@
 //
 
 import UIKit
+import ObjectiveC
+
+// Ключ для привязки жизненного цикла контейнера к UIViewController через associated object.
+nonisolated(unsafe) var containerRetainKey: UInt8 = 0
+
+// MARK: - Containing
+
+/// Интерфейс объекта, который оборачивает UI-контент (UIViewController)
+/// и управляет его жизненным циклом. Контейнеры реализуют его, чтобы оставаться чистыми Swift-объектами.
+@MainActor
+public protocol Containing: AnyObject {
+    /// Возвращает реальный `UIViewController`, которым управляет этот контейнер.
+    /// При первом вызове этого метода контейнер привязывает свой жизненный цикл к возвращаемому контроллеру.
+    func extractContent() -> UIViewController
+}
+
+private final class LifecycleRetainer {
+    var retainers: [ObjectIdentifier: AnyObject] = [:]
+}
+
+public extension Containing {
+    func bindLifecycle(to viewController: UIViewController) {
+        let retainer: LifecycleRetainer
+        if let existing = objc_getAssociatedObject(viewController, &containerRetainKey) as? LifecycleRetainer {
+            retainer = existing
+        } else {
+            retainer = LifecycleRetainer()
+            objc_setAssociatedObject(viewController, &containerRetainKey, retainer, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+        }
+        retainer.retainers[ObjectIdentifier(self)] = self
+    }
+    
+    func unbindLifecycle(from viewController: UIViewController) {
+        if let retainer = objc_getAssociatedObject(viewController, &containerRetainKey) as? LifecycleRetainer {
+            retainer.retainers.removeValue(forKey: ObjectIdentifier(self))
+        }
+    }
+}
 
 // MARK: - Coordinating
 
 /// Интерфейс объекта, способного управлять навигационным потоком.
-///
-/// Используется контейнерами для запуска логики координатора без знания о его внутренних маршрутах.
 @MainActor
 public protocol Coordinating: AnyObject {
-    /// Тип роутера, с которым совместим данный координатор.
     associatedtype R: Routing
-
-    /// Запускает координатор в указанном роутере.
-    /// - Parameter router: Роутер (контейнер), который берет на себя отображение UI.
     func start(with router: R)
 }
 
@@ -26,13 +58,18 @@ public protocol Coordinating: AnyObject {
 
 /// Базовый протокол для всех роутеров (контейнеров).
 @MainActor
-public protocol Routing: UIViewController {
+public protocol Routing: Containing {
     func present(_ item: ContainerItem, animated: Bool, completion: (() -> Void)?)
+    func dismiss(animated: Bool, completion: (() -> Void)?)
 }
 
 public extension Routing {
     func present(_ item: ContainerItem, animated: Bool, completion: (() -> Void)?) {
-        present(item.viewController, animated: animated, completion: completion)
+        extractContent().present(item.viewController, animated: animated, completion: completion)
+    }
+
+    func dismiss(animated: Bool, completion: (() -> Void)?) {
+        extractContent().dismiss(animated: animated, completion: completion)
     }
 }
 
@@ -41,36 +78,19 @@ public extension Routing {
 /// Возможности навигации в стеке (UINavigationController).
 @MainActor
 public protocol StackRouting: Routing {
-    /// Текущее состояние стека элементов в зоне ответственности роутера.
     var items: [ContainerItem] { get }
-
-    /// Кладет элемент в навигационный стек (Push).
     func push(_ item: ContainerItem, animated: Bool, completion: (() -> Void)?)
-
-    /// Возвращается на один экран назад (Pop).
     func pop(animated: Bool, completion: (() -> Void)?)
-
-    /// Возвращается к корню текущего флоу (Pop To Root).
     func popToRoot(animated: Bool, completion: (() -> Void)?)
-
-    /// Возвращается к конкретному элементу в стеке.
     func popTo(_ item: ContainerItem, animated: Bool, completion: (() -> Void)?)
-
-    /// Заменяет текущий стек на новый массив элементов.
     func setStack(_ items: [ContainerItem], animated: Bool)
 }
 
 // MARK: - Switch Routing
 
 /// Возможности контейнера, который переключает один активный контент на другой.
-///
-/// Типичный кейс: смена корневого сценария приложения (например, Splash -> Main),
-/// но протокол не привязан только к `UIWindow`.
 @MainActor
 public protocol SwitchRouting: Routing {
-
-    /// Полностью заменяет текущий контент контейнера новым элементом.
-    /// При использовании в root-сценарии это эквивалентно смене корневого экрана.
     func setRoot(_ item: ContainerItem, animated: Bool, completion: (() -> Void)?)
 }
 
@@ -79,19 +99,9 @@ public protocol SwitchRouting: Routing {
 /// Возможности управления вкладками (UITabBarController).
 @MainActor
 public protocol TabRouting: Routing {
-
-    /// Индекс текущей выбранной вкладки.
     var selectedIndex: Int { get }
-
-    /// Текущий выбранный элемент вкладки.
     var selectedItem: ContainerItem? { get }
-
-    /// Устанавливает элементы для вкладок.
     func setItems(_ items: [ContainerItem], animated: Bool)
-
-    /// Переключает вкладку по индексу.
     func selectTab(at index: Int)
-
-    /// Переключает вкладку, соответствующую переданному элементу.
     func selectItem(_ item: ContainerItem)
 }

@@ -21,7 +21,8 @@ public func homeViewController(
         composer: HomeComposer(dependencies: dependencies),
         eventHandler: eventHandler
     )
-    let container = StackContainer(coordinator: coordinator)
-    container.navigationBar.prefersLargeTitles = true
-    return container
+    let nav = UINavigationController()
+    nav.navigationBar.prefersLargeTitles = true
+    let container = StackContainer(coordinator: coordinator, navigationController: nav)
+    return container.extractContent()
 }

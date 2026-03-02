@@ -7,103 +7,166 @@
 
 import UIKit
 
+import ObjectiveC
+
 /// Контейнер переключения контента с поддержкой анимированных переходов.
-///
-/// Контейнер держит **ровно один** активный дочерний контроллер и умеет безопасно
-/// заменять его на новый (с анимацией или без).
-///
-/// Чаще всего используется как root-контроллер окна приложения, но не ограничен этим сценарием:
-/// его можно применять в любом месте, где нужен хост для последовательной смены одного контента другим.
-///
-/// - Note: **Конфигурация:** Этот контейнер проксирует свойства (ориентация экрана, статус бар) от своего текущего контента.
-///   Настраивайте эти параметры в контроллерах, которые инкапсулируются в `ContainerItem`.
-public final class SwitchContainer: ProxyViewController, SwitchRouting {
+@MainActor
+public final class SwitchContainer: SwitchRouting {
+    private let coordinator: any Coordinating
+    private weak var currentContent: UIViewController?
+    private var oldContentRetainer: UIViewController?
+    private var unextractedContent: UIViewController?
 
-    /// Инициализирует контейнер с заданным координатором.
-    /// - Parameter coordinator: Координатор, который будет управлять этим контейнером.
     public init<C: Coordinating>(coordinator: C) where C.R == SwitchContainer {
-        self.startFlow = { container in
-            coordinator.start(with: container)
+        self.coordinator = coordinator
+        coordinator.start(with: self)
+    }
+
+    /// Возвращает текущий UIViewController, которым управляет контейнер.
+    ///
+    /// - Returns: Корневой `UIViewController` для отображения в окне или иерархии вью.
+    /// - Warning: Приводит к fatalError, если контент не был установлен перед вызовом.
+    public func extractContent() -> UIViewController {
+        guard let vc = currentContent ?? unextractedContent else {
+            fatalError("SwitchContainer has no content.")
         }
-        super.init(nibName: nil, bundle: nil)
+        unextractedContent = nil
+        return vc
     }
 
-    public required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-
-    public override func viewDidLoad() {
-        super.viewDidLoad()
-        startFlow(self)
-    }
-
-    // MARK: - Private members
-
-    private let startFlow: (SwitchContainer) -> Void
-    private var pendingAnimated: Bool = false
-    private var pendingCompletion: (() -> Void)?
-
-    // MARK: - Switch Logic
-
+    /// Переключает на новый корневой контроллер с возможностью анимации.
+    ///
+    /// - Parameters:
+    ///   - item: `ContainerItem`, оборачивающий новый `UIViewController`.
+    ///   - animated: Использовать ли переходы при замене контента.
+    ///   - completion: Замыкание, вызываемое после окончания анимации.
     public func setRoot(_ item: ContainerItem, animated: Bool, completion: (() -> Void)?) {
-        // Сохраняем флаги во временное состояние, так как setContent не принимает их.
-        pendingAnimated = animated
-        pendingCompletion = completion
-
-        // Этот вызов триггерит метод transition(from:to:)
-        setContent(item.viewController)
+        let newVC = item.viewController
+        
+        guard let oldVC = currentContent else {
+            currentContent = newVC
+            unextractedContent = newVC // Сохраняем сильную ссылку до момента вызова extractContent
+            bindLifecycle(to: newVC)
+            completion?()
+            return
+        }
+        
+        self.oldContentRetainer = oldVC
+        unbindLifecycle(from: oldVC)
+        
+        self.currentContent = newVC
+        bindLifecycle(to: newVC)
+        
+        performTransition(from: oldVC, to: newVC, animated: animated) { [weak self] in
+            self?.oldContentRetainer = nil
+            completion?()
+        }
     }
 
-    // MARK: - Transition Logic
-
-    public override func transition(from oldViewController: UIViewController?, to newViewController: UIViewController) {
-        let animated = pendingAnimated
-        let completion = pendingCompletion
-
-        pendingAnimated = false
-        pendingCompletion = nil
-
-        // Первичная установка (нет старого экрана). Анимация не требуется.
-        guard let oldViewController = oldViewController else {
-            setupChildViewController(newViewController)
-            completion?()
-            return
+    private func performTransition(from oldVC: UIViewController, to newVC: UIViewController, animated: Bool, completion: @escaping () -> Void) {
+        var responderContext: UIResponder? = oldVC.next
+        var foundContext: UIResponder? = nil
+        
+        while let responder = responderContext {
+            if responder is UIWindow || responder is UINavigationController || responder is UITabBarController || responder is UIViewController {
+                foundContext = responder
+                break
+            }
+            responderContext = responder.next
         }
-
-        if !animated {
-            oldViewController.willMove(toParent: nil)
-            oldViewController.view.removeFromSuperview()
-            oldViewController.removeFromParent()
-
-            setupChildViewController(newViewController)
-            completion?()
-            return
+        
+        if let window = foundContext as? UIWindow {
+            transitionInWindow(window: window, oldVC: oldVC, newVC: newVC, animated: animated, completion: completion)
+        } else if let nav = foundContext as? UINavigationController {
+            transitionInNavigationController(nav: nav, oldVC: oldVC, newVC: newVC, animated: animated, completion: completion)
+        } else if let tab = foundContext as? UITabBarController {
+            transitionInTabBarController(tab: tab, oldVC: oldVC, newVC: newVC, animated: animated, completion: completion)
+        } else if let parentVC = foundContext as? UIViewController {
+            transitionInParentViewController(parentVC: parentVC, oldVC: oldVC, newVC: newVC, animated: animated, completion: completion)
+        } else if let presentingVC = oldVC.presentingViewController {
+            transitionInPresentingViewController(presentingVC: presentingVC, oldVC: oldVC, newVC: newVC, animated: animated, completion: completion)
+        } else {
+            completion()
         }
+    }
 
-        addChild(newViewController)
-        newViewController.view.alpha = 0
-        newViewController.view.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(newViewController.view)
+    private func transitionInWindow(window: UIWindow, oldVC: UIViewController, newVC: UIViewController, animated: Bool, completion: @escaping () -> Void) {
+        if animated {
+            UIView.transition(with: window, duration: 0.3, options: .transitionCrossDissolve, animations: {
+                let oldState = UIView.areAnimationsEnabled
+                UIView.setAnimationsEnabled(false)
+                window.rootViewController = newVC
+                UIView.setAnimationsEnabled(oldState)
+            }, completion: { _ in
+                completion()
+            })
+        } else {
+            window.rootViewController = newVC
+            completion()
+        }
+    }
 
-        NSLayoutConstraint.activate([
-            newViewController.view.topAnchor.constraint(equalTo: view.topAnchor),
-            newViewController.view.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-            newViewController.view.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            newViewController.view.trailingAnchor.constraint(equalTo: view.trailingAnchor)
-        ])
+    private func transitionInNavigationController(nav: UINavigationController, oldVC: UIViewController, newVC: UIViewController, animated: Bool, completion: @escaping () -> Void) {
+        var viewControllers = nav.viewControllers
+        if let index = viewControllers.firstIndex(of: oldVC) {
+            viewControllers[index] = newVC
+            nav.setViewControllers(viewControllers, animated: animated, completion: completion)
+        } else {
+            completion()
+        }
+    }
 
-        view.layoutIfNeeded()
+    private func transitionInTabBarController(tab: UITabBarController, oldVC: UIViewController, newVC: UIViewController, animated: Bool, completion: @escaping () -> Void) {
+        var viewControllers = tab.viewControllers ?? []
+        if let index = viewControllers.firstIndex(of: oldVC) {
+            viewControllers[index] = newVC
+            tab.setViewControllers(viewControllers, animated: animated)
+            completion()
+        } else {
+            completion()
+        }
+    }
 
-        oldViewController.willMove(toParent: nil)
-
-        UIView.animate(withDuration: 0.3, animations: {
-            newViewController.view.alpha = 1
+    private func transitionInParentViewController(parentVC: UIViewController, oldVC: UIViewController, newVC: UIViewController, animated: Bool, completion: @escaping () -> Void) {
+        parentVC.addChild(newVC)
+        newVC.view.frame = oldVC.view.frame
+        newVC.view.alpha = 0
+        parentVC.view.insertSubview(newVC.view, aboveSubview: oldVC.view)
+        
+        oldVC.willMove(toParent: nil)
+        
+        UIView.animate(withDuration: animated ? 0.3 : 0.0, animations: {
+            newVC.view.alpha = 1
         }, completion: { _ in
-            oldViewController.view.removeFromSuperview()
-            oldViewController.removeFromParent()
+            oldVC.view.removeFromSuperview()
+            oldVC.removeFromParent()
+            newVC.didMove(toParent: parentVC)
+            completion()
+        })
+    }
 
-            newViewController.didMove(toParent: self)
-            completion?()
+    private func transitionInPresentingViewController(presentingVC: UIViewController, oldVC: UIViewController, newVC: UIViewController, animated: Bool, completion: @escaping () -> Void) {
+        oldVC.addChild(newVC)
+        newVC.view.frame = oldVC.view.bounds
+        newVC.view.alpha = 0
+        oldVC.view.addSubview(newVC.view)
+        
+        UIView.animate(withDuration: animated ? 0.3 : 0.0, animations: {
+            newVC.view.alpha = 1
+        }, completion: { _ in
+            let window = presentingVC.view.window ?? oldVC.view.window
+            let snapshot = window?.snapshotView(afterScreenUpdates: false)
+            if let snapshot = snapshot, let window = window {
+                snapshot.frame = window.bounds
+                window.addSubview(snapshot)
+            }
+            
+            oldVC.dismiss(animated: false) {
+                presentingVC.present(newVC, animated: false) {
+                    snapshot?.removeFromSuperview()
+                    completion()
+                }
+            }
         })
     }
 }

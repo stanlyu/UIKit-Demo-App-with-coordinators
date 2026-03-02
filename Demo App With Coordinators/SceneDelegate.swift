@@ -14,10 +14,12 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
         guard let windowScene = (scene as? UIWindowScene) else { return }
-        let window = UIWindow(windowScene: windowScene)
-        let coordinator = ApplicationCoordinator(composer: ApplicationComposer())
+        let applicationComposer = ApplicationComposer()
+        let coordinator = ApplicationCoordinator(composer: applicationComposer)
         let rootContainer = SwitchContainer(coordinator: coordinator)
-        window.rootViewController = rootContainer
+        
+        let window = UIWindow(windowScene: windowScene)
+        window.rootViewController = rootContainer.extractContent()
         self.window = window
         window.makeKeyAndVisible()
     }

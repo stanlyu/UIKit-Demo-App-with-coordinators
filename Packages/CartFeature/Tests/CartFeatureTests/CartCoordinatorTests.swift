@@ -211,7 +211,7 @@ private final class MockCartComposer: CartComposing {
 
     var paymentOnComplete: ((CartPaymentResult?) -> Void)?
 
-    func makeViewController(for route: CartRoute, capability: ComposeCapability) -> UIViewController {
+    func makeViewController(for route: CartRoute) -> UIViewController {
         switch route {
         case .cart(let eventHandler):
             return cartViewController
@@ -235,7 +235,9 @@ private final class MockCartComposer: CartComposing {
 }
 
 @MainActor
-private final class MockStackRouter: UIViewController, StackRouting {
+private final class MockStackRouter: StackRouting {
+    func extractContent() -> UIViewController { return UIViewController() }
+
     struct PushCall {
         let item: ContainerItem
         let animated: Bool
@@ -293,4 +295,6 @@ private final class MockStackRouter: UIViewController, StackRouting {
         presentedAnimated = animated
         completion?()
     }
+    
+    func dismiss(animated: Bool, completion: (() -> Void)?) {}
 }

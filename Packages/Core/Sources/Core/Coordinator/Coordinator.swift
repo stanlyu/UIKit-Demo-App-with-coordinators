@@ -32,10 +32,7 @@ open class Coordinator<R: Routing, Route>: Coordinating {
     ///
     /// - Parameter composer: Компоузер, собирающий `UIViewController` для данного `Route`.
     public init<C: Composing>(composer: C) where C.Route == Route {
-        self.composer = ComposerBox(
-            wrappedComposer: composer,
-            capability: ComposeCapability()
-        )
+        self.composer = ComposerBox(wrappedComposer: composer)
     }
 
     /// Служебная точка входа для связывания Роутера и Координатора.

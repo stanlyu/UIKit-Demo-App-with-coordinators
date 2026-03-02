@@ -65,7 +65,7 @@ private final class MockMainTabsComposer: MainTabsComposing {
 
     var homeEventHandler: ((HomeEvent) -> Void)?
 
-    func makeViewController(for route: MainTabsRoute, capability: ComposeCapability) -> UIViewController {
+    func makeViewController(for route: MainTabsRoute) -> UIViewController {
         switch route {
         case .home(let eventHandler):
             homeEventHandler = eventHandler
@@ -87,7 +87,9 @@ private final class MockCartInput: CartInput {
 }
 
 @MainActor
-private final class MockTabRouter: UIViewController, TabRouting {
+private final class MockTabRouter: TabRouting {
+    func extractContent() -> UIViewController { return UIViewController() }
+
     struct SetItemsCall {
         let items: [ContainerItem]
         let animated: Bool
@@ -115,4 +117,5 @@ private final class MockTabRouter: UIViewController, TabRouting {
     }
 
     func present(_ item: ContainerItem, animated: Bool, completion: (() -> Void)?) {}
+    func dismiss(animated: Bool, completion: (() -> Void)?) {}
 }

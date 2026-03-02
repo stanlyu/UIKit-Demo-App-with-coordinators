@@ -12,9 +12,9 @@ import UIKit
 /// `UIViewController` инкапсулирован внутри `Core`, чтобы координаторы
 /// и внешние модули работали через абстракцию контейнера.
 public struct ContainerItem {
-    internal let viewController: UIViewController
+    public let viewController: UIViewController
 
-    internal init(_ viewController: UIViewController) {
+    public init(_ viewController: UIViewController) {
         self.viewController = viewController
     }
 }

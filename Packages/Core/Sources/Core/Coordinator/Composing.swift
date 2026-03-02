@@ -15,5 +15,5 @@ import UIKit
 public protocol Composing {
     associatedtype Route
 
-    func makeViewController(for route: Route, capability: ComposeCapability) -> UIViewController
+    func makeViewController(for route: Route) -> UIViewController
 }

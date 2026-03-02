@@ -16,7 +16,7 @@ struct HomeComposer: HomeComposing {
         self.dependencies = dependencies
     }
 
-    func makeViewController(for route: HomeRoute, capability: ComposeCapability) -> UIViewController {
+    func makeViewController(for route: HomeRoute) -> UIViewController {
         switch route {
         case .home(let eventHandler):
             let service = HomeService()

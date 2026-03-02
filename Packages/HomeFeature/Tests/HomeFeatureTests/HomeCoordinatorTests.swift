@@ -105,7 +105,7 @@ private final class MockHomeComposer: HomeComposing {
     var homeEventHandler: HomeEventHandler?
     var pickupPointsOnClose: (() -> Void)?
 
-    func makeViewController(for route: HomeRoute, capability: ComposeCapability) -> UIViewController {
+    func makeViewController(for route: HomeRoute) -> UIViewController {
         switch route {
         case .home(let eventHandler):
             homeEventHandler = eventHandler
@@ -119,7 +119,9 @@ private final class MockHomeComposer: HomeComposing {
 }
 
 @MainActor
-private final class MockStackRouter: UIViewController, StackRouting {
+private final class MockStackRouter: StackRouting {
+    func extractContent() -> UIViewController { return UIViewController() }
+
     struct PushCall {
         let item: ContainerItem
         let animated: Bool
@@ -154,4 +156,7 @@ private final class MockStackRouter: UIViewController, StackRouting {
     func setStack(_ items: [ContainerItem], animated: Bool) {
         self.items = items
     }
+    
+    func present(_ item: ContainerItem, animated: Bool, completion: (() -> Void)?) {}
+    func dismiss(animated: Bool, completion: (() -> Void)?) {}
 }

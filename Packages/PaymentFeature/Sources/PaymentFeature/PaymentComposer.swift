@@ -18,10 +18,7 @@ enum PaymentRoute {
 protocol PaymentComposing: Composing where Route == PaymentRoute {}
 
 struct PaymentComposer: PaymentComposing {
-    func makeViewController(
-        for route: PaymentRoute,
-        capability: ComposeCapability
-    ) -> UIViewController {
+    func makeViewController(for route: PaymentRoute) -> UIViewController {
         switch route {
         case .payment(let eventHandler):
             let interactor = PaymentInteractor(service: PaymentService())

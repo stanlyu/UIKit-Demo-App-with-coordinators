@@ -52,7 +52,7 @@ private final class MockApplicationComposer: ApplicationComposing {
     
     var launchEventHandler: ((LaunchScreenEvent) -> Void)?
     
-    func makeViewController(for route: ApplicationRoute, capability: ComposeCapability) -> UIViewController {
+    func makeViewController(for route: ApplicationRoute) -> UIViewController {
         switch route {
         case .launch(let eventHandler):
             launchEventHandler = eventHandler
@@ -64,7 +64,9 @@ private final class MockApplicationComposer: ApplicationComposing {
 }
 
 @MainActor
-private final class MockSwitchRouter: UIViewController, SwitchRouting {
+private final class MockSwitchRouter: SwitchRouting {
+    func extractContent() -> UIViewController { return UIViewController() }
+
     struct SetRootCall {
         let item: ContainerItem
         let animated: Bool
@@ -78,4 +80,5 @@ private final class MockSwitchRouter: UIViewController, SwitchRouting {
     }
     
     func present(_ item: ContainerItem, animated: Bool, completion: (() -> Void)?) {}
+    func dismiss(animated: Bool, completion: (() -> Void)?) {}
 }

@@ -20,7 +20,7 @@ final class PaymentViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        view.backgroundColor = UIColor.systemRed.withAlphaComponent(0.14)
+        view.backgroundColor = .systemBackground
         title = "Оплата"
         setupNavigationBar()
 

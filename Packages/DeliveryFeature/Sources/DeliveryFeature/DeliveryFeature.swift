@@ -24,15 +24,16 @@ public func pickupPointsViewController(
             flowEventHandler: eventHandler
         )
         let container = InlineContainer(coordinator: coordinator)
-        return container
+        return container.extractContent()
     } else {
         let coordinator = DeliveryStackCoordinator(
             composer: DeliveryComposer(dependencies: dependencies, showsBackButtonOnRoot: false),
             flowEventHandler: eventHandler
         )
-        let container = StackContainer(coordinator: coordinator)
-        container.navigationBar.prefersLargeTitles = true
-        return container
+        let nav = UINavigationController()
+        nav.navigationBar.prefersLargeTitles = true
+        let container = StackContainer(coordinator: coordinator, navigationController: nav)
+        return container.extractContent()
     }
 }
 

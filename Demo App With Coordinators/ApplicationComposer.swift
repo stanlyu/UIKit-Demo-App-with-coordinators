@@ -10,7 +10,7 @@ enum ApplicationRoute {
 protocol ApplicationComposing: Composing where Route == ApplicationRoute {}
 
 struct ApplicationComposer: ApplicationComposing {
-    func makeViewController(for route: ApplicationRoute, capability: ComposeCapability) -> UIViewController {
+    func makeViewController(for route: ApplicationRoute) -> UIViewController {
         switch route {
         case .launch(let eventHandler):
             let viewController = LaunchViewController()
@@ -25,13 +25,14 @@ struct ApplicationComposer: ApplicationComposing {
         case .mainFlow:
             let mainTabsComposer = MainTabsComposer()
             let mainTabsCoordinator = MainTabsCoordinator(composer: mainTabsComposer)
-            let mainTabsContainer = TabContainer(coordinator: mainTabsCoordinator)
-            configureMainTabsContainer(mainTabsContainer)
-            return mainTabsContainer
+            let tabBarController = UITabBarController()
+            configureMainTabsController(tabBarController)
+            let mainTabsContainer = TabContainer(coordinator: mainTabsCoordinator, tabBarController: tabBarController)
+            return mainTabsContainer.extractContent()
         }
     }
 
-    private func configureMainTabsContainer(_ container: TabContainer) {
+    private func configureMainTabsController(_ controller: UITabBarController) {
         let appearance = UITabBarAppearance()
         appearance.configureWithTransparentBackground()
 
@@ -53,7 +54,7 @@ struct ApplicationComposer: ApplicationComposing {
         appearance.inlineLayoutAppearance = itemAppearance
         appearance.compactInlineLayoutAppearance = itemAppearance
 
-        container.tabBar.standardAppearance = appearance
-        container.tabBar.scrollEdgeAppearance = appearance
+        controller.tabBar.standardAppearance = appearance
+        controller.tabBar.scrollEdgeAppearance = appearance
     }
 }

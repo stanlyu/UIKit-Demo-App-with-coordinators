@@ -21,7 +21,7 @@ struct CartComposer: CartComposing {
         self.dependencies = dependencies
     }
 
-    func makeViewController(for route: CartRoute, capability: ComposeCapability) -> UIViewController {
+    func makeViewController(for route: CartRoute) -> UIViewController {
         switch route {
         case .cart(let eventHandler):
             let service = CartService()
