@@ -12,10 +12,6 @@ import ObjectiveC
 /// Роутер, управляющий стеком контроллеров (UINavigationController).
 @MainActor
 public final class StackRouter: StackRouting {
-    private weak var navigationController: UINavigationController!
-    private let _startCoordinator: (StackRouter) -> Void
-    private var hasStarted: Bool = false
-
     public init<C: Coordinating>(coordinator: C, navigationController: UINavigationController = UINavigationController()) where C.R == StackRouter {
         self.navigationController = navigationController
         self._startCoordinator = { router in
@@ -29,10 +25,8 @@ public final class StackRouter: StackRouting {
     ///
     /// - Returns: `UIViewController` кастованый как корневой навигационный контроллер.
     public func extractRootUI() -> UIViewController {
-        if !hasStarted {
-            hasStarted = true
-            _startCoordinator(self)
-        }
+        _startCoordinator?(self)
+        _startCoordinator = nil
         
         guard let nav = navigationController else {
             fatalError("StackRouter's navigation controller was deallocated or not set.")
@@ -94,4 +88,9 @@ public final class StackRouter: StackRouting {
     public func setStack(_ items: [RouterItem], animated: Bool) {
         navigationController.setViewControllers(items.map(\.viewController), animated: animated)
     }
+
+    // MARK: - Private members
+
+    private weak var navigationController: UINavigationController!
+    private var _startCoordinator: ((StackRouter) -> Void)?
 }

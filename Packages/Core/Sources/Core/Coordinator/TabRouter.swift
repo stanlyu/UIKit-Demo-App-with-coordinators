@@ -12,10 +12,6 @@ import ObjectiveC
 /// Роутер, управляющий вкладками (UITabBarController).
 @MainActor
 public final class TabRouter: TabRouting {
-    private weak var tabBarController: UITabBarController!
-    private let _startCoordinator: (TabRouter) -> Void
-    private var hasStarted: Bool = false
-
     public init<C: Coordinating>(coordinator: C, tabBarController: UITabBarController = UITabBarController()) where C.R == TabRouter {
         self.tabBarController = tabBarController
         self._startCoordinator = { router in
@@ -29,10 +25,8 @@ public final class TabRouter: TabRouting {
     ///
     /// - Returns: `UIViewController` кастованый как корневой таб бар контроллер.
     public func extractRootUI() -> UIViewController {
-        if !hasStarted {
-            hasStarted = true
-            _startCoordinator(self)
-        }
+        _startCoordinator?(self)
+        _startCoordinator = nil
         
         guard let tab = tabBarController else {
             fatalError("TabRouter's tab bar controller was deallocated or not set.")
@@ -76,4 +70,9 @@ public final class TabRouter: TabRouting {
             tabBarController.selectedIndex = index
         }
     }
+
+    // MARK: - Private members
+
+    private weak var tabBarController: UITabBarController!
+    private var _startCoordinator: ((TabRouter) -> Void)?
 }
