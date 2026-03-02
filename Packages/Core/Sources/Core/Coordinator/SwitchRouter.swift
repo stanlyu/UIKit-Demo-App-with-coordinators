@@ -12,14 +12,16 @@ import ObjectiveC
 /// Роутер переключения контента с поддержкой анимированных переходов.
 @MainActor
 public final class SwitchRouter: SwitchRouting {
-    private let coordinator: any Coordinating
+    private let _startCoordinator: (SwitchRouter) -> Void
     private weak var currentContent: UIViewController?
     private var oldContentRetainer: UIViewController?
     private var unextractedContent: UIViewController?
+    private var hasStarted: Bool = false
 
     public init<C: Coordinating>(coordinator: C) where C.R == SwitchRouter {
-        self.coordinator = coordinator
-        coordinator.start(with: self)
+        self._startCoordinator = { router in
+            coordinator.start(with: router)
+        }
     }
 
     /// Возвращает текущий UIViewController, которым управляет роутер.
@@ -27,6 +29,11 @@ public final class SwitchRouter: SwitchRouting {
     /// - Returns: Корневой `UIViewController` для отображения в окне или иерархии вью.
     /// - Warning: Приводит к fatalError, если контент не был установлен перед вызовом.
     public func extractRootUI() -> UIViewController {
+        if !hasStarted {
+            hasStarted = true
+            _startCoordinator(self)
+        }
+        
         guard let vc = currentContent ?? unextractedContent else {
             fatalError("SwitchRouter has no content.")
         }

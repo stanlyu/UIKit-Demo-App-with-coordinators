@@ -13,20 +13,27 @@ import ObjectiveC
 @MainActor
 public final class StackRouter: StackRouting {
     private weak var navigationController: UINavigationController!
-    private let coordinator: any Coordinating
+    private let _startCoordinator: (StackRouter) -> Void
+    private var hasStarted: Bool = false
 
     public init<C: Coordinating>(coordinator: C, navigationController: UINavigationController = UINavigationController()) where C.R == StackRouter {
         self.navigationController = navigationController
-        self.coordinator = coordinator
+        self._startCoordinator = { router in
+            coordinator.start(with: router)
+        }
         
         self.bindLifecycle(to: navigationController)
-        coordinator.start(with: self)
     }
 
     /// Извлекает корневой `UINavigationController`, которым управляет стек.
     ///
     /// - Returns: `UIViewController` кастованый как корневой навигационный контроллер.
     public func extractRootUI() -> UIViewController {
+        if !hasStarted {
+            hasStarted = true
+            _startCoordinator(self)
+        }
+        
         guard let nav = navigationController else {
             fatalError("StackRouter's navigation controller was deallocated or not set.")
         }

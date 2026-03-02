@@ -13,11 +13,13 @@ public final class InlineRouter: StackRouting {
     /// Текущий отображаемый контроллер, вставленный инлайном в чужой `UINavigationController`.
     public private(set) weak var contentViewController: UIViewController?
     private var unextractedContent: UIViewController?
-    private let coordinator: any Coordinating
+    private let _startCoordinator: (InlineRouter) -> Void
+    private var hasStarted: Bool = false
 
     public init<C: Coordinating>(coordinator: C) where C.R == InlineRouter {
-        self.coordinator = coordinator
-        coordinator.start(with: self)
+        self._startCoordinator = { router in
+            coordinator.start(with: router)
+        }
     }
 
     private func setContent(_ content: UIViewController) {
@@ -40,8 +42,13 @@ public final class InlineRouter: StackRouting {
     /// - Returns: Корневой `UIViewController` этого инлайн-флоу.
     /// - Precondition: Метод `setContent` должен быть вызван хотя бы один раз до вызова `extractRootUI()`.
     public func extractRootUI() -> UIViewController {
+        if !hasStarted {
+            hasStarted = true
+            _startCoordinator(self)
+        }
+        
         guard let content = contentViewController ?? unextractedContent else {
-            fatalError("InlineRouter's extractRootUI() called before it received any content. Call coordinator.start() pushing at least one item first.")
+            fatalError("InlineRouter's extractRootUI() called but no content was provided by the coordinator.")
         }
         unextractedContent = nil
         return content

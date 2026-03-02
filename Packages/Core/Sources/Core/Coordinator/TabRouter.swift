@@ -13,20 +13,27 @@ import ObjectiveC
 @MainActor
 public final class TabRouter: TabRouting {
     private weak var tabBarController: UITabBarController!
-    private let coordinator: any Coordinating
+    private let _startCoordinator: (TabRouter) -> Void
+    private var hasStarted: Bool = false
 
     public init<C: Coordinating>(coordinator: C, tabBarController: UITabBarController = UITabBarController()) where C.R == TabRouter {
         self.tabBarController = tabBarController
-        self.coordinator = coordinator
+        self._startCoordinator = { router in
+            coordinator.start(with: router)
+        }
         
         self.bindLifecycle(to: tabBarController)
-        coordinator.start(with: self)
     }
 
     /// Извлекает корневой `UITabBarController`, которым управляет вкладка.
     ///
     /// - Returns: `UIViewController` кастованый как корневой таб бар контроллер.
     public func extractRootUI() -> UIViewController {
+        if !hasStarted {
+            hasStarted = true
+            _startCoordinator(self)
+        }
+        
         guard let tab = tabBarController else {
             fatalError("TabRouter's tab bar controller was deallocated or not set.")
         }
