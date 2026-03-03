@@ -8,13 +8,22 @@
 import UIKit
 import Core
 
+typealias PaymentEventHandler = (PaymentPresenter.Event) -> Void
+
+enum PaymentRoute {
+    case payment(eventHandler: PaymentEventHandler)
+}
+
 typealias PaymentInlineCoordinator = PaymentCoordinatingLogic<InlineRouter>
 
 @MainActor
 final class PaymentCoordinatingLogic<Router: StackRouting>: Coordinator<Router, PaymentRoute> {
-    init<C: PaymentComposing>(composer: C, eventHandler: @escaping (PaymentEvent) -> Void) {
+    init(
+        eventHandler: @escaping (PaymentEvent) -> Void,
+        buildBlock: @MainActor @Sendable @escaping (PaymentRoute) -> UIViewController
+    ) {
         self.eventHandler = eventHandler
-        super.init(composer: composer)
+        super.init(buildBlock: buildBlock)
     }
 
     override func start(_ capability: StartCapability) {
