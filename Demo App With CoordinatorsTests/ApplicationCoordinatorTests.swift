@@ -65,6 +65,7 @@ private final class MockApplicationComposer: ApplicationComposing {
 
 @MainActor
 private final class MockSwitchRouter: SwitchRouting {
+    var root: RouterRoot { RouterRoot(UIViewController()) }
     func extractRootUI() -> UIViewController { return UIViewController() }
 
     struct SetRootCall {

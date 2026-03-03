@@ -17,6 +17,9 @@ public protocol RoutingContext: AnyObject {
     /// Возвращает реальный `UIViewController`, которым управляет этот роутер.
     /// При первом вызове этого метода роутер привязывает свой жизненный цикл к возвращаемому контроллеру.
     func extractRootUI() -> UIViewController
+
+    /// Непрозрачная обертка для корневого `UIViewController`, которым управляет этот роутер.
+    var root: RouterRoot { get }
 }
 
 // MARK: - Coordinating
@@ -25,7 +28,13 @@ public protocol RoutingContext: AnyObject {
 @MainActor
 public protocol Coordinating: AnyObject {
     associatedtype R: Routing
-    func start(with router: R)
+
+    /// Ссылка на родительский координатор (weak).
+    var parentCoordinator: (any Coordinating)? { get }
+    /// Список дочерних координаторов, запущенных из текущего.
+    var childCoordinators: [any Coordinating] { get }
+    /// Строковая метка, обычно имя класса координатора.
+    var coordinatorLabel: String { get }
 }
 
 // MARK: - Routing (Base)

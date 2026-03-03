@@ -88,6 +88,7 @@ private final class MockCartInput: CartInput {
 
 @MainActor
 private final class MockTabRouter: TabRouting {
+    var root: RouterRoot { RouterRoot(UIViewController()) }
     func extractRootUI() -> UIViewController { return UIViewController() }
 
     struct SetItemsCall {
