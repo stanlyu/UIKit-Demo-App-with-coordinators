@@ -11,7 +11,13 @@ import ObjectiveC
 
 /// Роутер, управляющий вкладками (UITabBarController).
 @MainActor
-public final class TabRouter: TabRouting {
+public final class TabRouter: RoutingContext {
+    /// Инициализирует роутер для управления вкладками.
+    ///
+    /// - Parameters:
+    ///   - coordinator: Координатор, который будет управлять данным роутером.
+    ///   - tabBarController: Корневой `UITabBarController`. По умолчанию создается новый.
+    ///   - lifecycleManager: Менеджер жизненного цикла. По умолчанию используется реализация через ассоциированные объекты.
     public init<C: Coordinating>(
         coordinator: C, 
         tabBarController: UITabBarController = UITabBarController(),
@@ -26,6 +32,12 @@ public final class TabRouter: TabRouting {
         self.lifecycleManager.retain(self, to: tabBarController)
     }
 
+    // MARK: - Private members
+
+    private weak var tabBarController: UITabBarController!
+    private let lifecycleManager: any LifecycleManaging
+    private var _startCoordinator: ((TabRouter) -> Void)?
+
     /// Извлекает корневой `UITabBarController`, которым управляет вкладка.
     ///
     /// - Returns: `UIViewController` кастованый как корневой таб бар контроллер.
@@ -38,11 +50,17 @@ public final class TabRouter: TabRouting {
         }
         return tab
     }
+}
 
+// MARK: - TabRouting
+
+extension TabRouter: TabRouting {
+    /// Текущий выбранный индекс вкладки.
     public var selectedIndex: Int {
         tabBarController.selectedIndex
     }
 
+    /// Текущий выбранный элемент вкладки (возвращает `RouterItem`).
     public var selectedItem: RouterItem? {
         guard let selected = tabBarController.selectedViewController else { return nil }
         return RouterItem(selected)
@@ -75,10 +93,4 @@ public final class TabRouter: TabRouting {
             tabBarController.selectedIndex = index
         }
     }
-
-    // MARK: - Private members
-
-    private weak var tabBarController: UITabBarController!
-    private let lifecycleManager: any LifecycleManaging
-    private var _startCoordinator: ((TabRouter) -> Void)?
 }

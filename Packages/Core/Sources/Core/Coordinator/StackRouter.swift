@@ -11,7 +11,13 @@ import ObjectiveC
 
 /// Роутер, управляющий стеком контроллеров (UINavigationController).
 @MainActor
-public final class StackRouter: StackRouting {
+public final class StackRouter: RoutingContext {
+    /// Инициализирует роутер для управления стеком навигации.
+    ///
+    /// - Parameters:
+    ///   - coordinator: Координатор, который будет управлять данным роутером.
+    ///   - navigationController: Корневой `UINavigationController`. По умолчанию создается новый.
+    ///   - lifecycleManager: Менеджер жизненного цикла. По умолчанию используется реализация через ассоциированные объекты.
     public init<C: Coordinating>(
         coordinator: C, 
         navigationController: UINavigationController = UINavigationController(),
@@ -26,6 +32,12 @@ public final class StackRouter: StackRouting {
         self.lifecycleManager.retain(self, to: navigationController)
     }
 
+    // MARK: - Private members
+
+    private weak var navigationController: UINavigationController!
+    private let lifecycleManager: any LifecycleManaging
+    private var _startCoordinator: ((StackRouter) -> Void)?
+
     /// Извлекает корневой `UINavigationController`, которым управляет стек.
     ///
     /// - Returns: `UIViewController` кастованый как корневой навигационный контроллер.
@@ -39,6 +51,12 @@ public final class StackRouter: StackRouting {
         return nav
     }
 
+}
+
+// MARK: - StackRouting
+
+extension StackRouter: StackRouting {
+    /// Текущие элементы (экраны) в навигационном стеке.
     public var items: [RouterItem] {
         navigationController.viewControllers.map(RouterItem.init) ?? []
     }
@@ -93,10 +111,4 @@ public final class StackRouter: StackRouting {
     public func setStack(_ items: [RouterItem], animated: Bool) {
         navigationController.setViewControllers(items.map(\.viewController), animated: animated)
     }
-
-    // MARK: - Private members
-
-    private weak var navigationController: UINavigationController!
-    private let lifecycleManager: any LifecycleManaging
-    private var _startCoordinator: ((StackRouter) -> Void)?
 }

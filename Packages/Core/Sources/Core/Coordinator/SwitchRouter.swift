@@ -11,7 +11,12 @@ import ObjectiveC
 
 /// Роутер переключения контента с поддержкой анимированных переходов.
 @MainActor
-public final class SwitchRouter: SwitchRouting {
+public final class SwitchRouter: RoutingContext {
+    /// Инициализирует роутер переключения контента.
+    ///
+    /// - Parameters:
+    ///   - coordinator: Координатор, который будет управлять данным роутером.
+    ///   - lifecycleManager: Менеджер жизненного цикла. По умолчанию используется реализация через ассоциированные объекты.
     public init<C: Coordinating>(
         coordinator: C,
         lifecycleManager: any LifecycleManaging = AssociatedObjectLifecycleManager()
@@ -37,6 +42,18 @@ public final class SwitchRouter: SwitchRouting {
         return vc
     }
 
+    // MARK: - Private members
+
+    private weak var currentContent: UIViewController?
+    private let lifecycleManager: any LifecycleManaging
+    private var oldContentRetainer: UIViewController?
+    private var unextractedContent: UIViewController?
+    private var _startCoordinator: ((SwitchRouter) -> Void)?
+}
+
+// MARK: - SwitchRouting
+
+extension SwitchRouter: SwitchRouting {
     /// Переключает на новый корневой контроллер с возможностью анимации.
     ///
     /// - Parameters:
@@ -172,12 +189,4 @@ public final class SwitchRouter: SwitchRouting {
             }
         })
     }
-
-    // MARK: - Private members
-
-    private weak var currentContent: UIViewController?
-    private let lifecycleManager: any LifecycleManaging
-    private var oldContentRetainer: UIViewController?
-    private var unextractedContent: UIViewController?
-    private var _startCoordinator: ((SwitchRouter) -> Void)?
 }

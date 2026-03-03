@@ -9,10 +9,15 @@ import UIKit
 import ObjectiveC
 
 /// Роутер, который **встраивается** в существующий навигационный стек.
-public final class InlineRouter: StackRouting {
+public final class InlineRouter: RoutingContext {
     /// Текущий отображаемый контроллер, вставленный инлайном в чужой `UINavigationController`.
     public private(set) weak var contentViewController: UIViewController?
 
+    /// Инициализирует инлайн-роутер.
+    ///
+    /// - Parameters:
+    ///   - coordinator: Координатор, который будет управлять данным роутером.
+    ///   - lifecycleManager: Менеджер жизненного цикла. По умолчанию используется реализация через ассоциированные объекты.
     public init<C: Coordinating>(
         coordinator: C,
         lifecycleManager: any LifecycleManaging = AssociatedObjectLifecycleManager()
@@ -31,6 +36,12 @@ public final class InlineRouter: StackRouting {
         self.unextractedContent = content // Сохраняем сильную ссылку до момента вызова extractRootUI
         lifecycleManager.retain(self, to: content)
     }
+
+    // MARK: - Private members
+
+    private var unextractedContent: UIViewController?
+    private let lifecycleManager: any LifecycleManaging
+    private var _startCoordinator: ((InlineRouter) -> Void)?
     
     // MARK: - RoutingContext
     
@@ -52,9 +63,12 @@ public final class InlineRouter: StackRouting {
         unextractedContent = nil
         return content
     }
+}
 
-    // MARK: - Displaying (StackRouting)
-    
+// MARK: - Displaying (StackRouting)
+
+extension InlineRouter: StackRouting {
+    /// Текущие элементы (экраны) в инлайн-последовательности навигационного стека (начиная от корневого инлайн-элемента).
     public var items: [RouterItem] {
         guard let contentViewController else { return [] }
         guard let navigationController = contentViewController.navigationController else { return [RouterItem(contentViewController)] }
@@ -147,10 +161,4 @@ public final class InlineRouter: StackRouting {
 
         nav.setViewControllers(currentStack, animated: animated)
     }
-
-    // MARK: - Private members
-
-    private var unextractedContent: UIViewController?
-    private let lifecycleManager: any LifecycleManaging
-    private var _startCoordinator: ((InlineRouter) -> Void)?
 }
