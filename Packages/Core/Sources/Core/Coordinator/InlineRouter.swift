@@ -13,7 +13,11 @@ public final class InlineRouter: StackRouting {
     /// Текущий отображаемый контроллер, вставленный инлайном в чужой `UINavigationController`.
     public private(set) weak var contentViewController: UIViewController?
 
-    public init<C: Coordinating>(coordinator: C) where C.R == InlineRouter {
+    public init<C: Coordinating>(
+        coordinator: C,
+        lifecycleManager: any LifecycleManaging = AssociatedObjectLifecycleManager()
+    ) where C.R == InlineRouter {
+        self.lifecycleManager = lifecycleManager
         self._startCoordinator = { router in
             coordinator.start(with: router)
         }
@@ -21,11 +25,11 @@ public final class InlineRouter: StackRouting {
 
     private func setContent(_ content: UIViewController) {
         if let current = contentViewController {
-            unbindLifecycle(from: current)
+            lifecycleManager.release(self, from: current)
         }
         self.contentViewController = content
         self.unextractedContent = content // Сохраняем сильную ссылку до момента вызова extractRootUI
-        bindLifecycle(to: content)
+        lifecycleManager.retain(self, to: content)
     }
     
     // MARK: - RoutingContext
@@ -147,5 +151,6 @@ public final class InlineRouter: StackRouting {
     // MARK: - Private members
 
     private var unextractedContent: UIViewController?
+    private let lifecycleManager: any LifecycleManaging
     private var _startCoordinator: ((InlineRouter) -> Void)?
 }

@@ -12,13 +12,18 @@ import ObjectiveC
 /// Роутер, управляющий стеком контроллеров (UINavigationController).
 @MainActor
 public final class StackRouter: StackRouting {
-    public init<C: Coordinating>(coordinator: C, navigationController: UINavigationController = UINavigationController()) where C.R == StackRouter {
+    public init<C: Coordinating>(
+        coordinator: C, 
+        navigationController: UINavigationController = UINavigationController(),
+        lifecycleManager: any LifecycleManaging = AssociatedObjectLifecycleManager()
+    ) where C.R == StackRouter {
         self.navigationController = navigationController
+        self.lifecycleManager = lifecycleManager
         self._startCoordinator = { router in
             coordinator.start(with: router)
         }
         
-        self.bindLifecycle(to: navigationController)
+        self.lifecycleManager.retain(self, to: navigationController)
     }
 
     /// Извлекает корневой `UINavigationController`, которым управляет стек.
@@ -92,5 +97,6 @@ public final class StackRouter: StackRouting {
     // MARK: - Private members
 
     private weak var navigationController: UINavigationController!
+    private let lifecycleManager: any LifecycleManaging
     private var _startCoordinator: ((StackRouter) -> Void)?
 }

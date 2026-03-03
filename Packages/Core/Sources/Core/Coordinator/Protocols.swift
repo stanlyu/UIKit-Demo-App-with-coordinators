@@ -8,9 +8,6 @@
 import UIKit
 import ObjectiveC
 
-// Ключ для привязки жизненного цикла роутера к UIViewController через associated object.
-nonisolated(unsafe) var routerRetainKey: UInt8 = 0
-
 // MARK: - RoutingContext
 
 /// Интерфейс объекта, который оборачивает UI-контент (UIViewController)
@@ -20,29 +17,6 @@ public protocol RoutingContext: AnyObject {
     /// Возвращает реальный `UIViewController`, которым управляет этот роутер.
     /// При первом вызове этого метода роутер привязывает свой жизненный цикл к возвращаемому контроллеру.
     func extractRootUI() -> UIViewController
-}
-
-private final class LifecycleRetainer {
-    var retainers: [ObjectIdentifier: AnyObject] = [:]
-}
-
-public extension RoutingContext {
-    func bindLifecycle(to viewController: UIViewController) {
-        let retainer: LifecycleRetainer
-        if let existing = objc_getAssociatedObject(viewController, &routerRetainKey) as? LifecycleRetainer {
-            retainer = existing
-        } else {
-            retainer = LifecycleRetainer()
-            objc_setAssociatedObject(viewController, &routerRetainKey, retainer, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
-        }
-        retainer.retainers[ObjectIdentifier(self)] = self
-    }
-    
-    func unbindLifecycle(from viewController: UIViewController) {
-        if let retainer = objc_getAssociatedObject(viewController, &routerRetainKey) as? LifecycleRetainer {
-            retainer.retainers.removeValue(forKey: ObjectIdentifier(self))
-        }
-    }
 }
 
 // MARK: - Coordinating

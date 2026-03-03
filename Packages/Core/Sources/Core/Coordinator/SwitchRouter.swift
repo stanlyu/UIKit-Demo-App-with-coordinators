@@ -12,7 +12,11 @@ import ObjectiveC
 /// Роутер переключения контента с поддержкой анимированных переходов.
 @MainActor
 public final class SwitchRouter: SwitchRouting {
-    public init<C: Coordinating>(coordinator: C) where C.R == SwitchRouter {
+    public init<C: Coordinating>(
+        coordinator: C,
+        lifecycleManager: any LifecycleManaging = AssociatedObjectLifecycleManager()
+    ) where C.R == SwitchRouter {
+        self.lifecycleManager = lifecycleManager
         self._startCoordinator = { router in
             coordinator.start(with: router)
         }
@@ -45,16 +49,16 @@ public final class SwitchRouter: SwitchRouting {
         guard let oldVC = currentContent else {
             currentContent = newVC
             unextractedContent = newVC // Сохраняем сильную ссылку до момента вызова extractRootUI
-            bindLifecycle(to: newVC)
+            lifecycleManager.retain(self, to: newVC)
             completion?()
             return
         }
         
         self.oldContentRetainer = oldVC
-        unbindLifecycle(from: oldVC)
+        lifecycleManager.release(self, from: oldVC)
         
         self.currentContent = newVC
-        bindLifecycle(to: newVC)
+        lifecycleManager.retain(self, to: newVC)
         
         performTransition(from: oldVC, to: newVC, animated: animated) { [weak self] in
             self?.oldContentRetainer = nil
@@ -172,6 +176,7 @@ public final class SwitchRouter: SwitchRouting {
     // MARK: - Private members
 
     private weak var currentContent: UIViewController?
+    private let lifecycleManager: any LifecycleManaging
     private var oldContentRetainer: UIViewController?
     private var unextractedContent: UIViewController?
     private var _startCoordinator: ((SwitchRouter) -> Void)?

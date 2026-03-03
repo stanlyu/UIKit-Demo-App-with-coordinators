@@ -12,13 +12,18 @@ import ObjectiveC
 /// Роутер, управляющий вкладками (UITabBarController).
 @MainActor
 public final class TabRouter: TabRouting {
-    public init<C: Coordinating>(coordinator: C, tabBarController: UITabBarController = UITabBarController()) where C.R == TabRouter {
+    public init<C: Coordinating>(
+        coordinator: C, 
+        tabBarController: UITabBarController = UITabBarController(),
+        lifecycleManager: any LifecycleManaging = AssociatedObjectLifecycleManager()
+    ) where C.R == TabRouter {
         self.tabBarController = tabBarController
+        self.lifecycleManager = lifecycleManager
         self._startCoordinator = { router in
             coordinator.start(with: router)
         }
         
-        self.bindLifecycle(to: tabBarController)
+        self.lifecycleManager.retain(self, to: tabBarController)
     }
 
     /// Извлекает корневой `UITabBarController`, которым управляет вкладка.
@@ -74,5 +79,6 @@ public final class TabRouter: TabRouting {
     // MARK: - Private members
 
     private weak var tabBarController: UITabBarController!
+    private let lifecycleManager: any LifecycleManaging
     private var _startCoordinator: ((TabRouter) -> Void)?
 }
