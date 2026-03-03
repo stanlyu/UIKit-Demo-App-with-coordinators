@@ -9,7 +9,8 @@ import UIKit
 import ObjectiveC
 
 /// Роутер, который **встраивается** в существующий навигационный стек.
-public final class InlineRouter: RoutingContext {
+@MainActor
+public final class InlineRouter {
     /// Текущий отображаемый контроллер, вставленный инлайном в чужой `UINavigationController`.
     public private(set) weak var contentViewController: UIViewController?
 
@@ -18,14 +19,13 @@ public final class InlineRouter: RoutingContext {
     /// - Parameters:
     ///   - coordinator: Координатор, который будет управлять данным роутером.
     ///   - lifecycleManager: Менеджер жизненного цикла. По умолчанию используется реализация через ассоциированные объекты.
-    public init<C: Coordinating>(
-        coordinator: C,
+    @MainActor
+    public init(
+        coordinator: _BaseCoordinator<InlineRouter>,
         lifecycleManager: any LifecycleManaging = AssociatedObjectLifecycleManager()
-    ) where C.R == InlineRouter {
+    ) {
+        self.coordinator = coordinator
         self.lifecycleManager = lifecycleManager
-        self._startCoordinator = { router in
-            coordinator.start(with: router)
-        }
     }
 
     private func setContent(_ content: UIViewController) {
@@ -39,12 +39,23 @@ public final class InlineRouter: RoutingContext {
 
     // MARK: - Private members
 
+    private let coordinator: _BaseCoordinator<InlineRouter>
     private var unextractedContent: UIViewController?
     private let lifecycleManager: any LifecycleManaging
-    private var _startCoordinator: ((InlineRouter) -> Void)?
     
-    // MARK: - RoutingContext
-    
+}
+
+// MARK: - RoutingContext
+
+extension InlineRouter: RoutingContext {
+    /// Непрозрачная обертка для корневого `UIViewController`, которым управляет этот роутер.
+    public var root: RouterRoot {
+        guard let content = contentViewController ?? unextractedContent else {
+            fatalError("InlineRouter has no content when accessing root.")
+        }
+        return RouterRoot(content)
+    }
+
     /// Извлекает корневой `UIViewController` из роутера.
     ///
     /// Этот метод должен быть вызван один раз, чтобы получить `UIViewController`,
@@ -54,8 +65,7 @@ public final class InlineRouter: RoutingContext {
     /// - Returns: Корневой `UIViewController` этого инлайн-флоу.
     /// - Precondition: Метод `setContent` должен быть вызван хотя бы один раз до вызова `extractRootUI()`.
     public func extractRootUI() -> UIViewController {
-        _startCoordinator?(self)
-        _startCoordinator = nil
+        coordinator.start(with: self)
         
         guard let content = contentViewController ?? unextractedContent else {
             fatalError("InlineRouter's extractRootUI() called but no content was provided by the coordinator.")

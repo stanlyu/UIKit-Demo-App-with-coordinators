@@ -11,20 +11,41 @@ import ObjectiveC
 
 /// Роутер переключения контента с поддержкой анимированных переходов.
 @MainActor
-public final class SwitchRouter: RoutingContext {
+public final class SwitchRouter {
     /// Инициализирует роутер переключения контента.
     ///
     /// - Parameters:
     ///   - coordinator: Координатор, который будет управлять данным роутером.
     ///   - lifecycleManager: Менеджер жизненного цикла. По умолчанию используется реализация через ассоциированные объекты.
-    public init<C: Coordinating>(
-        coordinator: C,
+    @MainActor
+    public init(
+        coordinator: _BaseCoordinator<SwitchRouter>,
         lifecycleManager: any LifecycleManaging = AssociatedObjectLifecycleManager()
-    ) where C.R == SwitchRouter {
+    ) {
+        self.coordinator = coordinator
         self.lifecycleManager = lifecycleManager
-        self._startCoordinator = { router in
-            coordinator.start(with: router)
+    }
+
+    // MARK: - Private members
+
+    private let coordinator: _BaseCoordinator<SwitchRouter>
+
+    private weak var currentContent: UIViewController?
+    private let lifecycleManager: any LifecycleManaging
+    private var oldContentRetainer: UIViewController?
+    private var unextractedContent: UIViewController?
+    
+}
+
+// MARK: - RoutingContext
+
+extension SwitchRouter: RoutingContext {
+    /// Непрозрачная обертка для корневого `UIViewController`, которым управляет этот роутер.
+    public var root: RouterRoot {
+        guard let content = currentContent ?? unextractedContent else {
+            fatalError("SwitchRouter has no content when accessing root.")
         }
+        return RouterRoot(content)
     }
 
     /// Возвращает текущий UIViewController, которым управляет роутер.
@@ -32,8 +53,7 @@ public final class SwitchRouter: RoutingContext {
     /// - Returns: Корневой `UIViewController` для отображения в окне или иерархии вью.
     /// - Warning: Приводит к fatalError, если контент не был установлен перед вызовом.
     public func extractRootUI() -> UIViewController {
-        _startCoordinator?(self)
-        _startCoordinator = nil
+        coordinator.start(with: self)
         
         guard let vc = currentContent ?? unextractedContent else {
             fatalError("SwitchRouter has no content.")
@@ -41,14 +61,6 @@ public final class SwitchRouter: RoutingContext {
         unextractedContent = nil
         return vc
     }
-
-    // MARK: - Private members
-
-    private weak var currentContent: UIViewController?
-    private let lifecycleManager: any LifecycleManaging
-    private var oldContentRetainer: UIViewController?
-    private var unextractedContent: UIViewController?
-    private var _startCoordinator: ((SwitchRouter) -> Void)?
 }
 
 // MARK: - SwitchRouting

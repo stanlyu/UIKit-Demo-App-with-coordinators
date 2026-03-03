@@ -19,10 +19,13 @@ public final class ComposerBox<Route> {
     }
 
     public final func makeItem(for route: Route) -> RouterItem {
-        RouterItem(makeViewController(route))
+        let vc = makeViewController(route)
+        owner?.adoptTaggedChild(from: vc)
+        return RouterItem(vc)
     }
 
     // MARK: - Private members
 
+    internal weak var owner: ChildAdopting?
     private let makeViewController: @MainActor (Route) -> UIViewController
 }

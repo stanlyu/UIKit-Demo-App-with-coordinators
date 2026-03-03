@@ -120,6 +120,7 @@ private final class MockHomeComposer: HomeComposing {
 
 @MainActor
 private final class MockStackRouter: StackRouting {
+    var root: RouterRoot { RouterRoot(UIViewController()) }
     func extractRootUI() -> UIViewController { return UIViewController() }
 
     struct PushCall {

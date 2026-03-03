@@ -11,39 +11,47 @@ import ObjectiveC
 
 /// Роутер, управляющий вкладками (UITabBarController).
 @MainActor
-public final class TabRouter: RoutingContext {
+public final class TabRouter {
     /// Инициализирует роутер для управления вкладками.
     ///
     /// - Parameters:
     ///   - coordinator: Координатор, который будет управлять данным роутером.
     ///   - tabBarController: Корневой `UITabBarController`. По умолчанию создается новый.
     ///   - lifecycleManager: Менеджер жизненного цикла. По умолчанию используется реализация через ассоциированные объекты.
-    public init<C: Coordinating>(
-        coordinator: C, 
+    @MainActor
+    public init(
+        coordinator: _BaseCoordinator<TabRouter>, 
         tabBarController: UITabBarController = UITabBarController(),
         lifecycleManager: any LifecycleManaging = AssociatedObjectLifecycleManager()
-    ) where C.R == TabRouter {
+    ) {
+        self.coordinator = coordinator
         self.tabBarController = tabBarController
         self.lifecycleManager = lifecycleManager
-        self._startCoordinator = { router in
-            coordinator.start(with: router)
-        }
         
         self.lifecycleManager.retain(self, to: tabBarController)
     }
 
     // MARK: - Private members
 
+    private let coordinator: _BaseCoordinator<TabRouter>
     private weak var tabBarController: UITabBarController!
     private let lifecycleManager: any LifecycleManaging
-    private var _startCoordinator: ((TabRouter) -> Void)?
+}
+
+// MARK: - RoutingContext
+
+extension TabRouter: RoutingContext {
+
+    /// Непрозрачная обертка для корневого `UIViewController`, которым управляет этот роутер.
+    public var root: RouterRoot { 
+        RouterRoot(tabBarController) 
+    }
 
     /// Извлекает корневой `UITabBarController`, которым управляет вкладка.
     ///
     /// - Returns: `UIViewController` кастованый как корневой таб бар контроллер.
     public func extractRootUI() -> UIViewController {
-        _startCoordinator?(self)
-        _startCoordinator = nil
+        coordinator.start(with: self)
         
         guard let tab = tabBarController else {
             fatalError("TabRouter's tab bar controller was deallocated or not set.")

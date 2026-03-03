@@ -11,46 +11,53 @@ import ObjectiveC
 
 /// Роутер, управляющий стеком контроллеров (UINavigationController).
 @MainActor
-public final class StackRouter: RoutingContext {
+public final class StackRouter {
     /// Инициализирует роутер для управления стеком навигации.
     ///
     /// - Parameters:
     ///   - coordinator: Координатор, который будет управлять данным роутером.
     ///   - navigationController: Корневой `UINavigationController`. По умолчанию создается новый.
     ///   - lifecycleManager: Менеджер жизненного цикла. По умолчанию используется реализация через ассоциированные объекты.
-    public init<C: Coordinating>(
-        coordinator: C, 
+    @MainActor
+    public init(
+        coordinator: _BaseCoordinator<StackRouter>, 
         navigationController: UINavigationController = UINavigationController(),
         lifecycleManager: any LifecycleManaging = AssociatedObjectLifecycleManager()
-    ) where C.R == StackRouter {
+    ) {
+        self.coordinator = coordinator
         self.navigationController = navigationController
         self.lifecycleManager = lifecycleManager
-        self._startCoordinator = { router in
-            coordinator.start(with: router)
-        }
         
         self.lifecycleManager.retain(self, to: navigationController)
     }
 
     // MARK: - Private members
 
+    private let coordinator: _BaseCoordinator<StackRouter>
     private weak var navigationController: UINavigationController!
     private let lifecycleManager: any LifecycleManaging
-    private var _startCoordinator: ((StackRouter) -> Void)?
+}
+
+// MARK: - RoutingContext
+
+extension StackRouter: RoutingContext {
+
+    /// Непрозрачная обертка для корневого `UIViewController`, которым управляет этот роутер.
+    public var root: RouterRoot { 
+        RouterRoot(navigationController) 
+    }
 
     /// Извлекает корневой `UINavigationController`, которым управляет стек.
     ///
     /// - Returns: `UIViewController` кастованый как корневой навигационный контроллер.
     public func extractRootUI() -> UIViewController {
-        _startCoordinator?(self)
-        _startCoordinator = nil
+        coordinator.start(with: self)
         
         guard let nav = navigationController else {
             fatalError("StackRouter's navigation controller was deallocated or not set.")
         }
         return nav
     }
-
 }
 
 // MARK: - StackRouting
