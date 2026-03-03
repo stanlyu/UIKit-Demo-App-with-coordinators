@@ -16,5 +16,12 @@ let package = Package(
                 .swiftLanguageMode(.v6)
             ]
         ),
+        .testTarget(
+            name: "CoreTests",
+            dependencies: ["Core"],
+            swiftSettings: [
+                .swiftLanguageMode(.v6)
+            ]
+        )
     ]
 )
