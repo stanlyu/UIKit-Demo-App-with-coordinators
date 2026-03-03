@@ -49,6 +49,15 @@ open class Coordinator<R: Routing, Route>: _BaseCoordinator<R>, Coordinating {
         self.composer.owner = self
     }
 
+    /// Инициализатор для простых потоков (без DI-Composer).
+    /// Позволяет передать функцию-сборщик экранов напрямую, без создания отдельного класса-компоузера.
+    public init(buildBlock: @MainActor @Sendable @escaping (Route) -> UIViewController) {
+        let inlineComposer = InlineComposer(buildBlock: buildBlock)
+        self.composer = ComposerBox(wrappedComposer: inlineComposer)
+        super.init()
+        self.composer.owner = self
+    }
+
     deinit {
         MainActor.assumeIsolated {
             (parentCoordinator as? AnyCoordinatorTreeNode)?.removeChild(self)

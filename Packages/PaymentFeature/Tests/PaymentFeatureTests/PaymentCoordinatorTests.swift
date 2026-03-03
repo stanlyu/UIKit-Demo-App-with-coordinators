@@ -12,7 +12,7 @@ struct PaymentCoordinatorTests {
         sut.coordinator.start(with: sut.router)
 
         #expect(sut.router.pushCalls.count == 1)
-        #expect(sut.router.pushCalls[0].item.viewController === sut.composer.paymentViewController)
+        #expect(sut.router.pushCalls[0].item.viewController === sut.paymentViewController)
         #expect(sut.router.pushCalls[0].animated == false)
     }
 
@@ -22,7 +22,7 @@ struct PaymentCoordinatorTests {
         let sut = makeSUT(eventHandler: { receivedEvents.append($0) })
         sut.coordinator.start(with: sut.router)
 
-        sut.composer.paymentEventHandler?(.onBackTap)
+        sut.paymentEventHandler(.onBackTap)
 
         guard let event = receivedEvents.last else {
             Issue.record("Не получено событие .cancelled")
@@ -41,7 +41,7 @@ struct PaymentCoordinatorTests {
         let result = PaymentResult.failure(amount: 2500, error: .processingTimeout)
 
         sut.coordinator.start(with: sut.router)
-        sut.composer.paymentEventHandler?(.onPaymentCompleted(result))
+        sut.paymentEventHandler(.onPaymentCompleted(result))
 
         guard let event = receivedEvents.last else {
             Issue.record("Не получено событие .completed")
@@ -64,29 +64,31 @@ struct PaymentCoordinatorTests {
 private extension PaymentCoordinatorTests {
     struct SUT {
         let coordinator: PaymentCoordinatingLogic<MockStackRouter>
-        let composer: MockPaymentComposer
         let router: MockStackRouter
+        let paymentViewController: UIViewController
+        let paymentEventHandler: @escaping (PaymentEventHandler)
     }
 
     func makeSUT(eventHandler: @escaping (PaymentEvent) -> Void = { _ in }) -> SUT {
-        let composer = MockPaymentComposer()
         let router = MockStackRouter()
-        let coordinator = PaymentCoordinatingLogic<MockStackRouter>(composer: composer, eventHandler: eventHandler)
-        return SUT(coordinator: coordinator, composer: composer, router: router)
-    }
-}
-
-@MainActor
-private final class MockPaymentComposer: PaymentComposing {
-    let paymentViewController = UIViewController()
-    var paymentEventHandler: PaymentEventHandler?
-
-    func makeViewController(for route: PaymentRoute) -> UIViewController {
-        switch route {
-        case .payment(let eventHandler):
-            paymentEventHandler = eventHandler
-            return paymentViewController
-        }
+        let vc = UIViewController()
+        var extractedEventHandler: PaymentEventHandler?
+        
+        let coordinator = PaymentCoordinatingLogic<MockStackRouter>(
+            eventHandler: eventHandler,
+            buildBlock: { @MainActor route in
+                if case .payment(let handler) = route {
+                    extractedEventHandler = handler
+                }
+                return vc
+            }
+        )
+        return SUT(
+            coordinator: coordinator,
+            router: router,
+            paymentViewController: vc,
+            paymentEventHandler: { extractedEventHandler?($0) }
+        )
     }
 }
 
