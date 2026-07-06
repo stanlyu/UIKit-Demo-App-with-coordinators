@@ -26,15 +26,15 @@ public final class StackRouter {
     ) {
         self.coordinator = coordinator
         self.navigationController = navigationController
+        self.unextractedRoot = navigationController
         self.lifecycleManager = lifecycleManager
-        
-        self.lifecycleManager.retain(self, to: navigationController)
     }
 
     // MARK: - Private members
 
     private let coordinator: _BaseCoordinator<StackRouter>
-    private weak var navigationController: UINavigationController!
+    private weak var navigationController: UINavigationController?
+    private var unextractedRoot: UINavigationController?
     private let lifecycleManager: any LifecycleManaging
 }
 
@@ -44,7 +44,10 @@ extension StackRouter: RoutingContext {
 
     /// Непрозрачная обертка для корневого `UIViewController`, которым управляет этот роутер.
     public var root: RouterRoot { 
-        RouterRoot(navigationController) 
+        guard let navigationController = navigationController ?? unextractedRoot else {
+            fatalError("StackRouter's navigation controller was deallocated or not set.")
+        }
+        return RouterRoot(navigationController)
     }
 
     /// Извлекает корневой `UINavigationController`, которым управляет стек.
@@ -53,9 +56,11 @@ extension StackRouter: RoutingContext {
     public func extractRootUI() -> UIViewController {
         coordinator.start(with: self)
         
-        guard let nav = navigationController else {
+        guard let nav = navigationController ?? unextractedRoot else {
             fatalError("StackRouter's navigation controller was deallocated or not set.")
         }
+        lifecycleManager.retain(self, to: nav)
+        unextractedRoot = nil
         return nav
     }
 }
@@ -65,7 +70,10 @@ extension StackRouter: RoutingContext {
 extension StackRouter: StackRouting {
     /// Текущие элементы (экраны) в навигационном стеке.
     public var items: [RouterItem] {
-        navigationController.viewControllers.map(RouterItem.init) ?? []
+        guard let navigationController = navigationController ?? unextractedRoot else {
+            fatalError("StackRouter's navigation controller was deallocated or not set.")
+        }
+        return navigationController.viewControllers.map(RouterItem.init)
     }
 
     /// Осуществляет переход к новому экрану с добавлением в стек.
@@ -75,6 +83,10 @@ extension StackRouter: StackRouting {
     ///   - animated: Использовать ли переходы при добавлении контента.
     ///   - completion: Замыкание, вызываемое после окончания перехода.
     public func push(_ item: RouterItem, animated: Bool, completion: (() -> Void)?) {
+        guard let navigationController = navigationController ?? unextractedRoot else {
+            fatalError("StackRouter's navigation controller was deallocated or not set.")
+        }
+
         if navigationController.viewControllers.isEmpty {
             navigationController.pushViewController(item.viewController, animated: false, completion: completion)
         } else {
@@ -88,6 +100,9 @@ extension StackRouter: StackRouting {
     ///   - animated: Следует ли анимировать возвращение назад.
     ///   - completion: Вызывается по окончанию перехода на предыдущий контроллер.
     public func pop(animated: Bool, completion: (() -> Void)?) {
+        guard let navigationController = navigationController ?? unextractedRoot else {
+            fatalError("StackRouter's navigation controller was deallocated or not set.")
+        }
         navigationController.popViewController(animated: animated, completion: completion)
     }
 
@@ -97,6 +112,9 @@ extension StackRouter: StackRouting {
     ///   - animated: Следует ли анимировать возврат к корню.
     ///   - completion: Замыкание по завершению процесса сброса экрана стека.
     public func popToRoot(animated: Bool, completion: (() -> Void)?) {
+        guard let navigationController = navigationController ?? unextractedRoot else {
+            fatalError("StackRouter's navigation controller was deallocated or not set.")
+        }
         navigationController.popToRootViewController(animated: animated, completion: completion)
     }
 
@@ -107,6 +125,9 @@ extension StackRouter: StackRouting {
     ///   - animated: Анимировать ли процесс до целевого роутера.
     ///   - completion: Вызов завершения.
     public func popTo(_ item: RouterItem, animated: Bool, completion: (() -> Void)?) {
+        guard let navigationController = navigationController ?? unextractedRoot else {
+            fatalError("StackRouter's navigation controller was deallocated or not set.")
+        }
         navigationController.popToViewController(item.viewController, animated: animated, completion: completion)
     }
 
@@ -116,6 +137,9 @@ extension StackRouter: StackRouting {
     ///   - items: Массив экранов, которые должны стать новым стеком `navigationController`.
     ///   - animated: Использовать ли UI-анимации для переустановки экранов.
     public func setStack(_ items: [RouterItem], animated: Bool) {
+        guard let navigationController = navigationController ?? unextractedRoot else {
+            fatalError("StackRouter's navigation controller was deallocated or not set.")
+        }
         navigationController.setViewControllers(items.map(\.viewController), animated: animated)
     }
 }

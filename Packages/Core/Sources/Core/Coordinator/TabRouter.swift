@@ -26,15 +26,15 @@ public final class TabRouter {
     ) {
         self.coordinator = coordinator
         self.tabBarController = tabBarController
+        self.unextractedRoot = tabBarController
         self.lifecycleManager = lifecycleManager
-        
-        self.lifecycleManager.retain(self, to: tabBarController)
     }
 
     // MARK: - Private members
 
     private let coordinator: _BaseCoordinator<TabRouter>
-    private weak var tabBarController: UITabBarController!
+    private weak var tabBarController: UITabBarController?
+    private var unextractedRoot: UITabBarController?
     private let lifecycleManager: any LifecycleManaging
 }
 
@@ -44,7 +44,10 @@ extension TabRouter: RoutingContext {
 
     /// Непрозрачная обертка для корневого `UIViewController`, которым управляет этот роутер.
     public var root: RouterRoot { 
-        RouterRoot(tabBarController) 
+        guard let tabBarController = tabBarController ?? unextractedRoot else {
+            fatalError("TabRouter's tab bar controller was deallocated or not set.")
+        }
+        return RouterRoot(tabBarController)
     }
 
     /// Извлекает корневой `UITabBarController`, которым управляет вкладка.
@@ -53,9 +56,11 @@ extension TabRouter: RoutingContext {
     public func extractRootUI() -> UIViewController {
         coordinator.start(with: self)
         
-        guard let tab = tabBarController else {
+        guard let tab = tabBarController ?? unextractedRoot else {
             fatalError("TabRouter's tab bar controller was deallocated or not set.")
         }
+        lifecycleManager.retain(self, to: tab)
+        unextractedRoot = nil
         return tab
     }
 }
@@ -65,11 +70,17 @@ extension TabRouter: RoutingContext {
 extension TabRouter: TabRouting {
     /// Текущий выбранный индекс вкладки.
     public var selectedIndex: Int {
-        tabBarController.selectedIndex
+        guard let tabBarController = tabBarController ?? unextractedRoot else {
+            fatalError("TabRouter's tab bar controller was deallocated or not set.")
+        }
+        return tabBarController.selectedIndex
     }
 
     /// Текущий выбранный элемент вкладки (возвращает `RouterItem`).
     public var selectedItem: RouterItem? {
+        guard let tabBarController = tabBarController ?? unextractedRoot else {
+            fatalError("TabRouter's tab bar controller was deallocated or not set.")
+        }
         guard let selected = tabBarController.selectedViewController else { return nil }
         return RouterItem(selected)
     }
@@ -80,6 +91,9 @@ extension TabRouter: TabRouting {
     ///   - items: Массив экранов, которые должны стать вкладками `UITabBarController`.
     ///   - animated: Использовать ли UI-анимации для переустановки вкладок.
     public func setItems(_ items: [RouterItem], animated: Bool) {
+        guard let tabBarController = tabBarController ?? unextractedRoot else {
+            fatalError("TabRouter's tab bar controller was deallocated or not set.")
+        }
         tabBarController.setViewControllers(items.map(\.viewController), animated: animated)
     }
 
@@ -87,6 +101,9 @@ extension TabRouter: TabRouting {
     ///
     /// - Parameter index: Индекс окна, которое нужно сделать выделенным.
     public func selectTab(at index: Int) {
+        guard let tabBarController = tabBarController ?? unextractedRoot else {
+            fatalError("TabRouter's tab bar controller was deallocated or not set.")
+        }
         tabBarController.selectedIndex = index
     }
 
@@ -96,6 +113,9 @@ extension TabRouter: TabRouting {
     ///
     /// - Parameter item: Объект вью контроллера, который нужно сделать выделенным.
     public func selectItem(_ item: RouterItem) {
+        guard let tabBarController = tabBarController ?? unextractedRoot else {
+            fatalError("TabRouter's tab bar controller was deallocated or not set.")
+        }
         if let viewControllers = tabBarController.viewControllers,
            let index = viewControllers.firstIndex(where: { $0 === item.viewController }) {
             tabBarController.selectedIndex = index
