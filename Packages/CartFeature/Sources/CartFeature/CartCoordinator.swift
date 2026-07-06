@@ -4,7 +4,11 @@ import Core
 typealias CartCoordinator = CartCoordinatingLogic<StackRouter>
 
 final class CartCoordinatingLogic<Router: StackRouting>: Coordinator<Router, CartRoute> {
-    init<C: CartComposing>(composer: C) {
+    init<C: CartComposing>(
+        composer: C,
+        onEvent: @escaping (CartNavigationOutputEvent) -> Void
+    ) {
+        self.onEvent = onEvent
         super.init(composer: composer)
     }
 
@@ -18,13 +22,20 @@ final class CartCoordinatingLogic<Router: StackRouting>: Coordinator<Router, Car
         router?.push(item, animated: false, completion: nil)
     }
 
-    private func showPickupPoints() {
-        let item = composer.makeItem(for: .pickupPoints)
-        router?.present(item, animated: true, completion: nil)
+    private let onEvent: (CartNavigationOutputEvent) -> Void
+
+    private func requestPickupPoints() {
+        guard let router else { return }
+        let context = RouterNavigationStackContext(router: router)
+        onEvent(.pickupPointsRequested(context: context, onClose: { [weak self] in
+            self?.router?.dismiss(animated: true, completion: nil)
+        }))
     }
 
-    private func showPayment() {
-        let item = composer.makeItem(for: .payment(onComplete: { [weak self] result in
+    private func requestPayment() {
+        guard let router else { return }
+        let context = RouterNavigationStackContext(router: router)
+        onEvent(.paymentRequested(context: context, onComplete: { [weak self] result in
             guard let self else { return }
 
             if let result {
@@ -33,7 +44,6 @@ final class CartCoordinatingLogic<Router: StackRouting>: Coordinator<Router, Car
                 self.router?.pop(animated: true, completion: nil)
             }
         }))
-        router?.push(item, animated: true, completion: nil)
     }
 
     private func completePayment(with result: CartPaymentResult) {
@@ -52,7 +62,7 @@ final class CartCoordinatingLogic<Router: StackRouting>: Coordinator<Router, Car
     }
 }
 
-extension CartCoordinatingLogic: CartInput {
+extension CartCoordinatingLogic: CartNavigationInput {
     func placeOrder(_ orderID: Int) {
         router?.popToRoot(animated: false, completion: nil)
 
@@ -61,9 +71,9 @@ extension CartCoordinatingLogic: CartInput {
             case .onBackTap:
                 self?.router?.pop(animated: true, completion: nil)
             case .onChangePickupPointTap:
-                self?.showPickupPoints()
+                self?.requestPickupPoints()
             case .onContinueToPayment:
-                self?.showPayment()
+                self?.requestPayment()
             }
         }))
         router?.push(item, animated: true, completion: nil)

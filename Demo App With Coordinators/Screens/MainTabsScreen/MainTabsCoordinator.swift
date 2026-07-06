@@ -1,6 +1,7 @@
 import UIKit
 import HomeFeature
 import CartFeature
+import DeliveryFeature
 import Core
 
 typealias MainTabsCoordinator = MainTabsCoordinatingLogic<TabRouter>
@@ -12,7 +13,7 @@ final class MainTabsCoordinatingLogic<Router: TabRouting>: Coordinator<Router, M
 
         let homeItem = composer.makeItem(
             for: .home(
-                eventHandler: { [weak self] event in
+                onEvent: { [weak self] event in
                     self?.handle(homeEvent: event)
                 }
             )
@@ -21,7 +22,10 @@ final class MainTabsCoordinatingLogic<Router: TabRouting>: Coordinator<Router, M
         let cartItem = composer.makeItem(
             for: .cart(
                 onCreated: { [weak self] input in
-                    self?.cartInput = input
+                    self?.cartNavigationInput = input
+                },
+                onEvent: { [weak self] event in
+                    self?.handle(cartEvent: event)
                 }
             )
         )
@@ -31,14 +35,46 @@ final class MainTabsCoordinatingLogic<Router: TabRouting>: Coordinator<Router, M
     }
 
     private var cartItem: RouterItem?
-    private var cartInput: CartInput?
+    private weak var cartNavigationInput: (any CartNavigationInput)?
 
-    private func handle(homeEvent: HomeEvent) {
+    private func handle(homeEvent: HomeNavigationOutputEvent) {
         switch homeEvent {
         case .placeOrder(let orderID):
             guard let cartItem else { return }
             router?.selectItem(cartItem)
-            cartInput?.placeOrder(orderID)
+            cartNavigationInput?.placeOrder(orderID)
+
+        case let .pickupPointsRequested(context, onClose):
+            let item = composer.makeItem(for: .pickupPoints(
+                embeddedInNavigationStack: true,
+                onEvent: { event in
+                    switch event {
+                    case .didClose:
+                        onClose()
+                    }
+                }
+            ))
+            context.push(item.viewController, animated: true)
+        }
+    }
+
+    private func handle(cartEvent: CartNavigationOutputEvent) {
+        switch cartEvent {
+        case let .pickupPointsRequested(context, onClose):
+            let item = composer.makeItem(for: .pickupPoints(
+                embeddedInNavigationStack: false,
+                onEvent: { event in
+                    switch event {
+                    case .didClose:
+                        onClose()
+                    }
+                }
+            ))
+            context.present(item.viewController, animated: true)
+
+        case let .paymentRequested(context, onComplete):
+            let item = composer.makeItem(for: .payment(onComplete: onComplete))
+            context.push(item.viewController, animated: true)
         }
     }
 }

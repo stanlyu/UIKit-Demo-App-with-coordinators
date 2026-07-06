@@ -8,21 +8,23 @@
 import UIKit
 import Core
 
-public enum HomeEvent {
-    case placeOrder(Int)
+public enum HomeNavigationOutputEvent {
+    case placeOrder(orderID: Int)
+    case pickupPointsRequested(context: any NavigationStackContext, onClose: () -> Void)
 }
 
 @MainActor
-public func homeViewController(
-    with eventHandler: @escaping (HomeEvent) -> Void,
-    dependencies: HomeDependencies
-) -> UIViewController {
-    let coordinator = HomeCoordinator(
-        composer: HomeComposer(dependencies: dependencies),
-        eventHandler: eventHandler
-    )
-    let nav = UINavigationController()
-    nav.navigationBar.prefersLargeTitles = true
-    let router = StackRouter(coordinator: coordinator, navigationController: nav)
-    return router.extractRootUI()
+public enum HomeModule {
+    public static func create(
+        onEvent: @escaping (HomeNavigationOutputEvent) -> Void
+    ) -> UIViewController {
+        let coordinator = HomeCoordinator(
+            composer: HomeComposer(),
+            onEvent: onEvent
+        )
+        let nav = UINavigationController()
+        nav.navigationBar.prefersLargeTitles = true
+        let router = StackRouter(coordinator: coordinator, navigationController: nav)
+        return router.extractRootUI()
+    }
 }

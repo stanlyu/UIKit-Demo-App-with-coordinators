@@ -8,10 +8,10 @@
 import UIKit
 import Core
 
-typealias PaymentEventHandler = (PaymentPresenter.Event) -> Void
+typealias PaymentPresenterEventHandler = (PaymentPresenter.Event) -> Void
 
 enum PaymentRoute {
-    case payment(eventHandler: PaymentEventHandler)
+    case payment(eventHandler: PaymentPresenterEventHandler)
 }
 
 typealias PaymentInlineCoordinator = PaymentCoordinatingLogic<InlineRouter>
@@ -19,10 +19,10 @@ typealias PaymentInlineCoordinator = PaymentCoordinatingLogic<InlineRouter>
 @MainActor
 final class PaymentCoordinatingLogic<Router: StackRouting>: Coordinator<Router, PaymentRoute> {
     init(
-        eventHandler: @escaping (PaymentEvent) -> Void,
+        onEvent: @escaping (PaymentNavigationOutputEvent) -> Void,
         buildBlock: @MainActor @Sendable @escaping (PaymentRoute) -> UIViewController
     ) {
-        self.eventHandler = eventHandler
+        self.onEvent = onEvent
         super.init(buildBlock: buildBlock)
     }
 
@@ -35,14 +35,14 @@ final class PaymentCoordinatingLogic<Router: StackRouting>: Coordinator<Router, 
 
     // MARK: - Private members
 
-    private let eventHandler: (PaymentEvent) -> Void
+    private let onEvent: (PaymentNavigationOutputEvent) -> Void
 
     private func handle(event: PaymentPresenter.Event) {
         switch event {
         case .onBackTap:
-            eventHandler(.cancelled)
+            onEvent(.cancelled)
         case let .onPaymentCompleted(result):
-            eventHandler(.completed(result))
+            onEvent(.completed(result))
         }
     }
 }

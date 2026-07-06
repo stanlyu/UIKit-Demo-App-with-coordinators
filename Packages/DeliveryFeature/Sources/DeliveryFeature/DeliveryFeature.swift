@@ -8,36 +8,37 @@
 import UIKit
 import Core
 
-public enum DeliveryFlowEvent {
-    case closed
+public enum PickupPointNavigationOutputEvent {
+    case didClose
 }
 
 @MainActor
-public func pickupPointsViewController(
-    embeddedInNavigationStack: Bool = false,
-    dependencies: DeliveryDependencies,
-    eventHandler: ((DeliveryFlowEvent) -> Void)? = nil
-) -> UIViewController {
-    if embeddedInNavigationStack {
-        let coordinator = DeliveryInlineCoordinator(
-            composer: DeliveryComposer(dependencies: dependencies, showsBackButtonOnRoot: true),
-            flowEventHandler: eventHandler
-        )
-        let router = InlineRouter(coordinator: coordinator)
-        return router.extractRootUI()
-    } else {
-        let coordinator = DeliveryStackCoordinator(
-            composer: DeliveryComposer(dependencies: dependencies, showsBackButtonOnRoot: false),
-            flowEventHandler: eventHandler
-        )
-        let nav = UINavigationController()
-        nav.navigationBar.prefersLargeTitles = true
-        let router = StackRouter(coordinator: coordinator, navigationController: nav)
-        return router.extractRootUI()
+public enum PickupPointModule {
+    public static func makePickupPointsManager() -> PickupPointsManaging {
+        PickupPointsManager()
     }
-}
 
-@MainActor
-public func pickupPointsManager() -> PickupPointsManaging {
-    PickupPointsManager()
+    public static func create(
+        embeddedInNavigationStack: Bool = false,
+        dependencies: PickupPointBusinessDependencies,
+        onEvent: ((PickupPointNavigationOutputEvent) -> Void)? = nil
+    ) -> UIViewController {
+        if embeddedInNavigationStack {
+            let coordinator = DeliveryInlineCoordinator(
+                composer: DeliveryComposer(dependencies: dependencies, rootNavigationControl: .backButton),
+                onEvent: onEvent
+            )
+            let router = InlineRouter(coordinator: coordinator)
+            return router.extractRootUI()
+        } else {
+            let coordinator = DeliveryStackCoordinator(
+                composer: DeliveryComposer(dependencies: dependencies, rootNavigationControl: .closeButton),
+                onEvent: onEvent
+            )
+            let nav = UINavigationController()
+            nav.navigationBar.prefersLargeTitles = true
+            let router = StackRouter(coordinator: coordinator, navigationController: nav)
+            return router.extractRootUI()
+        }
+    }
 }

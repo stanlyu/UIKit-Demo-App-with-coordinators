@@ -29,7 +29,7 @@ public protocol PickupPointsManaging: AnyObject {
     func removeFromFavorites(pickupPointID id: Int)
 }
 
-public struct DeliveryDependencies {
+public struct PickupPointBusinessDependencies {
     let pickupPointsManager: PickupPointsManaging
 
     public init(pickupPointsManager: PickupPointsManaging) {

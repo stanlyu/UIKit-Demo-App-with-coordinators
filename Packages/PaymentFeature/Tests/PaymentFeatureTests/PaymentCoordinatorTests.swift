@@ -18,8 +18,8 @@ struct PaymentCoordinatorTests {
 
     @Test
     func backTap_forwardsCancelledEventToModuleOutput() {
-        var receivedEvents: [PaymentEvent] = []
-        let sut = makeSUT(eventHandler: { receivedEvents.append($0) })
+        var receivedEvents: [PaymentNavigationOutputEvent] = []
+        let sut = makeSUT(onEvent: { receivedEvents.append($0) })
         sut.coordinator.start(with: sut.router)
 
         sut.paymentEventHandler(.onBackTap)
@@ -36,8 +36,8 @@ struct PaymentCoordinatorTests {
 
     @Test
     func paymentCompleted_forwardsCompletedResultToModuleOutput() {
-        var receivedEvents: [PaymentEvent] = []
-        let sut = makeSUT(eventHandler: { receivedEvents.append($0) })
+        var receivedEvents: [PaymentNavigationOutputEvent] = []
+        let sut = makeSUT(onEvent: { receivedEvents.append($0) })
         let result = PaymentResult.failure(amount: 2500, error: .processingTimeout)
 
         sut.coordinator.start(with: sut.router)
@@ -66,16 +66,16 @@ private extension PaymentCoordinatorTests {
         let coordinator: PaymentCoordinatingLogic<MockStackRouter>
         let router: MockStackRouter
         let paymentViewController: UIViewController
-        let paymentEventHandler: @escaping (PaymentEventHandler)
+        let paymentEventHandler: @escaping (PaymentPresenterEventHandler)
     }
 
-    func makeSUT(eventHandler: @escaping (PaymentEvent) -> Void = { _ in }) -> SUT {
+    func makeSUT(onEvent: @escaping (PaymentNavigationOutputEvent) -> Void = { _ in }) -> SUT {
         let router = MockStackRouter()
         let vc = UIViewController()
-        var extractedEventHandler: PaymentEventHandler?
-        
+        var extractedEventHandler: PaymentPresenterEventHandler?
+
         let coordinator = PaymentCoordinatingLogic<MockStackRouter>(
-            eventHandler: eventHandler,
+            onEvent: onEvent,
             buildBlock: { @MainActor route in
                 if case .payment(let handler) = route {
                     extractedEventHandler = handler

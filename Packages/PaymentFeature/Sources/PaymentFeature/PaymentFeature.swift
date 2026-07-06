@@ -8,26 +8,30 @@
 import UIKit
 import Core
 
-public enum PaymentEvent {
+public enum PaymentNavigationOutputEvent {
     case completed(PaymentResult)
     case cancelled
 }
 
 @MainActor
-public func paymentViewController(with eventHandler: @escaping (PaymentEvent) -> Void) -> UIViewController {
-    let coordinator = PaymentInlineCoordinator(
-        eventHandler: eventHandler,
-        buildBlock: { route in
-            switch route {
-            case .payment(let handler):
-                let interactor = PaymentInteractor(service: PaymentService())
-                let presenter = PaymentPresenter(interactor: interactor, onEvent: handler)
-                let viewController = PaymentViewController(viewOutput: presenter)
-                presenter.view = viewController
-                return viewController
+public enum PaymentModule {
+    public static func create(
+        onEvent: @escaping (PaymentNavigationOutputEvent) -> Void
+    ) -> UIViewController {
+        let coordinator = PaymentInlineCoordinator(
+            onEvent: onEvent,
+            buildBlock: { route in
+                switch route {
+                case .payment(let handler):
+                    let interactor = PaymentInteractor(service: PaymentService())
+                    let presenter = PaymentPresenter(interactor: interactor, onEvent: handler)
+                    let viewController = PaymentViewController(viewOutput: presenter)
+                    presenter.view = viewController
+                    return viewController
+                }
             }
-        }
-    )
-    let router = InlineRouter(coordinator: coordinator)
-    return router.extractRootUI()
+        )
+        let router = InlineRouter(coordinator: coordinator)
+        return router.extractRootUI()
+    }
 }

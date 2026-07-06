@@ -10,13 +10,18 @@ enum DeliveryRoute {
     case deleteConfirmation(pickupPoint: PickupPoint, onConfirm: () -> Void)
 }
 
+enum PickupPointsRootNavigationControl {
+    case backButton
+    case closeButton
+}
+
 @MainActor
 protocol DeliveryComposing: Composing where Route == DeliveryRoute {}
 
 struct DeliveryComposer: DeliveryComposing {
-    init(dependencies: DeliveryDependencies, showsBackButtonOnRoot: Bool) {
+    init(dependencies: PickupPointBusinessDependencies, rootNavigationControl: PickupPointsRootNavigationControl) {
         self.dependencies = dependencies
-        self.showsBackButtonOnRoot = showsBackButtonOnRoot
+        self.rootNavigationControl = rootNavigationControl
     }
 
     func makeViewController(for route: DeliveryRoute) -> UIViewController {
@@ -26,7 +31,7 @@ struct DeliveryComposer: DeliveryComposing {
             let presenter = PickupPointsPresenter(interactor: interactor, onEvent: eventHandler)
             let viewController = PickupPointsViewController(
                 viewOutput: presenter,
-                showsBackButtonOnRoot: showsBackButtonOnRoot
+                rootNavigationControl: rootNavigationControl
             )
             presenter.view = viewController
             return viewController
@@ -52,6 +57,6 @@ struct DeliveryComposer: DeliveryComposing {
         }
     }
 
-    private let dependencies: DeliveryDependencies
-    private let showsBackButtonOnRoot: Bool
+    private let dependencies: PickupPointBusinessDependencies
+    private let rootNavigationControl: PickupPointsRootNavigationControl
 }

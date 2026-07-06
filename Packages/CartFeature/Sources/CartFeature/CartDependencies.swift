@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import UIKit
 
 public struct CartPickupPoint: Equatable, Sendable {
     public let id: Int
@@ -25,20 +24,12 @@ public protocol CartSelectedPickupPointProviding: AnyObject {
 }
 
 @MainActor
-public protocol CartExternalModulesFactory: AnyObject {
-    func makePickupPointsViewController() -> UIViewController
-    func makePaymentViewController(onComplete: @escaping (CartPaymentResult?) -> Void) -> UIViewController
-}
-
-public struct CartDependencies {
+public struct CartBusinessDependencies {
     let selectedPickupPointProvider: CartSelectedPickupPointProviding
-    public private(set) weak var externalModulesFactory: (any CartExternalModulesFactory)?
 
     public init(
-        selectedPickupPointProvider: CartSelectedPickupPointProviding,
-        externalModulesFactory: CartExternalModulesFactory
+        selectedPickupPointProvider: CartSelectedPickupPointProviding
     ) {
         self.selectedPickupPointProvider = selectedPickupPointProvider
-        self.externalModulesFactory = externalModulesFactory
     }
 }

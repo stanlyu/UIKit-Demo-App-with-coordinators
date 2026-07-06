@@ -22,19 +22,30 @@ public enum CartPaymentResult: Sendable {
 }
 
 @MainActor
-public protocol CartInput: AnyObject {
+public protocol CartNavigationInput: AnyObject {
     func placeOrder(_ orderID: Int)
 }
 
-public typealias CartModule = (viewController: UIViewController, coordinator: CartInput)
+public enum CartNavigationOutputEvent {
+    case pickupPointsRequested(context: any NavigationStackContext, onClose: () -> Void)
+    case paymentRequested(context: any NavigationStackContext, onComplete: (CartPaymentResult?) -> Void)
+}
 
 @MainActor
-public func cartModule(dependencies: CartDependencies) -> CartModule {
-    let coordinator = CartCoordinator(
-        composer: CartComposer(dependencies: dependencies)
-    )
-    let nav = UINavigationController()
-    nav.navigationBar.prefersLargeTitles = true
-    let router = StackRouter(coordinator: coordinator, navigationController: nav)
-    return (router.extractRootUI(), coordinator)
+public enum CartModule {
+    public typealias Instance = (viewController: UIViewController, navigationInput: any CartNavigationInput)
+
+    public static func create(
+        dependencies: CartBusinessDependencies,
+        onEvent: @escaping (CartNavigationOutputEvent) -> Void
+    ) -> Instance {
+        let coordinator = CartCoordinator(
+            composer: CartComposer(dependencies: dependencies),
+            onEvent: onEvent
+        )
+        let nav = UINavigationController()
+        nav.navigationBar.prefersLargeTitles = true
+        let router = StackRouter(coordinator: coordinator, navigationController: nav)
+        return (router.extractRootUI(), coordinator)
+    }
 }

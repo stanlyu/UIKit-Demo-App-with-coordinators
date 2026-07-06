@@ -108,7 +108,7 @@ private final class MockDeliveryComposer: DeliveryComposing {
     private(set) var deleteConfirmationRequestedPickupPoint: PickupPoint?
     var deleteConfirmationOnConfirm: (() -> Void)?
 
-    func makeViewController(for route: DeliveryRoute, capability: ComposeCapability) -> UIViewController {
+    func makeViewController(for route: DeliveryRoute) -> UIViewController {
         switch route {
         case .pickupPoints(let eventHandler):
             pickupPointsEventHandler = eventHandler

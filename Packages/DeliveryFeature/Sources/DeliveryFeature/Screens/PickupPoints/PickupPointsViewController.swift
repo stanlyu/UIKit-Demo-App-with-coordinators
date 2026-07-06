@@ -11,10 +11,10 @@ import UIKit
 final class PickupPointsViewController: UIViewController {
     init(
         viewOutput: PickupPointsViewOutput,
-        showsBackButtonOnRoot: Bool
+        rootNavigationControl: PickupPointsRootNavigationControl
     ) {
         self.viewOutput = viewOutput
-        self.showsBackButtonOnRoot = showsBackButtonOnRoot
+        self.rootNavigationControl = rootNavigationControl
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -46,7 +46,7 @@ final class PickupPointsViewController: UIViewController {
     }
 
     private let viewOutput: PickupPointsViewOutput
-    private let showsBackButtonOnRoot: Bool
+    private let rootNavigationControl: PickupPointsRootNavigationControl
 
     private var rowsByID: [PickupPointsRow.ID: PickupPointsRow] = [:]
     private var sectionTitlesByKind: [PickupPointsSectionKind: String] = [:]
@@ -80,7 +80,8 @@ final class PickupPointsViewController: UIViewController {
     private let cellReuseIdentifier = "pickup-point-cell"
 
     private func setupNavigation() {
-        if showsBackButtonOnRoot {
+        switch rootNavigationControl {
+        case .backButton:
             if navigationController?.viewControllers.first !== self {
                 navigationItem.leftBarButtonItem = UIBarButtonItem(
                     image: UIImage(systemName: "chevron.left"),
@@ -89,8 +90,15 @@ final class PickupPointsViewController: UIViewController {
                     action: #selector(handleBackButtonTap)
                 )
             }
-        } else {
+
+        case .closeButton:
             navigationItem.hidesBackButton = true
+            navigationItem.leftBarButtonItem = UIBarButtonItem(
+                title: "Закрыть",
+                primaryAction: UIAction { [weak self] _ in
+                    self?.viewOutput.backButtonDidTap()
+                }
+            )
         }
 
         let addButtonAction = UIAction { [weak self] _ in

@@ -1,21 +1,16 @@
 import UIKit
 import Core
 
-typealias HomeEventHandler = (HomePresenter.Event) -> Void
+typealias HomePresenterEventHandler = (HomePresenter.Event) -> Void
 
 enum HomeRoute {
-    case home(eventHandler: HomeEventHandler)
-    case pickupPoints(onClose: () -> Void)
+    case home(eventHandler: HomePresenterEventHandler)
 }
 
 @MainActor
 protocol HomeComposing: Composing where Route == HomeRoute {}
 
 struct HomeComposer: HomeComposing {
-    init(dependencies: HomeDependencies) {
-        self.dependencies = dependencies
-    }
-
     func makeViewController(for route: HomeRoute) -> UIViewController {
         switch route {
         case .home(let eventHandler):
@@ -27,14 +22,6 @@ struct HomeComposer: HomeComposing {
             homeViewController.viewOutput = homePresenter
             return homeViewController
 
-        case .pickupPoints(let onClose):
-            guard let externalModulesFactory = dependencies.externalModulesFactory else {
-                assertionFailure("External modules factory is missing")
-                return UIViewController()
-            }
-            return externalModulesFactory.makePickupPointsViewController(onClose: onClose)
         }
     }
-
-    private let dependencies: HomeDependencies
 }

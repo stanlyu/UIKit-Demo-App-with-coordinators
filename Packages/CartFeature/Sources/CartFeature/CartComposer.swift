@@ -9,15 +9,13 @@ enum CartRoute {
     case cart(eventHandler: CartEventHandler)
     case placeOrder(orderID: Int, eventHandler: PlaceOrderEventHandler)
     case orderConfirmation(paymentResult: CartPaymentResult, eventHandler: OrderConfirmationEventHandler)
-    case pickupPoints
-    case payment(onComplete: (CartPaymentResult?) -> Void)
 }
 
 @MainActor
 protocol CartComposing: Composing where Route == CartRoute {}
 
 struct CartComposer: CartComposing {
-    init(dependencies: CartDependencies) {
+    init(dependencies: CartBusinessDependencies) {
         self.dependencies = dependencies
     }
 
@@ -53,21 +51,8 @@ struct CartComposer: CartComposing {
             viewController.viewOutput = presenter
             return viewController
 
-        case .pickupPoints:
-            guard let externalModulesFactory = dependencies.externalModulesFactory else {
-                assertionFailure("External modules factory is missing")
-                return UIViewController()
-            }
-            return externalModulesFactory.makePickupPointsViewController()
-
-        case .payment(let onComplete):
-            guard let externalModulesFactory = dependencies.externalModulesFactory else {
-                assertionFailure("External modules factory is missing")
-                return UIViewController()
-            }
-            return externalModulesFactory.makePaymentViewController(onComplete: onComplete)
         }
     }
 
-    private let dependencies: CartDependencies
+    private let dependencies: CartBusinessDependencies
 }

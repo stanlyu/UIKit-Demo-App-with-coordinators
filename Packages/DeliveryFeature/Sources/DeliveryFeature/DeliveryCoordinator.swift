@@ -8,9 +8,9 @@ final class DeliveryCoordinatingLogic<Router: StackRouting>: Coordinator<Router,
     
     init<C: DeliveryComposing>(
         composer: C,
-        flowEventHandler: ((DeliveryFlowEvent) -> Void)? = nil
+        onEvent: ((PickupPointNavigationOutputEvent) -> Void)? = nil
     ) {
-        self.flowEventHandler = flowEventHandler
+        self.onEvent = onEvent
         super.init(composer: composer)
     }
     
@@ -21,7 +21,7 @@ final class DeliveryCoordinatingLogic<Router: StackRouting>: Coordinator<Router,
         router?.push(item, animated: false, completion: nil)
     }
     
-    private let flowEventHandler: ((DeliveryFlowEvent) -> Void)?
+    private let onEvent: ((PickupPointNavigationOutputEvent) -> Void)?
     
     private func handle(event: PickupPointsPresenter.Event) {
         switch event {
@@ -41,7 +41,7 @@ final class DeliveryCoordinatingLogic<Router: StackRouting>: Coordinator<Router,
             router?.present(item, animated: true, completion: nil)
             
         case .onCloseRequested:
-            flowEventHandler?(.closed)
+            onEvent?(.didClose)
         }
     }
 }

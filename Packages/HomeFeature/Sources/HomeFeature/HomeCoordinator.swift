@@ -4,29 +4,30 @@ import Core
 typealias HomeCoordinator = HomeCoordinatingLogic<StackRouter>
 
 final class HomeCoordinatingLogic<Router: StackRouting>: Coordinator<Router, HomeRoute> {
-    init<C: HomeComposing>(composer: C, eventHandler: @escaping (HomeEvent) -> Void) {
-        self.eventHandler = eventHandler
+    init<C: HomeComposing>(composer: C, onEvent: @escaping (HomeNavigationOutputEvent) -> Void) {
+        self.onEvent = onEvent
         super.init(composer: composer)
     }
 
     override func start(_ capability: StartCapability) {
         let item = composer.makeItem(for: .home(eventHandler: { [weak self] event in
-            switch event {
-            case .onPlaceOrderTap(let orderID):
-                self?.eventHandler(.placeOrder(orderID))
-            case .onPickupPointTap:
-                self?.showPickupPoints()
-            }
-        }))
+              switch event {
+              case .onPlaceOrderTap(let orderID):
+                  self?.onEvent(.placeOrder(orderID: orderID))
+              case .onPickupPointTap:
+                  self?.requestPickupPoints()
+              }
+          }))
         router?.push(item, animated: false, completion: nil)
     }
 
-    private let eventHandler: (HomeEvent) -> Void
+    private let onEvent: (HomeNavigationOutputEvent) -> Void
 
-    private func showPickupPoints() {
-        let item = composer.makeItem(for: .pickupPoints(onClose: { [weak self] in
+    private func requestPickupPoints() {
+        guard let router else { return }
+        let context = RouterNavigationStackContext(router: router)
+        onEvent(.pickupPointsRequested(context: context, onClose: { [weak self] in
             self?.router?.pop(animated: true, completion: nil)
         }))
-        router?.push(item, animated: true, completion: nil)
     }
 }
