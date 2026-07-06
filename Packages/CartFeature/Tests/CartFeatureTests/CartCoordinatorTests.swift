@@ -227,7 +227,7 @@ private final class MockCartComposer: CartComposing {
 
     func makeViewController(for route: CartRoute) -> UIViewController {
         switch route {
-        case .cart(let eventHandler):
+        case .cart(_):
             return cartViewController
         case .placeOrder(let orderID, let eventHandler):
             requestedOrderIDs.append(orderID)

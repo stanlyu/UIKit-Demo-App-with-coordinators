@@ -292,7 +292,7 @@ struct CoordinatorMemoryTests {
         parent!.addChild(child)
         #expect(child.parentCoordinator === parent)
 
-        weak var weakParent = parent
+        weak let weakParent = parent
         parent = nil
 
         #expect(weakParent == nil, "parent должен деаллоцироваться — цикла нет")

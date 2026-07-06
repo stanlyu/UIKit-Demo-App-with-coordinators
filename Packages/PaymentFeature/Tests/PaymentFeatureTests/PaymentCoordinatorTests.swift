@@ -66,7 +66,7 @@ private extension PaymentCoordinatorTests {
         let coordinator: PaymentCoordinatingLogic<MockStackRouter>
         let router: MockStackRouter
         let paymentViewController: UIViewController
-        let paymentEventHandler: @escaping (PaymentPresenterEventHandler)
+        let paymentEventHandler: PaymentPresenterEventHandler
     }
 
     func makeSUT(onEvent: @escaping (PaymentNavigationOutputEvent) -> Void = { _ in }) -> SUT {
