@@ -12,7 +12,7 @@ struct HomeCoordinatorTests {
         sut.coordinator.start(with: sut.router)
 
         #expect(sut.router.pushCalls.count == 1)
-        #expect(sut.router.pushCalls[0].item.viewController === sut.composer.homeViewController)
+        #expect(sut.router.pushCalls[0].item.isWrapping(sut.composer.homeViewController))
         #expect(sut.router.pushCalls[0].animated == false)
     }
 
@@ -75,10 +75,10 @@ struct HomeCoordinatorTests {
         sut.composer.homeEventHandler?(.onPickupPointTap)
 
         let externalViewController = UIViewController()
-        receivedContext?.push(externalViewController, animated: true)
+        receivedContext?.push(RouterItem(externalViewController), animated: true)
 
         #expect(sut.router.pushCalls.count == 2)
-        #expect(sut.router.pushCalls.last?.item.viewController === externalViewController)
+        #expect(sut.router.pushCalls.last?.item.isWrapping(externalViewController) == true)
         #expect(sut.router.pushCalls.last?.animated == true)
     }
 }

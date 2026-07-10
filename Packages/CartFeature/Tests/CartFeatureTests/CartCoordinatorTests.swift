@@ -12,7 +12,7 @@ struct CartCoordinatorTests {
         sut.coordinator.start(with: sut.router)
 
         #expect(sut.router.pushCalls.count == 1)
-        #expect(sut.router.pushCalls[0].item.viewController === sut.composer.cartViewController)
+        #expect(sut.router.pushCalls[0].item.isWrapping(sut.composer.cartViewController))
         #expect(sut.router.pushCalls[0].animated == false)
     }
 
@@ -44,7 +44,7 @@ struct CartCoordinatorTests {
         sut.coordinator.placeOrder(42)
 
         #expect(sut.router.pushCalls.count == 2)
-        #expect(sut.router.pushCalls[1].item.viewController === sut.composer.placeOrderViewController)
+        #expect(sut.router.pushCalls[1].item.isWrapping(sut.composer.placeOrderViewController))
         #expect(sut.router.pushCalls[1].animated == true)
     }
 
@@ -80,7 +80,7 @@ struct CartCoordinatorTests {
         let pickupPointsViewController = UIViewController()
         sut.output.pickupPointsContext?.present(pickupPointsViewController, animated: true)
 
-        #expect(sut.router.presentedItem?.viewController === pickupPointsViewController)
+        #expect(sut.router.presentedItem?.isWrapping(pickupPointsViewController) == true)
         #expect(sut.router.presentedAnimated == true)
     }
 
@@ -118,7 +118,7 @@ struct CartCoordinatorTests {
         sut.output.paymentContext?.push(paymentViewController, animated: true)
 
         #expect(sut.router.pushCalls.count == 3)
-        #expect(sut.router.pushCalls[2].item.viewController === paymentViewController)
+        #expect(sut.router.pushCalls[2].item.isWrapping(paymentViewController))
         #expect(sut.router.pushCalls[2].animated == true)
     }
 
@@ -157,7 +157,7 @@ struct CartCoordinatorTests {
         sut.output.paymentOnComplete?(.success(amount: 1200))
 
         #expect(sut.router.pushCalls.count == 3)
-        #expect(sut.router.pushCalls[2].item.viewController === sut.composer.orderConfirmationViewController)
+        #expect(sut.router.pushCalls[2].item.isWrapping(sut.composer.orderConfirmationViewController))
         #expect(sut.router.pushCalls[2].animated == true)
     }
 
@@ -174,8 +174,8 @@ struct CartCoordinatorTests {
         #expect(sut.router.setStackCalls.count == 1)
         #expect(sut.router.setStackCalls[0].animated == false)
         #expect(sut.router.setStackCalls[0].items.count == 2)
-        #expect(sut.router.setStackCalls[0].items[0].viewController === cartRoot)
-        #expect(sut.router.setStackCalls[0].items[1].viewController === sut.composer.orderConfirmationViewController)
+        #expect(sut.router.setStackCalls[0].items[0].isWrapping(cartRoot))
+        #expect(sut.router.setStackCalls[0].items[1].isWrapping(sut.composer.orderConfirmationViewController))
     }
 
     @Test

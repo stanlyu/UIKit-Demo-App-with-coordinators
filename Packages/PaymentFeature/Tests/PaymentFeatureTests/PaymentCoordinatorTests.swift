@@ -12,7 +12,7 @@ struct PaymentCoordinatorTests {
         sut.coordinator.start(with: sut.router)
 
         #expect(sut.router.pushCalls.count == 1)
-        #expect(sut.router.pushCalls[0].item.viewController === sut.paymentViewController)
+        #expect(sut.router.pushCalls[0].item.isWrapping(sut.paymentViewController))
         #expect(sut.router.pushCalls[0].animated == false)
     }
 

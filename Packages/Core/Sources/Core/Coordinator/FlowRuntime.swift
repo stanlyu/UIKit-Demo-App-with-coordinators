@@ -1,6 +1,24 @@
 import UIKit
 
 @MainActor
+internal protocol FlowRuntimeNode: AnyObject {
+    var parent: (any FlowRuntimeNode)? { get }
+    var children: [any FlowRuntimeNode] { get }
+
+    func adopt(_ child: any FlowRuntimeNode)
+    func removeChild(_ child: any FlowRuntimeNode)
+    func setParent(_ parent: (any FlowRuntimeNode)?)
+}
+
+private final class WeakFlowRuntimeNode {
+    init(_ runtime: any FlowRuntimeNode) {
+        self.runtime = runtime
+    }
+
+    weak var runtime: (any FlowRuntimeNode)?
+}
+
+@MainActor
 internal final class FlowRuntime<RootViewController, Router, Navigation, Route, Coordinator>
 where
     RootViewController: UIViewController,
@@ -10,11 +28,12 @@ where
     internal init(
         router: Router,
         coordinator: Coordinator,
-        lifecycleManager: any LifecycleManaging = AssociatedObjectLifecycleManager()
+        attachmentManager: any FlowAttachmentManaging = FlowAttachmentManager.default
     ) {
         self.router = router
         self.coordinator = coordinator
-        self.lifecycleManager = lifecycleManager
+        self.attachmentManager = attachmentManager
+        router.setRuntime(self)
     }
 
     internal func run() -> UIViewController {
@@ -32,10 +51,10 @@ where
     internal func attach(to newRoot: UIViewController) {
         if attachedRoot === newRoot { return }
 
-        lifecycleManager.retain(self, to: newRoot)
+        attachmentManager.attach(self, to: newRoot)
 
         if let attachedRoot {
-            lifecycleManager.release(self, from: attachedRoot)
+            attachmentManager.detach(self, from: attachedRoot)
         }
 
         attachedRoot = newRoot
@@ -43,6 +62,41 @@ where
 
     private let router: Router
     private let coordinator: Coordinator
-    private let lifecycleManager: any LifecycleManaging
+    private let attachmentManager: any FlowAttachmentManaging
     private weak var attachedRoot: UIViewController?
+    private weak var parentRuntime: (any FlowRuntimeNode)?
+    private var childRuntimes: [ObjectIdentifier: WeakFlowRuntimeNode] = [:]
+}
+
+extension FlowRuntime: FlowRuntimeNode {
+    internal var parent: (any FlowRuntimeNode)? {
+        parentRuntime
+    }
+
+    internal var children: [any FlowRuntimeNode] {
+        childRuntimes = childRuntimes.filter { $0.value.runtime != nil }
+        return childRuntimes.values.compactMap(\.runtime)
+    }
+
+    internal func adopt(_ child: any FlowRuntimeNode) {
+        if child === self { return }
+
+        child.parent?.removeChild(child)
+
+        let childID = ObjectIdentifier(child)
+        childRuntimes[childID] = WeakFlowRuntimeNode(child)
+        child.setParent(self)
+    }
+
+    internal func removeChild(_ child: any FlowRuntimeNode) {
+        childRuntimes.removeValue(forKey: ObjectIdentifier(child))
+
+        if child.parent === self {
+            child.setParent(nil)
+        }
+    }
+
+    internal func setParent(_ parent: (any FlowRuntimeNode)?) {
+        parentRuntime = parent
+    }
 }

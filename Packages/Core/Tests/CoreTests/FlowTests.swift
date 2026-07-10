@@ -23,6 +23,19 @@ private final class FlowTestComposer: Composing {
 }
 
 @MainActor
+private final class SingleViewControllerComposer: Composing {
+    init(viewController: UIViewController) {
+        self.viewController = viewController
+    }
+
+    func makeViewController(for route: FlowTestRoute) -> UIViewController {
+        viewController
+    }
+
+    private let viewController: UIViewController
+}
+
+@MainActor
 private protocol FlowTestNavigationInput: AnyObject {
     func openDetails()
 }
@@ -64,6 +77,49 @@ private final class SwitchFlowTestCoordinator: BaseCoordinator<any SwitchNavigat
 
 @MainActor
 private final class CustomNavigationController: UINavigationController {}
+
+@MainActor
+private final class StateFlowAttachmentManager: FlowAttachmentManaging {
+    func retain(_ retainer: AnyObject, to viewController: UIViewController) {
+        let viewControllerID = ObjectIdentifier(viewController)
+        var retainedObjects = retainedObjectsByViewController[viewControllerID] ?? [:]
+        retainedObjects[ObjectIdentifier(retainer)] = retainer
+        retainedObjectsByViewController[viewControllerID] = retainedObjects
+    }
+
+    func release(_ retainer: AnyObject, from viewController: UIViewController) {
+        let viewControllerID = ObjectIdentifier(viewController)
+        retainedObjectsByViewController[viewControllerID]?.removeValue(forKey: ObjectIdentifier(retainer))
+    }
+
+    func attach(_ runtime: any FlowRuntimeNode, to viewController: UIViewController) {
+        runtimeByViewController[ObjectIdentifier(viewController)] = WeakRuntime(runtime)
+        retain(runtime, to: viewController)
+    }
+
+    func detach(_ runtime: any FlowRuntimeNode, from viewController: UIViewController) {
+        let viewControllerID = ObjectIdentifier(viewController)
+        if runtimeByViewController[viewControllerID]?.runtime === runtime {
+            runtimeByViewController.removeValue(forKey: viewControllerID)
+        }
+        release(runtime, from: viewController)
+    }
+
+    func runtime(attachedTo viewController: UIViewController) -> (any FlowRuntimeNode)? {
+        runtimeByViewController[ObjectIdentifier(viewController)]?.runtime
+    }
+
+    private final class WeakRuntime {
+        init(_ runtime: any FlowRuntimeNode) {
+            self.runtime = runtime
+        }
+
+        weak var runtime: (any FlowRuntimeNode)?
+    }
+
+    private var retainedObjectsByViewController: [ObjectIdentifier: [ObjectIdentifier: AnyObject]] = [:]
+    private var runtimeByViewController: [ObjectIdentifier: WeakRuntime] = [:]
+}
 
 @MainActor
 @Suite("Flow API")
@@ -132,6 +188,25 @@ struct FlowTests {
 
         flow.coordinator.switchToDetails()
 
-        #expect(flow.coordinator.router.currentItem?.viewController === composer.detailsViewController)
+        #expect(flow.coordinator.router.currentItem?.isWrapping(composer.detailsViewController) == true)
+    }
+
+    @Test func parentFlow_adoptsChildFlowReturnedAsViewController() throws {
+        let attachmentManager = StateFlowAttachmentManager()
+        let childComposer = FlowTestComposer()
+        let childFlow = Flow.inline(attachmentManager: attachmentManager, composer: childComposer) { router, composer in
+            InlineFlowTestCoordinator(router: router, composer: composer)
+        }
+
+        let parentComposer = SingleViewControllerComposer(viewController: childFlow.viewController)
+        let parentFlow = Flow.stack(attachmentManager: attachmentManager, composer: parentComposer) { router, composer in
+            StackFlowTestCoordinator(router: router, composer: composer)
+        }
+
+        let parentRuntime = try #require(attachmentManager.runtime(attachedTo: parentFlow.viewController))
+        let childRuntime = try #require(attachmentManager.runtime(attachedTo: childFlow.viewController))
+
+        #expect(parentRuntime.children.contains { $0 === childRuntime })
+        #expect(childRuntime.parent === parentRuntime)
     }
 }

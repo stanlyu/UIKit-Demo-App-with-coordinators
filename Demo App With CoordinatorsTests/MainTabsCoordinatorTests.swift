@@ -15,8 +15,8 @@ struct MainTabsCoordinatorTests {
 
         #expect(sut.router.setItemsCalls.count == 1)
         #expect(sut.router.setItemsCalls[0].items.count == 2)
-        #expect(sut.router.setItemsCalls[0].items[0].viewController === sut.composer.homeViewController)
-        #expect(sut.router.setItemsCalls[0].items[1].viewController === sut.composer.cartViewController)
+        #expect(sut.router.setItemsCalls[0].items[0].isWrapping(sut.composer.homeViewController))
+        #expect(sut.router.setItemsCalls[0].items[1].isWrapping(sut.composer.cartViewController))
         #expect(sut.router.setItemsCalls[0].animated == false)
     }
 
@@ -27,7 +27,7 @@ struct MainTabsCoordinatorTests {
 
         sut.composer.homeEventHandler?(.placeOrder(orderID: 42))
 
-        #expect(sut.router.selectItemCalls.last?.viewController === sut.composer.cartViewController)
+        #expect(sut.router.selectItemCalls.last?.isWrapping(sut.composer.cartViewController) == true)
     }
 
     @Test
@@ -48,7 +48,7 @@ struct MainTabsCoordinatorTests {
 
         sut.composer.homeEventHandler?(.pickupPointsRequested(context: context, onClose: {}))
 
-        #expect(context.pushCalls.last?.viewController === sut.composer.pickupPointsViewController)
+        #expect(context.pushCalls.last?.item.isWrapping(sut.composer.pickupPointsViewController) == true)
         #expect(context.pushCalls.last?.animated == true)
         #expect(sut.composer.pickupPointsEmbeddedInNavigationStack == true)
     }
@@ -61,7 +61,7 @@ struct MainTabsCoordinatorTests {
 
         sut.composer.cartEventHandler?(.paymentRequested(context: context, onComplete: { _ in }))
 
-        #expect(context.pushCalls.last?.viewController === sut.composer.paymentViewController)
+        #expect(context.pushCalls.last?.item.isWrapping(sut.composer.paymentViewController) == true)
         #expect(context.pushCalls.last?.animated == true)
     }
 }
@@ -124,7 +124,7 @@ private extension MainTabsCoordinatorTests {
     @MainActor
     private final class MockNavigationStackContext: NavigationStackContext {
         struct Call {
-            let viewController: UIViewController
+            let item: RouterItem
             let animated: Bool
         }
 
@@ -133,13 +133,13 @@ private extension MainTabsCoordinatorTests {
         private(set) var popCalls: [Bool] = []
         private(set) var dismissCalls: [Bool] = []
 
-        func push(_ viewController: UIViewController, animated: Bool, completion: (() -> Void)?) {
-            pushCalls.append(Call(viewController: viewController, animated: animated))
+        func push(_ item: RouterItem, animated: Bool, completion: (() -> Void)?) {
+            pushCalls.append(Call(item: item, animated: animated))
             completion?()
         }
 
-        func present(_ viewController: UIViewController, animated: Bool, completion: (() -> Void)?) {
-            presentCalls.append(Call(viewController: viewController, animated: animated))
+        func present(_ item: RouterItem, animated: Bool, completion: (() -> Void)?) {
+            presentCalls.append(Call(item: item, animated: animated))
             completion?()
         }
 

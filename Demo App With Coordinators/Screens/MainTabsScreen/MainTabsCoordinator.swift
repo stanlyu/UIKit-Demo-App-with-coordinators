@@ -54,7 +54,7 @@ final class MainTabsCoordinatingLogic<Router: TabRouting>: Coordinator<Router, M
                     }
                 }
             ))
-            context.push(item.viewController, animated: true)
+            context.push(item, animated: true)
         }
     }
 
@@ -70,11 +70,11 @@ final class MainTabsCoordinatingLogic<Router: TabRouting>: Coordinator<Router, M
                     }
                 }
             ))
-            context.present(item.viewController, animated: true)
+            context.present(item, animated: true)
 
         case let .paymentRequested(context, onComplete):
             let item = composer.makeItem(for: .payment(onComplete: onComplete))
-            context.push(item.viewController, animated: true)
+            context.push(item, animated: true)
         }
     }
 }

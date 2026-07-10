@@ -18,14 +18,22 @@ public final class ComposerBox<Route> {
         }
     }
 
+    internal func setAttachmentManager(_ attachmentManager: any FlowAttachmentManaging) {
+        self.attachmentManager = attachmentManager
+    }
+
     public final func makeItem(for route: Route) -> RouterItem {
         let vc = makeViewController(route)
         owner?.adoptTaggedChild(from: vc)
-        return RouterItem(vc)
+        return RouterItem(
+            vc,
+            runtime: attachmentManager.runtime(attachedTo: vc)
+        )
     }
 
     // MARK: - Private members
 
     internal weak var owner: ChildAdopting?
+    private var attachmentManager: any FlowAttachmentManaging = FlowAttachmentManager.default
     private let makeViewController: @MainActor (Route) -> UIViewController
 }

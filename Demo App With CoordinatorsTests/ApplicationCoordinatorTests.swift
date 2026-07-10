@@ -12,7 +12,7 @@ struct ApplicationCoordinatorTests {
         sut.coordinator.start(with: sut.router)
         
         #expect(sut.router.setRootCalls.count == 1)
-        #expect(sut.router.setRootCalls[0].item.viewController === sut.composer.launchViewController)
+        #expect(sut.router.setRootCalls[0].item.isWrapping(sut.composer.launchViewController))
         #expect(sut.router.setRootCalls[0].animated == false)
     }
     
@@ -24,7 +24,7 @@ struct ApplicationCoordinatorTests {
         sut.composer.launchEventHandler?(.mainFlowStarted)
         
         #expect(sut.router.setRootCalls.count == 2)
-        #expect(sut.router.setRootCalls[1].item.viewController === sut.composer.mainTabsViewController)
+        #expect(sut.router.setRootCalls[1].item.isWrapping(sut.composer.mainTabsViewController))
         #expect(sut.router.setRootCalls[1].animated == true)
     }
 }

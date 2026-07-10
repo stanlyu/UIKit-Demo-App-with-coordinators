@@ -12,7 +12,7 @@ struct DeliveryCoordinatorTests {
         sut.coordinator.start(with: sut.router)
 
         #expect(sut.router.pushCalls.count == 1)
-        #expect(sut.router.pushCalls[0].item.viewController === sut.composer.pickupPointsViewController)
+        #expect(sut.router.pushCalls[0].item.isWrapping(sut.composer.pickupPointsViewController))
         #expect(sut.router.pushCalls[0].animated == false)
     }
 
@@ -24,7 +24,7 @@ struct DeliveryCoordinatorTests {
         sut.composer.pickupPointsEventHandler?(.onAddPickupPoint)
 
         #expect(sut.router.pushCalls.count == 2)
-        #expect(sut.router.pushCalls[1].item.viewController === sut.composer.addPickupPointViewController)
+        #expect(sut.router.pushCalls[1].item.isWrapping(sut.composer.addPickupPointViewController))
         #expect(sut.router.pushCalls[1].animated == true)
     }
 
@@ -48,7 +48,7 @@ struct DeliveryCoordinatorTests {
         sut.coordinator.start(with: sut.router)
         sut.composer.pickupPointsEventHandler?(.onFavoriteDeleteRequested(pickupPoint: pickupPoint, input: input))
 
-        #expect(sut.router.presentedItem?.viewController === sut.composer.deleteConfirmationViewController)
+        #expect(sut.router.presentedItem?.isWrapping(sut.composer.deleteConfirmationViewController) == true)
         #expect(sut.router.presentedAnimated == true)
     }
 

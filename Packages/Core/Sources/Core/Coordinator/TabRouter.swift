@@ -94,7 +94,7 @@ extension TabRouter: TabRouting {
         guard let tabBarController = tabBarController ?? unextractedRoot else {
             fatalError("TabRouter's tab bar controller was deallocated or not set.")
         }
-        tabBarController.setViewControllers(items.map(\.viewController), animated: animated)
+        tabBarController.setViewControllers(items.map { $0.resolveViewController(parentRuntime: nil) }, animated: animated)
     }
 
     /// Выбирает определенную вкладку по её индексу.
@@ -117,7 +117,7 @@ extension TabRouter: TabRouting {
             fatalError("TabRouter's tab bar controller was deallocated or not set.")
         }
         if let viewControllers = tabBarController.viewControllers,
-           let index = viewControllers.firstIndex(where: { $0 === item.viewController }) {
+           let index = viewControllers.firstIndex(where: { item.isWrapping($0) }) {
             tabBarController.selectedIndex = index
         }
     }

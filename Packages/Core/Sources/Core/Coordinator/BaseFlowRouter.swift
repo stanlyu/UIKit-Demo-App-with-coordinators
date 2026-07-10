@@ -25,8 +25,21 @@ internal class BaseFlowRouter<RootViewController: UIViewController> {
         isWaitingForRuntimeAttach = false
     }
 
+    internal func setRuntime(_ runtime: any FlowRuntimeNode) {
+        self.runtime = runtime
+    }
+
+    internal func viewController(for item: RouterItem) -> UIViewController {
+        item.resolveViewController(parentRuntime: runtime)
+    }
+
+    internal func viewControllers(for items: [RouterItem]) -> [UIViewController] {
+        items.map { viewController(for: $0) }
+    }
+
     private weak var weakRootViewController: RootViewController?
     private var rootViewControllerRetainer: RootViewController?
+    private weak var runtime: (any FlowRuntimeNode)?
     // Отличает состояние "root еще не установлен" от "runtime уже прикреплен".
     private var isWaitingForRuntimeAttach = true
 }

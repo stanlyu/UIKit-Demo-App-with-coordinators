@@ -73,7 +73,7 @@ extension StackRouter: StackRouting {
         guard let navigationController = navigationController ?? unextractedRoot else {
             fatalError("StackRouter's navigation controller was deallocated or not set.")
         }
-        return navigationController.viewControllers.map(RouterItem.init)
+        return navigationController.viewControllers.map { RouterItem($0) }
     }
 
     /// Осуществляет переход к новому экрану с добавлением в стек.
@@ -86,11 +86,12 @@ extension StackRouter: StackRouting {
         guard let navigationController = navigationController ?? unextractedRoot else {
             fatalError("StackRouter's navigation controller was deallocated or not set.")
         }
+        let viewController = item.resolveViewController(parentRuntime: nil)
 
         if navigationController.viewControllers.isEmpty {
-            navigationController.pushViewController(item.viewController, animated: false, completion: completion)
+            navigationController.pushViewController(viewController, animated: false, completion: completion)
         } else {
-            navigationController.pushViewController(item.viewController, animated: animated, completion: completion)
+            navigationController.pushViewController(viewController, animated: animated, completion: completion)
         }
     }
 
@@ -128,7 +129,7 @@ extension StackRouter: StackRouting {
         guard let navigationController = navigationController ?? unextractedRoot else {
             fatalError("StackRouter's navigation controller was deallocated or not set.")
         }
-        navigationController.popToViewController(item.viewController, animated: animated, completion: completion)
+        navigationController.popToViewController(item.resolveViewController(parentRuntime: nil), animated: animated, completion: completion)
     }
 
     /// Заменяет полностью массив текущего навигационного стека новым массивом экранов.
@@ -140,6 +141,6 @@ extension StackRouter: StackRouting {
         guard let navigationController = navigationController ?? unextractedRoot else {
             fatalError("StackRouter's navigation controller was deallocated or not set.")
         }
-        navigationController.setViewControllers(items.map(\.viewController), animated: animated)
+        navigationController.setViewControllers(items.map { $0.resolveViewController(parentRuntime: nil) }, animated: animated)
     }
 }

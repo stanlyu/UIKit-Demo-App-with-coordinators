@@ -73,7 +73,7 @@ extension SwitchRouter: SwitchRouting {
     ///   - animated: Использовать ли переходы при замене контента.
     ///   - completion: Замыкание, вызываемое после окончания анимации.
     public func setRoot(_ item: RouterItem, animated: Bool, completion: (() -> Void)?) {
-        let newVC = item.viewController
+        let newVC = item.resolveViewController(parentRuntime: nil)
         
         guard let oldVC = currentContent else {
             currentContent = newVC

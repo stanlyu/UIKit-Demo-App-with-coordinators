@@ -88,19 +88,21 @@ extension InlineRouter: StackRouting {
 
         let flowStack = Array(navigationController.viewControllers[selfIndex...])
         // Возвращаем сам contentViewController плюс все что лежит поверх него
-        return flowStack.map(RouterItem.init)
+        return flowStack.map { RouterItem($0) }
     }
 
     public func push(_ item: RouterItem, animated: Bool, completion: (() -> Void)?) {
+        let viewController = item.resolveViewController(parentRuntime: nil)
+
         if contentViewController == nil {
-            setContent(item.viewController)
+            setContent(viewController)
             completion?()
         } else {
             guard let nav = contentViewController?.navigationController else {
                 assertionFailure("⚠️ InlineRouter: Попытка push, но контент не находится в NavigationController.")
                 return
             }
-            nav.pushViewController(item.viewController, animated: animated, completion: completion)
+            nav.pushViewController(viewController, animated: animated, completion: completion)
         }
     }
 
@@ -136,22 +138,23 @@ extension InlineRouter: StackRouting {
 
         let stack = nav.viewControllers
 
-        guard let selfIndex = stack.firstIndex(of: content), 
-              let targetIndex = stack.firstIndex(of: item.viewController) else { return }
+        guard let selfIndex = stack.firstIndex(of: content),
+              let targetIndex = stack.firstIndex(where: { item.isWrapping($0) }) else { return }
 
         if targetIndex < selfIndex {
             assertionFailure("⚠️ ОШИБКА ЛОГИКИ InlineRouter: Попытка перехода вне зоны ответственности.")
             return
         }
 
-        nav.popToViewController(item.viewController, animated: animated, completion: completion)
+        nav.popToViewController(item.resolveViewController(parentRuntime: nil), animated: animated, completion: completion)
     }
 
     public func setStack(_ items: [RouterItem], animated: Bool) {
         guard let first = items.first else { return }
+        let firstViewController = first.resolveViewController(parentRuntime: nil)
 
         if contentViewController == nil {
-            setContent(first.viewController)
+            setContent(firstViewController)
         }
         
         guard let nav = contentViewController?.navigationController, let content = contentViewController else {
@@ -166,7 +169,7 @@ extension InlineRouter: StackRouting {
         }
 
         if items.count > 1 {
-            currentStack.append(contentsOf: items.dropFirst().map(\.viewController))
+            currentStack.append(contentsOf: items.dropFirst().map { $0.resolveViewController(parentRuntime: nil) })
         }
 
         nav.setViewControllers(currentStack, animated: animated)

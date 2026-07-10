@@ -17,7 +17,7 @@ internal final class StackFlowRouter: BaseFlowRouter<UINavigationController> {
 
 extension StackFlowRouter {
     func present(_ item: RouterItem, animated: Bool, completion: (() -> Void)?) {
-        requireNavigationController().present(item.viewController, animated: animated, completion: completion)
+        requireNavigationController().present(viewController(for: item), animated: animated, completion: completion)
     }
 
     func dismiss(animated: Bool, completion: (() -> Void)?) {
@@ -27,17 +27,17 @@ extension StackFlowRouter {
 
 extension StackFlowRouter: StackNavigation {
     var items: [RouterItem] {
-        requireNavigationController().viewControllers.map(RouterItem.init)
+        requireNavigationController().viewControllers.map { RouterItem($0) }
     }
 
     func setRoot(_ item: RouterItem, animated: Bool) {
-        requireNavigationController().setViewControllers([item.viewController], animated: animated)
+        requireNavigationController().setViewControllers([viewController(for: item)], animated: animated)
     }
 
     func push(_ item: RouterItem, animated: Bool, completion: (() -> Void)?) {
         let navigationController = requireNavigationController()
         let shouldAnimate = navigationController.viewControllers.isEmpty ? false : animated
-        navigationController.pushViewController(item.viewController, animated: shouldAnimate, completion: completion)
+        navigationController.pushViewController(viewController(for: item), animated: shouldAnimate, completion: completion)
     }
 
     func pop(animated: Bool, completion: (() -> Void)?) {
@@ -49,11 +49,11 @@ extension StackFlowRouter: StackNavigation {
     }
 
     func popTo(_ item: RouterItem, animated: Bool, completion: (() -> Void)?) {
-        requireNavigationController().popToViewController(item.viewController, animated: animated, completion: completion)
+        requireNavigationController().popToViewController(viewController(for: item), animated: animated, completion: completion)
     }
 
     func setStack(_ items: [RouterItem], animated: Bool) {
-        requireNavigationController().setViewControllers(items.map(\.viewController), animated: animated)
+        requireNavigationController().setViewControllers(viewControllers(for: items), animated: animated)
     }
 }
 
@@ -74,7 +74,7 @@ internal final class TabFlowRouter: BaseFlowRouter<UITabBarController> {
 
 extension TabFlowRouter {
     func present(_ item: RouterItem, animated: Bool, completion: (() -> Void)?) {
-        requireTabBarController().present(item.viewController, animated: animated, completion: completion)
+        requireTabBarController().present(viewController(for: item), animated: animated, completion: completion)
     }
 
     func dismiss(animated: Bool, completion: (() -> Void)?) {
@@ -88,11 +88,11 @@ extension TabFlowRouter: TabNavigation {
     }
 
     var selectedItem: RouterItem? {
-        requireTabBarController().selectedViewController.map(RouterItem.init)
+        requireTabBarController().selectedViewController.map { RouterItem($0) }
     }
 
     func setItems(_ items: [RouterItem], animated: Bool) {
-        requireTabBarController().setViewControllers(items.map(\.viewController), animated: animated)
+        requireTabBarController().setViewControllers(viewControllers(for: items), animated: animated)
     }
 
     func selectTab(at index: Int) {
@@ -101,7 +101,7 @@ extension TabFlowRouter: TabNavigation {
 
     func selectItem(_ item: RouterItem) {
         let tabBarController = requireTabBarController()
-        guard let index = tabBarController.viewControllers?.firstIndex(where: { $0 === item.viewController }) else {
+        guard let index = tabBarController.viewControllers?.firstIndex(where: { item.isWrapping($0) }) else {
             return
         }
         tabBarController.selectedIndex = index
@@ -128,7 +128,7 @@ internal final class InlineFlowRouter: BaseFlowRouter<UIViewController> {
 
 extension InlineFlowRouter {
     func present(_ item: RouterItem, animated: Bool, completion: (() -> Void)?) {
-        requireContentViewController().present(item.viewController, animated: animated, completion: completion)
+        requireContentViewController().present(viewController(for: item), animated: animated, completion: completion)
     }
 
     func dismiss(animated: Bool, completion: (() -> Void)?) {
@@ -145,29 +145,33 @@ extension InlineFlowRouter: StackNavigation {
         guard let rootIndex = navigationController.viewControllers.firstIndex(of: contentViewController) else {
             return [RouterItem(contentViewController)]
         }
-        return navigationController.viewControllers[rootIndex...].map(RouterItem.init)
+        return navigationController.viewControllers[rootIndex...].map { RouterItem($0) }
     }
 
     func setRoot(_ item: RouterItem, animated: Bool) {
+        let viewController = viewController(for: item)
+
         guard let contentViewController else {
-            setContent(item.viewController)
+            setContent(viewController)
             return
         }
 
         guard let navigationController = contentViewController.navigationController,
               let rootIndex = navigationController.viewControllers.firstIndex(of: contentViewController) else {
-            setContent(item.viewController)
+            setContent(viewController)
             return
         }
 
         let previousStack = navigationController.viewControllers.prefix(upTo: rootIndex)
-        navigationController.setViewControllers(Array(previousStack) + [item.viewController], animated: animated)
-        setContent(item.viewController)
+        navigationController.setViewControllers(Array(previousStack) + [viewController], animated: animated)
+        setContent(viewController)
     }
 
     func push(_ item: RouterItem, animated: Bool, completion: (() -> Void)?) {
+        let viewController = viewController(for: item)
+
         guard let contentViewController else {
-            setContent(item.viewController)
+            setContent(viewController)
             completion?()
             return
         }
@@ -177,7 +181,7 @@ extension InlineFlowRouter: StackNavigation {
             return
         }
 
-        navigationController.pushViewController(item.viewController, animated: animated, completion: completion)
+        navigationController.pushViewController(viewController, animated: animated, completion: completion)
     }
 
     func pop(animated: Bool, completion: (() -> Void)?) {
@@ -204,7 +208,7 @@ extension InlineFlowRouter: StackNavigation {
         guard let navigationController = contentViewController?.navigationController,
               let contentViewController,
               let rootIndex = navigationController.viewControllers.firstIndex(of: contentViewController),
-              let targetIndex = navigationController.viewControllers.firstIndex(of: item.viewController) else {
+              let targetIndex = navigationController.viewControllers.firstIndex(where: { item.isWrapping($0) }) else {
             assertionFailure("InlineFlowRouter: content is not embedded in UINavigationController.")
             return
         }
@@ -214,14 +218,15 @@ extension InlineFlowRouter: StackNavigation {
             return
         }
 
-        navigationController.popToViewController(item.viewController, animated: animated, completion: completion)
+        navigationController.popToViewController(viewController(for: item), animated: animated, completion: completion)
     }
 
     func setStack(_ items: [RouterItem], animated: Bool) {
         guard let first = items.first else { return }
+        let firstViewController = viewController(for: first)
 
         if contentViewController == nil {
-            setContent(first.viewController)
+            setContent(firstViewController)
         }
 
         guard let navigationController = contentViewController?.navigationController,
@@ -232,7 +237,7 @@ extension InlineFlowRouter: StackNavigation {
         }
 
         var nextStack = Array(navigationController.viewControllers.prefix(upTo: rootIndex + 1))
-        nextStack.append(contentsOf: items.dropFirst().map(\.viewController))
+        nextStack.append(contentsOf: viewControllers(for: Array(items.dropFirst())))
         navigationController.setViewControllers(nextStack, animated: animated)
     }
 }
@@ -310,7 +315,7 @@ internal final class SwitchFlowRouter: BaseFlowRouter<UIViewController> {
 
 extension SwitchFlowRouter {
     func present(_ item: RouterItem, animated: Bool, completion: (() -> Void)?) {
-        requireCurrentContent().present(item.viewController, animated: animated, completion: completion)
+        requireCurrentContent().present(viewController(for: item), animated: animated, completion: completion)
     }
 
     func dismiss(animated: Bool, completion: (() -> Void)?) {
@@ -320,11 +325,11 @@ extension SwitchFlowRouter {
 
 extension SwitchFlowRouter: SwitchNavigation {
     var currentItem: RouterItem? {
-        rootViewController.map(RouterItem.init)
+        rootViewController.map { RouterItem($0) }
     }
 
     func switchTo(_ item: RouterItem, animated: Bool, completion: (() -> Void)?) {
-        let newViewController = item.viewController
+        let newViewController = viewController(for: item)
 
         guard let oldViewController = rootViewController else {
             setInitialContent(newViewController)

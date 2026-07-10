@@ -48,7 +48,7 @@ public protocol Routing: RoutingContext {
 
 public extension Routing {
     func present(_ item: RouterItem, animated: Bool, completion: (() -> Void)?) {
-        extractRootUI().present(item.viewController, animated: animated, completion: completion)
+        extractRootUI().present(item.resolveViewController(parentRuntime: nil), animated: animated, completion: completion)
     }
 
     func dismiss(animated: Bool, completion: (() -> Void)?) {
