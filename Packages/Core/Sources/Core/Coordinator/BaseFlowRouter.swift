@@ -30,7 +30,10 @@ internal class BaseFlowRouter<RootViewController: UIViewController> {
     }
 
     internal func viewController(for item: RouterItem) -> UIViewController {
-        item.resolveViewController(parentRuntime: runtime)
+        if let itemRuntime = item.runtime {
+            runtime?.adopt(itemRuntime)
+        }
+        return item.viewController
     }
 
     internal func viewControllers(for items: [RouterItem]) -> [UIViewController] {
@@ -39,7 +42,9 @@ internal class BaseFlowRouter<RootViewController: UIViewController> {
 
     private weak var weakRootViewController: RootViewController?
     private var rootViewControllerRetainer: RootViewController?
-    private weak var runtime: (any FlowRuntimeNode)?
+    internal weak var runtime: (any FlowRuntimeNode)?
     // Отличает состояние "root еще не установлен" от "runtime уже прикреплен".
     private var isWaitingForRuntimeAttach = true
 }
+
+extension BaseFlowRouter: FlowRuntimeRouter {}

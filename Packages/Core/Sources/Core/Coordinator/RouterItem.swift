@@ -13,8 +13,8 @@ import UIKit
 /// и внешние модули работали через абстракцию роутера.
 @MainActor
 public struct RouterItem {
-    private let viewController: UIViewController
-    private let runtime: (any FlowRuntimeNode)?
+    internal let viewController: UIViewController
+    internal let runtime: (any FlowRuntimeNode)?
 
     internal init(
         _ viewController: UIViewController,
@@ -25,9 +25,6 @@ public struct RouterItem {
     }
 
     internal func resolveViewController(parentRuntime: (any FlowRuntimeNode)?) -> UIViewController {
-        if let runtime {
-            parentRuntime?.adopt(runtime)
-        }
         return viewController
     }
 

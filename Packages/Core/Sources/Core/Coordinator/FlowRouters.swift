@@ -1,23 +1,107 @@
 import UIKit
 
 @MainActor
-internal final class StackFlowRouter: BaseFlowRouter<UINavigationController> {
-    internal init(makeNavigationController: @MainActor () -> UINavigationController) {
+internal final class FlowRouter<RootViewController: UIViewController, Driver>: FlowRuntimeRouter {
+    internal init(
+        rootViewController: RootViewController,
+        driver: Driver,
+        attachmentManager: any FlowAttachmentManaging
+    ) {
+        self.driver = driver
+        self.attachmentManager = attachmentManager
+        setRootViewController(rootViewController)
+    }
+
+    internal var rootViewController: RootViewController? {
+        weakRootViewController ?? rootViewControllerRetainer
+    }
+
+    internal func setRootViewController(_ viewController: RootViewController) {
+        weakRootViewController = viewController
+
+        if isWaitingForRuntimeAttach {
+            rootViewControllerRetainer = viewController
+        }
+    }
+
+    internal func releaseRootRetainer() {
+        rootViewControllerRetainer = nil
+        isWaitingForRuntimeAttach = false
+    }
+
+    internal func setRuntime(_ runtime: any FlowRuntimeNode) {
+        self.runtime = runtime
+    }
+
+    internal func viewController(for item: RouterItem) -> UIViewController {
+        if let itemRuntime = item.runtime {
+            runtime?.adopt(itemRuntime)
+        }
+        return item.viewController
+    }
+
+    internal func viewControllers(for items: [RouterItem]) -> [UIViewController] {
+        items.map { viewController(for: $0) }
+    }
+
+    internal func apply(_ mutation: NavigationMutation) {
+        guard let runtime else { return }
+
+        for item in mutation.insertedItems {
+            guard let childRuntime = item.runtime else { continue }
+            runtime.adopt(childRuntime)
+        }
+
+        for viewController in mutation.removedViewControllers {
+            guard let childRuntime = attachmentManager.runtime(attachedTo: viewController),
+                  childRuntime !== runtime else {
+                continue
+            }
+            runtime.removeChild(childRuntime)
+        }
+    }
+
+    private let attachmentManager: any FlowAttachmentManaging
+    fileprivate let driver: Driver
+    private weak var weakRootViewController: RootViewController?
+    private var rootViewControllerRetainer: RootViewController?
+    fileprivate weak var runtime: (any FlowRuntimeNode)?
+    private var isWaitingForRuntimeAttach = true
+}
+
+extension FlowRouter where RootViewController == UINavigationController, Driver == StackNavigationDriver {
+    internal convenience init(
+        makeNavigationController: @MainActor () -> UINavigationController,
+        attachmentManager: any FlowAttachmentManaging
+    ) {
         let navigationController = makeNavigationController()
-        super.init(rootViewController: navigationController)
+        let delegateDispatcher = NavigationControllerDelegateDispatcher.install(on: navigationController)
+        let driver = StackNavigationDriver(
+            navigationController: navigationController,
+            delegateDispatcher: delegateDispatcher
+        )
+        self.init(
+            rootViewController: navigationController,
+            driver: driver,
+            attachmentManager: attachmentManager
+        )
+        driver.onExternalMutation = { [weak self] mutation in
+            self?.apply(mutation)
+        }
     }
 
     private func requireNavigationController() -> UINavigationController {
         guard let navigationController = rootViewController else {
-            fatalError("StackFlowRouter's navigation controller was deallocated.")
+            fatalError("Stack FlowRouter's navigation controller was deallocated.")
         }
         return navigationController
     }
-}
 
-extension StackFlowRouter {
     func present(_ item: RouterItem, animated: Bool, completion: (() -> Void)?) {
-        requireNavigationController().present(viewController(for: item), animated: animated, completion: completion)
+        requireNavigationController().present(item.viewController, animated: animated) { [weak self] in
+            self?.apply(NavigationMutation(insertedItems: [item]))
+            completion?()
+        }
     }
 
     func dismiss(animated: Bool, completion: (() -> Void)?) {
@@ -25,36 +109,95 @@ extension StackFlowRouter {
     }
 }
 
-extension StackFlowRouter: StackNavigation {
+extension FlowRouter where RootViewController == UINavigationController, Driver == StackNavigationDriver {
     var items: [RouterItem] {
-        requireNavigationController().viewControllers.map { RouterItem($0) }
+        driver.viewControllers.map { RouterItem($0) }
     }
 
     func setRoot(_ item: RouterItem, animated: Bool) {
-        requireNavigationController().setViewControllers([viewController(for: item)], animated: animated)
+        driver.setRoot(item, animated: animated) { [weak self] mutation in
+            self?.apply(mutation)
+        }
     }
 
     func push(_ item: RouterItem, animated: Bool, completion: (() -> Void)?) {
-        let navigationController = requireNavigationController()
-        let shouldAnimate = navigationController.viewControllers.isEmpty ? false : animated
-        navigationController.pushViewController(viewController(for: item), animated: shouldAnimate, completion: completion)
+        driver.push(item, animated: animated) { [weak self] mutation in
+            self?.apply(mutation)
+            completion?()
+        }
     }
 
     func pop(animated: Bool, completion: (() -> Void)?) {
-        requireNavigationController().popViewController(animated: animated, completion: completion)
+        driver.pop(animated: animated) { [weak self] mutation in
+            self?.apply(mutation)
+            completion?()
+        }
     }
 
     func popToRoot(animated: Bool, completion: (() -> Void)?) {
-        requireNavigationController().popToRootViewController(animated: animated, completion: completion)
+        driver.popToRoot(animated: animated) { [weak self] mutation in
+            self?.apply(mutation)
+            completion?()
+        }
     }
 
     func popTo(_ item: RouterItem, animated: Bool, completion: (() -> Void)?) {
-        requireNavigationController().popToViewController(viewController(for: item), animated: animated, completion: completion)
+        driver.popTo(item, animated: animated) { [weak self] mutation in
+            self?.apply(mutation)
+            completion?()
+        }
     }
 
     func setStack(_ items: [RouterItem], animated: Bool) {
-        requireNavigationController().setViewControllers(viewControllers(for: items), animated: animated)
+        driver.setStack(items, animated: animated) { [weak self] mutation in
+            self?.apply(mutation)
+        }
     }
+}
+
+@MainActor
+internal final class StackNavigationFacade: StackNavigation {
+    internal init(router: FlowRouter<UINavigationController, StackNavigationDriver>) {
+        self.router = router
+    }
+
+    var items: [RouterItem] {
+        router.items
+    }
+
+    func present(_ item: RouterItem, animated: Bool, completion: (() -> Void)?) {
+        router.present(item, animated: animated, completion: completion)
+    }
+
+    func dismiss(animated: Bool, completion: (() -> Void)?) {
+        router.dismiss(animated: animated, completion: completion)
+    }
+
+    func setRoot(_ item: RouterItem, animated: Bool) {
+        router.setRoot(item, animated: animated)
+    }
+
+    func push(_ item: RouterItem, animated: Bool, completion: (() -> Void)?) {
+        router.push(item, animated: animated, completion: completion)
+    }
+
+    func pop(animated: Bool, completion: (() -> Void)?) {
+        router.pop(animated: animated, completion: completion)
+    }
+
+    func popToRoot(animated: Bool, completion: (() -> Void)?) {
+        router.popToRoot(animated: animated, completion: completion)
+    }
+
+    func popTo(_ item: RouterItem, animated: Bool, completion: (() -> Void)?) {
+        router.popTo(item, animated: animated, completion: completion)
+    }
+
+    func setStack(_ items: [RouterItem], animated: Bool) {
+        router.setStack(items, animated: animated)
+    }
+
+    private let router: FlowRouter<UINavigationController, StackNavigationDriver>
 }
 
 @MainActor

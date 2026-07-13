@@ -19,10 +19,21 @@ private final class WeakFlowRuntimeNode {
 }
 
 @MainActor
+internal protocol FlowRuntimeRouter: AnyObject {
+    associatedtype RootViewController: UIViewController
+
+    var rootViewController: RootViewController? { get }
+
+    func setRuntime(_ runtime: any FlowRuntimeNode)
+    func releaseRootRetainer()
+}
+
+@MainActor
 internal final class FlowRuntime<RootViewController, Router, Navigation, Route, Coordinator>
 where
     RootViewController: UIViewController,
-    Router: BaseFlowRouter<RootViewController>,
+    Router: FlowRuntimeRouter,
+    Router.RootViewController == RootViewController,
     Coordinator: BaseCoordinator<Navigation, Route>
 {
     internal init(

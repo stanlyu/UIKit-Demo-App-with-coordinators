@@ -33,8 +33,12 @@ public enum Flow {
         ) -> Coordinator
     ) -> CreatedFlow<Coordinator>
     where Coordinator: BaseCoordinator<any StackNavigation, Composer.Route>, Composer: Composing {
-        let router = StackFlowRouter(makeNavigationController: makeNavigationController)
-        let coordinator = makeCoordinator(router, composer)
+        let router = FlowRouter<UINavigationController, StackNavigationDriver>(
+            makeNavigationController: makeNavigationController,
+            attachmentManager: attachmentManager
+        )
+        let navigation = StackNavigationFacade(router: router)
+        let coordinator = makeCoordinator(navigation, composer)
         coordinator.setAttachmentManager(attachmentManager)
         let runtime = FlowRuntime(
             router: router,
