@@ -9,18 +9,21 @@ internal final class NavigationControllerDelegateDispatcher: NSObject {
 
         let dispatcher = NavigationControllerDelegateDispatcher()
         if let existingDelegate = navigationController.delegate {
-            dispatcher.addDelegate(existingDelegate)
+            dispatcher.addDelegate(existingDelegate, category: .external)
         }
         navigationController.delegate = dispatcher
         return dispatcher
     }
 
-    internal func addDelegate(_ delegate: any UINavigationControllerDelegate) {
+    internal func addDelegate(
+        _ delegate: any UINavigationControllerDelegate,
+        category: DelegateCategory = .external
+    ) {
         cleanupDelegates()
 
         let delegateID = ObjectIdentifier(delegate as AnyObject)
         guard !delegates.contains(where: { $0.id == delegateID }) else { return }
-        delegates.append(WeakNavigationControllerDelegate(delegate))
+        delegates.append(WeakNavigationControllerDelegate(delegate, category: category))
     }
 
     internal func removeDelegate(_ delegate: any UINavigationControllerDelegate) {
@@ -28,9 +31,26 @@ internal final class NavigationControllerDelegateDispatcher: NSObject {
         delegates.removeAll { $0.delegate == nil || $0.id == delegateID }
     }
 
-    private var activeDelegates: [any UINavigationControllerDelegate] {
+    private func activeDelegates(orderedBy order: DelegateDispatchOrder) -> [any UINavigationControllerDelegate] {
         cleanupDelegates()
-        return delegates.compactMap(\.delegate)
+        switch order {
+        case .registration:
+            return delegates.compactMap(\.delegate)
+        case .frameworkFirst:
+            return activeDelegates(in: [.framework, .external])
+        case .externalFirst:
+            return activeDelegates(in: [.external, .framework])
+        }
+    }
+
+    private func activeDelegates(
+        in categories: [DelegateCategory]
+    ) -> [any UINavigationControllerDelegate] {
+        categories.flatMap { category in
+            delegates
+                .filter { $0.category == category }
+                .compactMap(\.delegate)
+        }
     }
 
     private func cleanupDelegates() {
@@ -46,7 +66,7 @@ extension NavigationControllerDelegateDispatcher: UINavigationControllerDelegate
         willShow viewController: UIViewController,
         animated: Bool
     ) {
-        for delegate in activeDelegates {
+        for delegate in activeDelegates(orderedBy: .registration) {
             delegate.navigationController?(navigationController, willShow: viewController, animated: animated)
         }
     }
@@ -56,7 +76,7 @@ extension NavigationControllerDelegateDispatcher: UINavigationControllerDelegate
         didShow viewController: UIViewController,
         animated: Bool
     ) {
-        for delegate in activeDelegates {
+        for delegate in activeDelegates(orderedBy: .frameworkFirst) {
             delegate.navigationController?(navigationController, didShow: viewController, animated: animated)
         }
     }
@@ -67,7 +87,7 @@ extension NavigationControllerDelegateDispatcher: UINavigationControllerDelegate
         from fromVC: UIViewController,
         to toVC: UIViewController
     ) -> (any UIViewControllerAnimatedTransitioning)? {
-        for delegate in activeDelegates.reversed() {
+        for delegate in activeDelegates(orderedBy: .externalFirst) {
             if let animator = delegate.navigationController?(
                 navigationController,
                 animationControllerFor: operation,
@@ -84,7 +104,7 @@ extension NavigationControllerDelegateDispatcher: UINavigationControllerDelegate
         _ navigationController: UINavigationController,
         interactionControllerFor animationController: any UIViewControllerAnimatedTransitioning
     ) -> (any UIViewControllerInteractiveTransitioning)? {
-        for delegate in activeDelegates.reversed() {
+        for delegate in activeDelegates(orderedBy: .externalFirst) {
             if let interactionController = delegate.navigationController?(
                 navigationController,
                 interactionControllerFor: animationController
@@ -98,7 +118,7 @@ extension NavigationControllerDelegateDispatcher: UINavigationControllerDelegate
     internal func navigationControllerSupportedInterfaceOrientations(
         _ navigationController: UINavigationController
     ) -> UIInterfaceOrientationMask {
-        for delegate in activeDelegates {
+        for delegate in activeDelegates(orderedBy: .externalFirst) {
             if let supportedOrientations = delegate.navigationControllerSupportedInterfaceOrientations?(
                 navigationController
             ) {
@@ -111,7 +131,7 @@ extension NavigationControllerDelegateDispatcher: UINavigationControllerDelegate
     internal func navigationControllerPreferredInterfaceOrientationForPresentation(
         _ navigationController: UINavigationController
     ) -> UIInterfaceOrientation {
-        for delegate in activeDelegates {
+        for delegate in activeDelegates(orderedBy: .externalFirst) {
             if let preferredOrientation = delegate.navigationControllerPreferredInterfaceOrientationForPresentation?(
                 navigationController
             ) {
@@ -122,12 +142,30 @@ extension NavigationControllerDelegateDispatcher: UINavigationControllerDelegate
     }
 }
 
+extension NavigationControllerDelegateDispatcher {
+    internal enum DelegateCategory {
+        case external
+        case framework
+    }
+}
+
+private enum DelegateDispatchOrder {
+    case registration
+    case frameworkFirst
+    case externalFirst
+}
+
 private final class WeakNavigationControllerDelegate {
-    init(_ delegate: any UINavigationControllerDelegate) {
+    init(
+        _ delegate: any UINavigationControllerDelegate,
+        category: NavigationControllerDelegateDispatcher.DelegateCategory
+    ) {
         self.id = ObjectIdentifier(delegate as AnyObject)
         self.delegate = delegate
+        self.category = category
     }
 
     let id: ObjectIdentifier
+    let category: NavigationControllerDelegateDispatcher.DelegateCategory
     weak var delegate: (any UINavigationControllerDelegate)?
 }

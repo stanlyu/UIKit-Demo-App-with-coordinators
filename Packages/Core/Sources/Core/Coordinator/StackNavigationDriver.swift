@@ -10,7 +10,7 @@ internal final class StackNavigationDriver: NSObject {
         self.delegateDispatcher = delegateDispatcher
         self.lastKnownStack = navigationController.viewControllers
         super.init()
-        delegateDispatcher.addDelegate(self)
+        delegateDispatcher.addDelegate(self, category: .framework)
     }
 
     internal var onExternalMutation: ((NavigationMutation) -> Void)?

@@ -197,6 +197,7 @@ private final class CapturingNavigationDelegate: NSObject, UINavigationControlle
     var interactionController: (any UIViewControllerInteractiveTransitioning)?
     var supportedOrientations: UIInterfaceOrientationMask = .landscape
     var preferredOrientation: UIInterfaceOrientation = .landscapeLeft
+    var onDidShow: ((UINavigationController, UIViewController, Bool) -> Void)?
 
     func navigationController(
         _ navigationController: UINavigationController,
@@ -204,6 +205,7 @@ private final class CapturingNavigationDelegate: NSObject, UINavigationControlle
         animated: Bool
     ) {
         didShowCallCount += 1
+        onDidShow?(navigationController, viewController, animated)
     }
 
     func navigationController(
@@ -548,6 +550,46 @@ struct FlowTests {
 
         #expect(!parentRuntime.children.contains { $0 === childRuntime })
         #expect(childRuntime.parent == nil)
+    }
+
+    @Test func stackFlow_externalDidShowObservesRuntimeAfterNativeBackCleanup() throws {
+        let attachmentManager = StateFlowAttachmentManager()
+        let childFlow = makeInlineChildFlow(attachmentManager: attachmentManager)
+        let externalDelegate = CapturingNavigationDelegate()
+        let navigationController = UINavigationController()
+        navigationController.delegate = externalDelegate
+        let composer = RuntimeStackComposer(viewControllers: [
+            .root: UIViewController(),
+            .childA: childFlow.viewController
+        ])
+        var parentRuntime: (any FlowRuntimeNode)?
+        var childRuntime: (any FlowRuntimeNode)?
+        var didInspectCleanupDuringExternalDidShow = false
+        externalDelegate.onDidShow = { _, _, _ in
+            guard let parentRuntime, let childRuntime else { return }
+
+            didInspectCleanupDuringExternalDidShow = true
+            #expect(!parentRuntime.children.contains { $0 === childRuntime })
+            #expect(childRuntime.parent == nil)
+        }
+
+        let parentFlow = Flow.stack(
+            attachmentManager: attachmentManager,
+            makeNavigationController: { navigationController },
+            composer: composer
+        ) { router, composer in
+            RuntimeStackCoordinator(router: router, composer: composer)
+        }
+        parentFlow.coordinator.push(.childA)
+        let dispatcher = try #require(navigationController.delegate as? NavigationControllerDelegateDispatcher)
+        parentRuntime = try #require(attachmentManager.runtime(attachedTo: navigationController))
+        childRuntime = try #require(attachmentManager.runtime(attachedTo: childFlow.viewController))
+
+        navigationController.setViewControllers([composer.rootViewController], animated: false)
+        dispatcher.navigationController(navigationController, didShow: composer.rootViewController, animated: false)
+
+        #expect(didInspectCleanupDuringExternalDidShow)
+        #expect(externalDelegate.didShowCallCount == 1)
     }
 
     @Test func stackFlow_externalDeltaDoesNotCreateInsertedItems() {
