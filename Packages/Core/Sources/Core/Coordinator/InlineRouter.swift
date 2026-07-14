@@ -2,29 +2,27 @@ import UIKit
 
 @MainActor
 final class InlineRouter: BaseRouter<UIViewController>, StackNavigation {
-    var rootViewController: UIViewController? {
-        parentViewController
+    var items: [RouterItem] {
+        [parentRouterItem].compactMap { $0 } + childRouterItems
     }
 
-    var items: [RouterItem] {
-        childRouterItems
-    }
+    private weak var activeNavigationController: UINavigationController?
 
     private var navigationController: UINavigationController? {
-        rootViewController?.navigationController
+        guard let nav = parentViewController?.navigationController else { return nil }
+        setupDelegateIfNeeded(on: nav)
+        return nav
     }
 
-    func updateRootViewController(_ vc: UIViewController) {
-        updateParent(RouterItem(vc))
-        if let nav = vc.navigationController {
-            let dispatcher = NavigationControllerDelegateDispatcher.install(on: nav)
-            dispatcher.addDelegate(self, category: .instance)
-        }
-        syncChildRouterItems()
+    private func setupDelegateIfNeeded(on nav: UINavigationController) {
+        guard activeNavigationController !== nav else { return }
+        activeNavigationController = nav
+        let dispatcher = NavigationControllerDelegateDispatcher.install(on: nav)
+        dispatcher.addDelegate(self, category: .instance)
     }
 
     func setRoot(_ item: RouterItem, animated: Bool) {
-        let oldRoot = rootViewController
+        let oldRoot = parentViewController
         updateParent(item)
         
         if let oldRoot,
@@ -53,7 +51,7 @@ final class InlineRouter: BaseRouter<UIViewController>, StackNavigation {
     }
 
     func pop(animated: Bool, completion: (() -> Void)?) {
-        guard let rootVC = rootViewController,
+        guard let rootVC = parentViewController,
               let nav = navigationController else {
             completion?()
             return
@@ -73,7 +71,7 @@ final class InlineRouter: BaseRouter<UIViewController>, StackNavigation {
     }
 
     func popToRoot(animated: Bool, completion: (() -> Void)?) {
-        guard let rootVC = rootViewController else {
+        guard let rootVC = parentViewController else {
             completion?()
             return
         }
@@ -81,7 +79,7 @@ final class InlineRouter: BaseRouter<UIViewController>, StackNavigation {
     }
 
     func popTo(_ item: RouterItem, animated: Bool, completion: (() -> Void)?) {
-        guard let rootVC = rootViewController,
+        guard let rootVC = parentViewController,
               let nav = navigationController,
               let rootIndex = nav.viewControllers.firstIndex(of: rootVC),
               let targetIndex = nav.viewControllers.firstIndex(of: item.viewController) else {
@@ -104,7 +102,7 @@ final class InlineRouter: BaseRouter<UIViewController>, StackNavigation {
 
     func setStack(_ items: [RouterItem], animated: Bool) {
         guard let firstItem = items.first else { return }
-        let oldRoot = rootViewController
+        let oldRoot = parentViewController
         updateParent(firstItem)
         
         if let oldRoot,
@@ -119,13 +117,15 @@ final class InlineRouter: BaseRouter<UIViewController>, StackNavigation {
     }
 
     private func syncChildRouterItems() {
-        guard let rootVC = rootViewController else { return }
+        guard let rootVC = parentViewController else { return }
         let currentStack: [UIViewController]
+        
         if let nav = navigationController,
            let rootIndex = nav.viewControllers.firstIndex(of: rootVC) {
-            currentStack = Array(nav.viewControllers[rootIndex...])
+            // В дочерние элементы складываем всё, что идет ПОСЛЕ rootVC
+            currentStack = Array(nav.viewControllers.suffix(from: rootIndex + 1))
         } else {
-            currentStack = [rootVC]
+            currentStack = []
         }
         
         let updatedItems = currentStack.map { vc in

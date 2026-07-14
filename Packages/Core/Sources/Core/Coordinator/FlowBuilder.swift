@@ -128,8 +128,6 @@ public enum FlowBuilder {
             fatalError("Coordinator must set root content (setRoot) during start(_:).")
         }
 
-        router.updateRootViewController(rootVC)
-
         return CreatedFlow(viewController: rootVC, coordinator: coordinator)
     }
 
