@@ -3,8 +3,6 @@
 //  Core
 //
 
-import UIKit
-
 /// Контекст, через который родительский координатор может выполнить переход
 /// внутри навигационной области дочернего флоу, не раскрывая ему сборку внешнего модуля.
 @MainActor
@@ -33,10 +31,10 @@ public extension NavigationStackContext {
     }
 }
 
-/// Адаптер над `StackRouting` для передачи навигационных команд между флоу.
+/// Адаптер над `StackNavigation` для передачи навигационных команд между флоу.
 @MainActor
-public final class RouterNavigationStackContext<Router: StackRouting>: NavigationStackContext {
-    public init(router: Router) {
+public final class RouterNavigationStackContext: NavigationStackContext {
+    public init(router: any StackNavigation) {
         self.router = router
     }
 
@@ -58,5 +56,5 @@ public final class RouterNavigationStackContext<Router: StackRouting>: Navigatio
 
     // MARK: - Private members
 
-    private weak var router: Router?
+    private weak var router: (any StackNavigation)?
 }

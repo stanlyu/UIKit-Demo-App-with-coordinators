@@ -12,7 +12,7 @@ public extension UINavigationController {
 
     // MARK: - Push
 
-    public func pushViewController(_ viewController: UIViewController, animated: Bool, completion: (() -> Void)?) {
+    func pushViewController(_ viewController: UIViewController, animated: Bool, completion: (() -> Void)?) {
         pushViewController(viewController, animated: animated)
         handleCompletion(animated: animated, completion: completion)
     }
@@ -20,21 +20,21 @@ public extension UINavigationController {
     // MARK: - Pop
 
     @discardableResult
-    public func popViewController(animated: Bool, completion: (() -> Void)?) -> UIViewController? {
+    func popViewController(animated: Bool, completion: (() -> Void)?) -> UIViewController? {
         let poppedViewController = popViewController(animated: animated)
         handleCompletion(animated: animated, completion: completion)
         return poppedViewController
     }
 
     @discardableResult
-    public func popToViewController(_ viewController: UIViewController, animated: Bool, completion: (() -> Void)?) -> [UIViewController]? {
+    func popToViewController(_ viewController: UIViewController, animated: Bool, completion: (() -> Void)?) -> [UIViewController]? {
         let poppedViewControllers = popToViewController(viewController, animated: animated)
         handleCompletion(animated: animated, completion: completion)
         return poppedViewControllers
     }
 
     @discardableResult
-    public func popToRootViewController(animated: Bool, completion: (() -> Void)?) -> [UIViewController]? {
+    func popToRootViewController(animated: Bool, completion: (() -> Void)?) -> [UIViewController]? {
         let poppedViewControllers = popToRootViewController(animated: animated)
         handleCompletion(animated: animated, completion: completion)
         return poppedViewControllers
@@ -42,7 +42,7 @@ public extension UINavigationController {
 
     // MARK: - Set View Controllers
 
-    public func setViewControllers(_ viewControllers: [UIViewController], animated: Bool, completion: (() -> Void)?) {
+    func setViewControllers(_ viewControllers: [UIViewController], animated: Bool, completion: (() -> Void)?) {
         setViewControllers(viewControllers, animated: animated)
         handleCompletion(animated: animated, completion: completion)
     }

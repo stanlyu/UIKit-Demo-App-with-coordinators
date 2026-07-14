@@ -14,18 +14,14 @@ import UIKit
 @MainActor
 public struct RouterItem {
     internal let viewController: UIViewController
-    internal let runtime: (any FlowRuntimeNode)?
+    internal let instance: (any FlowInstanceNode)?
 
     internal init(
         _ viewController: UIViewController,
-        runtime: (any FlowRuntimeNode)? = nil
+        instance: (any FlowInstanceNode)? = nil
     ) {
         self.viewController = viewController
-        self.runtime = runtime
-    }
-
-    internal func resolveViewController(parentRuntime: (any FlowRuntimeNode)?) -> UIViewController {
-        return viewController
+        self.instance = instance
     }
 
     internal func isWrapping(_ viewController: UIViewController) -> Bool {

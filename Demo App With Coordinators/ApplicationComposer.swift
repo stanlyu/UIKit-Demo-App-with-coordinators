@@ -23,12 +23,16 @@ struct ApplicationComposer: ApplicationComposing {
             return viewController
 
         case .mainFlow:
-            let mainTabsComposer = MainTabsComposer()
-            let mainTabsCoordinator = MainTabsCoordinator(composer: mainTabsComposer)
-            let tabBarController = UITabBarController()
-            configureMainTabsController(tabBarController)
-            let mainTabsRouter = TabRouter(coordinator: mainTabsCoordinator, tabBarController: tabBarController)
-            return mainTabsRouter.extractRootUI()
+            return Flow.tab(
+                makeTabBarController: {
+                    let tabBarController = UITabBarController()
+                    configureMainTabsController(tabBarController)
+                    return tabBarController
+                },
+                composer: MainTabsComposer()
+            ) { router, composer in
+                MainTabsCoordinator(router: router, composer: composer)
+            }.viewController
         }
     }
 

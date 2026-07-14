@@ -9,30 +9,30 @@ struct ApplicationCoordinatorTests {
     func start_setsLaunchScreenAsRootWithoutAnimation() {
         let sut = makeSUT()
         
-        sut.coordinator.start(with: sut.router)
+        sut.coordinator.start(CoordinatorStartContext())
         
-        #expect(sut.router.setRootCalls.count == 1)
-        #expect(sut.router.setRootCalls[0].item.isWrapping(sut.composer.launchViewController))
-        #expect(sut.router.setRootCalls[0].animated == false)
+        #expect(sut.router.switchToCalls.count == 1)
+        #expect(sut.router.switchToCalls[0].item.isWrapping(sut.composer.launchViewController))
+        #expect(sut.router.switchToCalls[0].animated == false)
     }
     
     @Test
     func launchMainFlowEvent_replacesRootWithMainTabsAnimated() {
         let sut = makeSUT()
-        sut.coordinator.start(with: sut.router)
+        sut.coordinator.start(CoordinatorStartContext())
         
         sut.composer.launchEventHandler?(.mainFlowStarted)
         
-        #expect(sut.router.setRootCalls.count == 2)
-        #expect(sut.router.setRootCalls[1].item.isWrapping(sut.composer.mainTabsViewController))
-        #expect(sut.router.setRootCalls[1].animated == true)
+        #expect(sut.router.switchToCalls.count == 2)
+        #expect(sut.router.switchToCalls[1].item.isWrapping(sut.composer.mainTabsViewController))
+        #expect(sut.router.switchToCalls[1].animated == true)
     }
 }
 
 @MainActor
 private extension ApplicationCoordinatorTests {
     struct SUT {
-        let coordinator: ApplicationCoordinatingLogic<MockSwitchRouter>
+        let coordinator: ApplicationCoordinatingLogic
         let composer: MockApplicationComposer
         let router: MockSwitchRouter
     }
@@ -40,7 +40,7 @@ private extension ApplicationCoordinatorTests {
     func makeSUT() -> SUT {
         let composer = MockApplicationComposer()
         let router = MockSwitchRouter()
-        let coordinator = ApplicationCoordinatingLogic<MockSwitchRouter>(composer: composer)
+        let coordinator = ApplicationCoordinatingLogic(router: router, composer: composer)
         return SUT(coordinator: coordinator, composer: composer, router: router)
     }
 }
@@ -64,19 +64,18 @@ private final class MockApplicationComposer: ApplicationComposing {
 }
 
 @MainActor
-private final class MockSwitchRouter: SwitchRouting {
-    var root: RouterRoot { RouterRoot(UIViewController()) }
-    func extractRootUI() -> UIViewController { return UIViewController() }
-
-    struct SetRootCall {
+private final class MockSwitchRouter: SwitchNavigation {
+    struct SwitchToCall {
         let item: RouterItem
         let animated: Bool
     }
     
-    private(set) var setRootCalls: [SetRootCall] = []
+    var currentItem: RouterItem?
+    private(set) var switchToCalls: [SwitchToCall] = []
     
-    func setRoot(_ item: RouterItem, animated: Bool, completion: (() -> Void)?) {
-        setRootCalls.append(SetRootCall(item: item, animated: animated))
+    func switchTo(_ item: RouterItem, animated: Bool, completion: (() -> Void)?) {
+        currentItem = item
+        switchToCalls.append(SwitchToCall(item: item, animated: animated))
         completion?()
     }
     

@@ -11,7 +11,7 @@ struct MainTabsCoordinatorTests {
     func start_setsHomeAndCartTabsWithoutAnimation() {
         let sut = makeSUT()
 
-        sut.coordinator.start(with: sut.router)
+        sut.coordinator.start(CoordinatorStartContext())
 
         #expect(sut.router.setItemsCalls.count == 1)
         #expect(sut.router.setItemsCalls[0].items.count == 2)
@@ -23,7 +23,7 @@ struct MainTabsCoordinatorTests {
     @Test
     func homePlaceOrder_selectsCartTabController() {
         let sut = makeSUT()
-        sut.coordinator.start(with: sut.router)
+        sut.coordinator.start(CoordinatorStartContext())
 
         sut.composer.homeEventHandler?(.placeOrder(orderID: 42))
 
@@ -33,7 +33,7 @@ struct MainTabsCoordinatorTests {
     @Test
     func homePlaceOrder_forwardsOrderIDToCartCoordinator() {
         let sut = makeSUT()
-        sut.coordinator.start(with: sut.router)
+        sut.coordinator.start(CoordinatorStartContext())
 
         sut.composer.homeEventHandler?(.placeOrder(orderID: 42))
 
@@ -44,7 +44,7 @@ struct MainTabsCoordinatorTests {
     func homePickupPointsRequest_pushesPickupPointsInProvidedContext() {
         let sut = makeSUT()
         let context = MockNavigationStackContext()
-        sut.coordinator.start(with: sut.router)
+        sut.coordinator.start(CoordinatorStartContext())
 
         sut.composer.homeEventHandler?(.pickupPointsRequested(context: context, onClose: {}))
 
@@ -57,7 +57,7 @@ struct MainTabsCoordinatorTests {
     func cartPaymentRequest_pushesPaymentInProvidedContext() {
         let sut = makeSUT()
         let context = MockNavigationStackContext()
-        sut.coordinator.start(with: sut.router)
+        sut.coordinator.start(CoordinatorStartContext())
 
         sut.composer.cartEventHandler?(.paymentRequested(context: context, onComplete: { _ in }))
 
@@ -69,7 +69,7 @@ struct MainTabsCoordinatorTests {
 @MainActor
 private extension MainTabsCoordinatorTests {
     struct SUT {
-        let coordinator: MainTabsCoordinatingLogic<MockTabRouter>
+        let coordinator: MainTabsCoordinatingLogic
         let composer: MockMainTabsComposer
         let router: MockTabRouter
     }
@@ -77,7 +77,7 @@ private extension MainTabsCoordinatorTests {
     func makeSUT() -> SUT {
         let composer = MockMainTabsComposer()
         let router = MockTabRouter()
-        let coordinator = MainTabsCoordinatingLogic<MockTabRouter>(composer: composer)
+        let coordinator = MainTabsCoordinatingLogic(router: router, composer: composer)
         return SUT(coordinator: coordinator, composer: composer, router: router)
     }
 }
@@ -155,10 +155,7 @@ private extension MainTabsCoordinatorTests {
     }
 
 @MainActor
-private final class MockTabRouter: TabRouting {
-    var root: RouterRoot { RouterRoot(UIViewController()) }
-    func extractRootUI() -> UIViewController { return UIViewController() }
-
+private final class MockTabRouter: TabNavigation {
     struct SetItemsCall {
         let items: [RouterItem]
         let animated: Bool

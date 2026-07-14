@@ -24,21 +24,30 @@ public enum PickupPointModule {
         onEvent: ((PickupPointNavigationOutputEvent) -> Void)? = nil
     ) -> UIViewController {
         if embeddedInNavigationStack {
-            let coordinator = DeliveryInlineCoordinator(
-                composer: DeliveryComposer(dependencies: dependencies, rootNavigationControl: .backButton),
-                onEvent: onEvent
-            )
-            let router = InlineRouter(coordinator: coordinator)
-            return router.extractRootUI()
+            return Flow.inline(
+                composer: DeliveryComposer(dependencies: dependencies, rootNavigationControl: .backButton)
+            ) { router, composer in
+                DeliveryCoordinator(
+                    router: router,
+                    composer: composer,
+                    onEvent: onEvent
+                )
+            }.viewController
         } else {
-            let coordinator = DeliveryStackCoordinator(
-                composer: DeliveryComposer(dependencies: dependencies, rootNavigationControl: .closeButton),
-                onEvent: onEvent
-            )
-            let nav = UINavigationController()
-            nav.navigationBar.prefersLargeTitles = true
-            let router = StackRouter(coordinator: coordinator, navigationController: nav)
-            return router.extractRootUI()
+            return Flow.stack(
+                makeNavigationController: {
+                    let nav = UINavigationController()
+                    nav.navigationBar.prefersLargeTitles = true
+                    return nav
+                },
+                composer: DeliveryComposer(dependencies: dependencies, rootNavigationControl: .closeButton)
+            ) { router, composer in
+                DeliveryCoordinator(
+                    router: router,
+                    composer: composer,
+                    onEvent: onEvent
+                )
+            }.viewController
         }
     }
 }

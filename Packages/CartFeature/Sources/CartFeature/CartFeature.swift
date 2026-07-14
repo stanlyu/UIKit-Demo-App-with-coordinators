@@ -39,13 +39,20 @@ public enum CartModule {
         dependencies: CartBusinessDependencies,
         onEvent: @escaping (CartNavigationOutputEvent) -> Void
     ) -> Instance {
-        let coordinator = CartCoordinator(
-            composer: CartComposer(dependencies: dependencies),
-            onEvent: onEvent
-        )
-        let nav = UINavigationController()
-        nav.navigationBar.prefersLargeTitles = true
-        let router = StackRouter(coordinator: coordinator, navigationController: nav)
-        return (router.extractRootUI(), coordinator)
+        let flow = Flow.stack(
+            makeNavigationController: {
+                let nav = UINavigationController()
+                nav.navigationBar.prefersLargeTitles = true
+                return nav
+            },
+            composer: CartComposer(dependencies: dependencies)
+        ) { router, composer in
+            CartCoordinator(
+                router: router,
+                composer: composer,
+                onEvent: onEvent
+            )
+        }
+        return (flow.viewController, flow.coordinator)
     }
 }

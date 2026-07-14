@@ -9,31 +9,30 @@ import UIKit
 
 /// Type-erasure обертка над конкретным `Composing`.
 ///
-/// Предоставляет координатору безопасный API для получения `RouterItem` по route.
+/// Предоставляет координатору безопасный API для получения opaque navigation item
+/// по route. Доступ к `UIViewController` остается внутри `Core`.
 @MainActor
 public final class ComposerBox<Route> {
     internal init<C: Composing>(wrappedComposer: C) where C.Route == Route {
-        self.makeViewController = { route in
-            wrappedComposer.makeViewController(for: route)
+        self.makeRouterItem = { route, attachmentManager in
+            let viewController = wrappedComposer.makeViewController(for: route)
+            return RouterItem(
+                viewController,
+                instance: attachmentManager.instance(attachedTo: viewController)
+            )
         }
     }
 
-    internal func setAttachmentManager(_ attachmentManager: any FlowAttachmentManaging) {
+    internal func setAttachmentManager(_ attachmentManager: any FlowInstanceAttachmentStoring) {
         self.attachmentManager = attachmentManager
     }
 
     public final func makeItem(for route: Route) -> RouterItem {
-        let vc = makeViewController(route)
-        owner?.adoptTaggedChild(from: vc)
-        return RouterItem(
-            vc,
-            runtime: attachmentManager.runtime(attachedTo: vc)
-        )
+        makeRouterItem(route, attachmentManager)
     }
 
     // MARK: - Private members
 
-    internal weak var owner: ChildAdopting?
-    private var attachmentManager: any FlowAttachmentManaging = FlowAttachmentManager.default
-    private let makeViewController: @MainActor (Route) -> UIViewController
+    private var attachmentManager: any FlowInstanceAttachmentStoring = FlowInstanceAttachments.default
+    private let makeRouterItem: @MainActor (Route, any FlowInstanceAttachmentStoring) -> RouterItem
 }

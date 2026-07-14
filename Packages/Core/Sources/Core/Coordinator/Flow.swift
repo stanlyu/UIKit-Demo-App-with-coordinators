@@ -1,7 +1,13 @@
 import UIKit
 
+/// Точка входа для сборки flow новой архитектуры.
+///
+/// Снаружи модуль выбирает тип контейнера, передает composer и создает координатор.
+/// Core сам создает `FlowInstance`, привязывает его к root `UIViewController`
+/// и скрывает lifecycle API от feature-кода.
 @MainActor
 public enum Flow {
+    /// Собирает flow с собственным `UINavigationController`.
     public static func stack<Coordinator, Composer>(
         makeNavigationController: @escaping @MainActor () -> UINavigationController = {
             UINavigationController()
@@ -14,15 +20,16 @@ public enum Flow {
     ) -> CreatedFlow<Coordinator>
     where Coordinator: BaseCoordinator<any StackNavigation, Composer.Route>, Composer: Composing {
         stack(
-            attachmentManager: FlowAttachmentManager.default,
+            attachmentManager: FlowInstanceAttachments.default,
             makeNavigationController: makeNavigationController,
             composer: composer,
             makeCoordinator: makeCoordinator
         )
     }
 
+    /// Тестовая перегрузка с подменяемым attachment store.
     internal static func stack<Coordinator, Composer>(
-        attachmentManager: any FlowAttachmentManaging,
+        attachmentManager: any FlowInstanceAttachmentStoring,
         makeNavigationController: @escaping @MainActor () -> UINavigationController = {
             UINavigationController()
         },
@@ -40,15 +47,16 @@ public enum Flow {
         let navigation = StackNavigationFacade(router: router)
         let coordinator = makeCoordinator(navigation, composer)
         coordinator.setAttachmentManager(attachmentManager)
-        let runtime = FlowRuntime(
+        let instance = FlowInstance(
             router: router,
             coordinator: coordinator,
-            attachmentManager: attachmentManager
+            attachmentStore: attachmentManager
         )
-        let rootViewController = runtime.run()
+        let rootViewController = instance.run()
         return CreatedFlow(viewController: rootViewController, coordinator: coordinator)
     }
 
+    /// Собирает flow на базе `UITabBarController`.
     public static func tab<Coordinator, Composer>(
         makeTabBarController: @escaping @MainActor () -> UITabBarController = {
             UITabBarController()
@@ -61,15 +69,16 @@ public enum Flow {
     ) -> CreatedFlow<Coordinator>
     where Coordinator: BaseCoordinator<any TabNavigation, Composer.Route>, Composer: Composing {
         tab(
-            attachmentManager: FlowAttachmentManager.default,
+            attachmentManager: FlowInstanceAttachments.default,
             makeTabBarController: makeTabBarController,
             composer: composer,
             makeCoordinator: makeCoordinator
         )
     }
 
+    /// Тестовая перегрузка с подменяемым attachment store.
     internal static func tab<Coordinator, Composer>(
-        attachmentManager: any FlowAttachmentManaging,
+        attachmentManager: any FlowInstanceAttachmentStoring,
         makeTabBarController: @escaping @MainActor () -> UITabBarController = {
             UITabBarController()
         },
@@ -80,18 +89,26 @@ public enum Flow {
         ) -> Coordinator
     ) -> CreatedFlow<Coordinator>
     where Coordinator: BaseCoordinator<any TabNavigation, Composer.Route>, Composer: Composing {
-        let router = TabFlowRouter(makeTabBarController: makeTabBarController)
-        let coordinator = makeCoordinator(router, composer)
-        coordinator.setAttachmentManager(attachmentManager)
-        let runtime = FlowRuntime(
-            router: router,
-            coordinator: coordinator,
+        let router = FlowRouter<UITabBarController, TabNavigationDriver>(
+            makeTabBarController: makeTabBarController,
             attachmentManager: attachmentManager
         )
-        let rootViewController = runtime.run()
+        let navigation = TabNavigationFacade(router: router)
+        let coordinator = makeCoordinator(navigation, composer)
+        coordinator.setAttachmentManager(attachmentManager)
+        let instance = FlowInstance(
+            router: router,
+            coordinator: coordinator,
+            attachmentStore: attachmentManager
+        )
+        let rootViewController = instance.run()
         return CreatedFlow(viewController: rootViewController, coordinator: coordinator)
     }
 
+    /// Собирает flow, root которого является обычным `UIViewController`.
+    ///
+    /// Такой flow может жить внутри чужого navigation stack и управлять только
+    /// своей частью стека.
     public static func inline<Coordinator, Composer>(
         composer: Composer,
         makeCoordinator: @MainActor (
@@ -101,14 +118,15 @@ public enum Flow {
     ) -> CreatedFlow<Coordinator>
     where Coordinator: BaseCoordinator<any StackNavigation, Composer.Route>, Composer: Composing {
         inline(
-            attachmentManager: FlowAttachmentManager.default,
+            attachmentManager: FlowInstanceAttachments.default,
             composer: composer,
             makeCoordinator: makeCoordinator
         )
     }
 
+    /// Тестовая перегрузка с подменяемым attachment store.
     internal static func inline<Coordinator, Composer>(
-        attachmentManager: any FlowAttachmentManaging,
+        attachmentManager: any FlowInstanceAttachmentStoring,
         composer: Composer,
         makeCoordinator: @MainActor (
             _ router: any StackNavigation,
@@ -116,18 +134,22 @@ public enum Flow {
         ) -> Coordinator
     ) -> CreatedFlow<Coordinator>
     where Coordinator: BaseCoordinator<any StackNavigation, Composer.Route>, Composer: Composing {
-        let router = InlineFlowRouter()
-        let coordinator = makeCoordinator(router, composer)
-        coordinator.setAttachmentManager(attachmentManager)
-        let runtime = FlowRuntime(
-            router: router,
-            coordinator: coordinator,
+        let router = FlowRouter<UIViewController, InlineNavigationDriver>(
             attachmentManager: attachmentManager
         )
-        let rootViewController = runtime.run()
+        let navigation = InlineNavigationFacade(router: router)
+        let coordinator = makeCoordinator(navigation, composer)
+        coordinator.setAttachmentManager(attachmentManager)
+        let instance = FlowInstance(
+            router: router,
+            coordinator: coordinator,
+            attachmentStore: attachmentManager
+        )
+        let rootViewController = instance.run()
         return CreatedFlow(viewController: rootViewController, coordinator: coordinator)
     }
 
+    /// Собирает flow, который заменяет текущий root content целиком.
     public static func switching<Coordinator, Composer>(
         composer: Composer,
         makeCoordinator: @MainActor (
@@ -137,14 +159,15 @@ public enum Flow {
     ) -> CreatedFlow<Coordinator>
     where Coordinator: BaseCoordinator<any SwitchNavigation, Composer.Route>, Composer: Composing {
         switching(
-            attachmentManager: FlowAttachmentManager.default,
+            attachmentManager: FlowInstanceAttachments.default,
             composer: composer,
             makeCoordinator: makeCoordinator
         )
     }
 
+    /// Тестовая перегрузка с подменяемым attachment store.
     internal static func switching<Coordinator, Composer>(
-        attachmentManager: any FlowAttachmentManaging,
+        attachmentManager: any FlowInstanceAttachmentStoring,
         composer: Composer,
         makeCoordinator: @MainActor (
             _ router: any SwitchNavigation,
@@ -152,18 +175,18 @@ public enum Flow {
         ) -> Coordinator
     ) -> CreatedFlow<Coordinator>
     where Coordinator: BaseCoordinator<any SwitchNavigation, Composer.Route>, Composer: Composing {
-        let router = SwitchFlowRouter()
-        let coordinator = makeCoordinator(router, composer)
-        coordinator.setAttachmentManager(attachmentManager)
-        let runtime = FlowRuntime(
-            router: router,
-            coordinator: coordinator,
+        let router = FlowRouter<UIViewController, SwitchNavigationDriver>(
             attachmentManager: attachmentManager
         )
-        router.onRootChanged = { [weak runtime] newRoot in
-            runtime?.attach(to: newRoot)
-        }
-        let rootViewController = runtime.run()
+        let navigation = SwitchNavigationFacade(router: router)
+        let coordinator = makeCoordinator(navigation, composer)
+        coordinator.setAttachmentManager(attachmentManager)
+        let instance = FlowInstance(
+            router: router,
+            coordinator: coordinator,
+            attachmentStore: attachmentManager
+        )
+        let rootViewController = instance.run()
         return CreatedFlow(viewController: rootViewController, coordinator: coordinator)
     }
 }

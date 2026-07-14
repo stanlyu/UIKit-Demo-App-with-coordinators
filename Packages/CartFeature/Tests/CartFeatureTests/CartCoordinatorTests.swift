@@ -9,7 +9,7 @@ struct CartCoordinatorTests {
     func start_pushesCartRootWithoutAnimation() {
         let sut = makeSUT()
 
-        sut.coordinator.start(with: sut.router)
+        sut.coordinator.start(CoordinatorStartContext())
 
         #expect(sut.router.pushCalls.count == 1)
         #expect(sut.router.pushCalls[0].item.isWrapping(sut.composer.cartViewController))
@@ -19,7 +19,7 @@ struct CartCoordinatorTests {
     @Test
     func placeOrder_requestsScreenForGivenOrderID() {
         let sut = makeSUT()
-        sut.coordinator.start(with: sut.router)
+        sut.coordinator.start(CoordinatorStartContext())
 
         sut.coordinator.placeOrder(42)
 
@@ -29,7 +29,7 @@ struct CartCoordinatorTests {
     @Test
     func placeOrder_popsToRootWithoutAnimationBeforePush() {
         let sut = makeSUT()
-        sut.coordinator.start(with: sut.router)
+        sut.coordinator.start(CoordinatorStartContext())
 
         sut.coordinator.placeOrder(42)
 
@@ -39,7 +39,7 @@ struct CartCoordinatorTests {
     @Test
     func placeOrder_pushesPlaceOrderScreenAnimated() {
         let sut = makeSUT()
-        sut.coordinator.start(with: sut.router)
+        sut.coordinator.start(CoordinatorStartContext())
 
         sut.coordinator.placeOrder(42)
 
@@ -51,7 +51,7 @@ struct CartCoordinatorTests {
     @Test
     func placeOrderBackEvent_popsCurrentScreen() {
         let sut = makeSUT()
-        sut.coordinator.start(with: sut.router)
+        sut.coordinator.start(CoordinatorStartContext())
         sut.coordinator.placeOrder(42)
 
         sut.composer.placeOrderEventHandler?(.onBackTap)
@@ -62,7 +62,7 @@ struct CartCoordinatorTests {
     @Test
     func changePickupPointEvent_forwardsPickupPointsRequestToModuleOutput() {
         let sut = makeSUT()
-        sut.coordinator.start(with: sut.router)
+        sut.coordinator.start(CoordinatorStartContext())
         sut.coordinator.placeOrder(42)
 
         sut.composer.placeOrderEventHandler?(.onChangePickupPointTap)
@@ -73,12 +73,14 @@ struct CartCoordinatorTests {
     @Test
     func pickupPointsContext_presentsExternalScreenAnimated() {
         let sut = makeSUT()
-        sut.coordinator.start(with: sut.router)
+        sut.coordinator.start(CoordinatorStartContext())
         sut.coordinator.placeOrder(42)
 
         sut.composer.placeOrderEventHandler?(.onChangePickupPointTap)
         let pickupPointsViewController = UIViewController()
-        sut.output.pickupPointsContext?.present(pickupPointsViewController, animated: true)
+        let pickupPointsRouterItem = RouterItem(pickupPointsViewController)
+
+        sut.output.pickupPointsContext?.present(pickupPointsRouterItem, animated: true)
 
         #expect(sut.router.presentedItem?.isWrapping(pickupPointsViewController) == true)
         #expect(sut.router.presentedAnimated == true)
@@ -87,7 +89,7 @@ struct CartCoordinatorTests {
     @Test
     func pickupPointsOnClose_dismissesPresentedScreen() {
         let sut = makeSUT()
-        sut.coordinator.start(with: sut.router)
+        sut.coordinator.start(CoordinatorStartContext())
         sut.coordinator.placeOrder(42)
 
         sut.composer.placeOrderEventHandler?(.onChangePickupPointTap)
@@ -99,7 +101,7 @@ struct CartCoordinatorTests {
     @Test
     func continueToPaymentEvent_forwardsPaymentRequestToModuleOutput() {
         let sut = makeSUT()
-        sut.coordinator.start(with: sut.router)
+        sut.coordinator.start(CoordinatorStartContext())
         sut.coordinator.placeOrder(42)
 
         sut.composer.placeOrderEventHandler?(.onContinueToPayment)
@@ -110,12 +112,13 @@ struct CartCoordinatorTests {
     @Test
     func paymentContext_pushesExternalScreenAnimated() {
         let sut = makeSUT()
-        sut.coordinator.start(with: sut.router)
+        sut.coordinator.start(CoordinatorStartContext())
         sut.coordinator.placeOrder(42)
 
         sut.composer.placeOrderEventHandler?(.onContinueToPayment)
         let paymentViewController = UIViewController()
-        sut.output.paymentContext?.push(paymentViewController, animated: true)
+        let paymentRouterItem = RouterItem(paymentViewController)
+        sut.output.paymentContext?.push(paymentRouterItem, animated: true)
 
         #expect(sut.router.pushCalls.count == 3)
         #expect(sut.router.pushCalls[2].item.isWrapping(paymentViewController))
@@ -125,7 +128,7 @@ struct CartCoordinatorTests {
     @Test
     func paymentCompletionWithNil_popsPaymentScreen() {
         let sut = makeSUT()
-        sut.coordinator.start(with: sut.router)
+        sut.coordinator.start(CoordinatorStartContext())
         sut.coordinator.placeOrder(42)
         sut.composer.placeOrderEventHandler?(.onContinueToPayment)
 
@@ -137,7 +140,7 @@ struct CartCoordinatorTests {
     @Test
     func paymentCompletionWithResult_buildsOrderConfirmationForGivenResult() {
         let sut = makeSUT()
-        sut.coordinator.start(with: sut.router)
+        sut.coordinator.start(CoordinatorStartContext())
         sut.coordinator.placeOrder(42)
         sut.composer.placeOrderEventHandler?(.onContinueToPayment)
 
@@ -150,7 +153,7 @@ struct CartCoordinatorTests {
     @Test
     func paymentCompletionWithResult_pushesOrderConfirmationAnimated() {
         let sut = makeSUT()
-        sut.coordinator.start(with: sut.router)
+        sut.coordinator.start(CoordinatorStartContext())
         sut.coordinator.placeOrder(42)
         sut.composer.placeOrderEventHandler?(.onContinueToPayment)
 
@@ -164,7 +167,7 @@ struct CartCoordinatorTests {
     @Test
     func paymentCompletionWithResult_compactsNavigationStackToRootAndConfirmation() {
         let sut = makeSUT()
-        sut.coordinator.start(with: sut.router)
+        sut.coordinator.start(CoordinatorStartContext())
         let cartRoot = sut.composer.cartViewController
 
         sut.coordinator.placeOrder(42)
@@ -181,7 +184,7 @@ struct CartCoordinatorTests {
     @Test
     func orderConfirmationReturnEvent_popsToRootAnimated() {
         let sut = makeSUT()
-        sut.coordinator.start(with: sut.router)
+        sut.coordinator.start(CoordinatorStartContext())
 
         sut.coordinator.placeOrder(42)
         sut.composer.placeOrderEventHandler?(.onContinueToPayment)
@@ -196,7 +199,7 @@ struct CartCoordinatorTests {
 @MainActor
 private extension CartCoordinatorTests {
     struct SUT {
-        let coordinator: CartCoordinatingLogic<MockStackRouter>
+        let coordinator: CartCoordinatingLogic
         let composer: MockCartComposer
         let router: MockStackRouter
         let output: CartOutputSpy
@@ -206,7 +209,7 @@ private extension CartCoordinatorTests {
         let composer = MockCartComposer()
         let router = MockStackRouter()
         let output = CartOutputSpy()
-        let coordinator = CartCoordinatingLogic<MockStackRouter>(composer: composer, onEvent: { event in
+        let coordinator = CartCoordinatingLogic(router: router, composer: composer, onEvent: { event in
             output.handle(event)
         })
         return SUT(coordinator: coordinator, composer: composer, router: router, output: output)
@@ -261,10 +264,7 @@ private final class CartOutputSpy {
 }
 
 @MainActor
-private final class MockStackRouter: StackRouting {
-    var root: RouterRoot { RouterRoot(UIViewController()) }
-    func extractRootUI() -> UIViewController { return UIViewController() }
-
+private final class MockStackRouter: StackNavigation {
     struct PushCall {
         let item: RouterItem
         let animated: Bool
@@ -285,6 +285,10 @@ private final class MockStackRouter: StackRouting {
     private(set) var presentedItem: RouterItem?
     private(set) var presentedAnimated: Bool = false
     private(set) var dismissCalls: [Bool] = []
+
+    func setRoot(_ item: RouterItem, animated: Bool) {
+        items = [item]
+    }
 
     func push(_ item: RouterItem, animated: Bool, completion: (() -> Void)?) {
         pushCalls.append(PushCall(item: item, animated: animated))
@@ -323,7 +327,7 @@ private final class MockStackRouter: StackRouting {
         presentedAnimated = animated
         completion?()
     }
-    
+
     func dismiss(animated: Bool, completion: (() -> Void)?) {
         dismissCalls.append(animated)
         completion?()

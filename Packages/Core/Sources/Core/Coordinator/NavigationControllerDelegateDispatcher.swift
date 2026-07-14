@@ -2,6 +2,9 @@ import UIKit
 
 @MainActor
 internal final class NavigationControllerDelegateDispatcher: NSObject {
+    // UINavigationController умеет хранить только одного delegate.
+    // Dispatcher оставляет внешний delegate на месте логически, но пропускает
+    // через себя события, которые нужны Core для синхронизации дерева FlowInstance.
     internal static func install(on navigationController: UINavigationController) -> NavigationControllerDelegateDispatcher {
         if let dispatcher = navigationController.delegate as? NavigationControllerDelegateDispatcher {
             return dispatcher
@@ -9,7 +12,7 @@ internal final class NavigationControllerDelegateDispatcher: NSObject {
 
         let dispatcher = NavigationControllerDelegateDispatcher()
         if let existingDelegate = navigationController.delegate {
-            dispatcher.addDelegate(existingDelegate, category: .external)
+            dispatcher.addDelegate(existingDelegate, category: .application)
         }
         navigationController.delegate = dispatcher
         return dispatcher
@@ -17,9 +20,9 @@ internal final class NavigationControllerDelegateDispatcher: NSObject {
 
     internal func addDelegate(
         _ delegate: any UINavigationControllerDelegate,
-        category: DelegateCategory = .external
+        category: DelegateCategory = .application
     ) {
-        cleanupDelegates()
+        removeReleasedDelegates()
 
         let delegateID = ObjectIdentifier(delegate as AnyObject)
         guard !delegates.contains(where: { $0.id == delegateID }) else { return }
@@ -32,14 +35,19 @@ internal final class NavigationControllerDelegateDispatcher: NSObject {
     }
 
     private func activeDelegates(orderedBy order: DelegateDispatchOrder) -> [any UINavigationControllerDelegate] {
-        cleanupDelegates()
+        removeReleasedDelegates()
         switch order {
         case .registration:
+            // willShow остается в порядке регистрации: Core не меняет состояние дерева на willShow.
             return delegates.compactMap(\.delegate)
-        case .frameworkFirst:
-            return activeDelegates(in: [.framework, .external])
-        case .externalFirst:
-            return activeDelegates(in: [.external, .framework])
+        case .instanceFirst:
+            // didShow сначала нужен Core: после native back application delegate
+            // должен читать уже обновленное дерево FlowInstance.
+            return activeDelegates(in: [.instance, .application])
+        case .applicationFirst:
+            // Анимации и ориентации принадлежат приложению, поэтому application delegate
+            // получает приоритет над instance observer-ом Core.
+            return activeDelegates(in: [.application, .instance])
         }
     }
 
@@ -53,7 +61,7 @@ internal final class NavigationControllerDelegateDispatcher: NSObject {
         }
     }
 
-    private func cleanupDelegates() {
+    private func removeReleasedDelegates() {
         delegates.removeAll { $0.delegate == nil }
     }
 
@@ -76,7 +84,7 @@ extension NavigationControllerDelegateDispatcher: UINavigationControllerDelegate
         didShow viewController: UIViewController,
         animated: Bool
     ) {
-        for delegate in activeDelegates(orderedBy: .frameworkFirst) {
+        for delegate in activeDelegates(orderedBy: .instanceFirst) {
             delegate.navigationController?(navigationController, didShow: viewController, animated: animated)
         }
     }
@@ -87,7 +95,7 @@ extension NavigationControllerDelegateDispatcher: UINavigationControllerDelegate
         from fromVC: UIViewController,
         to toVC: UIViewController
     ) -> (any UIViewControllerAnimatedTransitioning)? {
-        for delegate in activeDelegates(orderedBy: .externalFirst) {
+        for delegate in activeDelegates(orderedBy: .applicationFirst) {
             if let animator = delegate.navigationController?(
                 navigationController,
                 animationControllerFor: operation,
@@ -104,7 +112,7 @@ extension NavigationControllerDelegateDispatcher: UINavigationControllerDelegate
         _ navigationController: UINavigationController,
         interactionControllerFor animationController: any UIViewControllerAnimatedTransitioning
     ) -> (any UIViewControllerInteractiveTransitioning)? {
-        for delegate in activeDelegates(orderedBy: .externalFirst) {
+        for delegate in activeDelegates(orderedBy: .applicationFirst) {
             if let interactionController = delegate.navigationController?(
                 navigationController,
                 interactionControllerFor: animationController
@@ -118,7 +126,7 @@ extension NavigationControllerDelegateDispatcher: UINavigationControllerDelegate
     internal func navigationControllerSupportedInterfaceOrientations(
         _ navigationController: UINavigationController
     ) -> UIInterfaceOrientationMask {
-        for delegate in activeDelegates(orderedBy: .externalFirst) {
+        for delegate in activeDelegates(orderedBy: .applicationFirst) {
             if let supportedOrientations = delegate.navigationControllerSupportedInterfaceOrientations?(
                 navigationController
             ) {
@@ -131,7 +139,7 @@ extension NavigationControllerDelegateDispatcher: UINavigationControllerDelegate
     internal func navigationControllerPreferredInterfaceOrientationForPresentation(
         _ navigationController: UINavigationController
     ) -> UIInterfaceOrientation {
-        for delegate in activeDelegates(orderedBy: .externalFirst) {
+        for delegate in activeDelegates(orderedBy: .applicationFirst) {
             if let preferredOrientation = delegate.navigationControllerPreferredInterfaceOrientationForPresentation?(
                 navigationController
             ) {
@@ -144,15 +152,17 @@ extension NavigationControllerDelegateDispatcher: UINavigationControllerDelegate
 
 extension NavigationControllerDelegateDispatcher {
     internal enum DelegateCategory {
-        case external
-        case framework
+        /// Delegate, который приложение уже назначило на `UINavigationController`.
+        case application
+        /// Внутренний observer Core для cleanup дерева FlowInstance после native back.
+        case instance
     }
 }
 
 private enum DelegateDispatchOrder {
     case registration
-    case frameworkFirst
-    case externalFirst
+    case instanceFirst
+    case applicationFirst
 }
 
 private final class WeakNavigationControllerDelegate {

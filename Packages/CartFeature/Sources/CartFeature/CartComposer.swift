@@ -41,7 +41,7 @@ struct CartComposer: CartComposing {
             let viewController = PlaceOrderViewController()
             presenter.view = viewController
             viewController.viewOutput = presenter
-            //            viewController.hidesBottomBarWhenPushed = true
+            viewController.hidesBottomBarWhenPushed = true
             return viewController
 
         case let .orderConfirmation(paymentResult, eventHandler):

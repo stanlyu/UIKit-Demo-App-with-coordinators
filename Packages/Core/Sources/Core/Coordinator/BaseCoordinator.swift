@@ -30,7 +30,7 @@ open class BaseCoordinator<Navigation, Route> {
         fatalError("Метод start(_:) должен быть переопределен в наследнике \(String(describing: self))")
     }
 
-    internal func setAttachmentManager(_ attachmentManager: any FlowAttachmentManaging) {
+    internal func setAttachmentManager(_ attachmentManager: any FlowInstanceAttachmentStoring) {
         composer.setAttachmentManager(attachmentManager)
     }
 }

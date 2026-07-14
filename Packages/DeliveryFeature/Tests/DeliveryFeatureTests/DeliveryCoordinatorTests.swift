@@ -9,7 +9,7 @@ struct DeliveryCoordinatorTests {
     func start_pushesPickupPointsRootWithoutAnimation() {
         let sut = makeSUT()
 
-        sut.coordinator.start(with: sut.router)
+        sut.coordinator.start(CoordinatorStartContext())
 
         #expect(sut.router.pushCalls.count == 1)
         #expect(sut.router.pushCalls[0].item.isWrapping(sut.composer.pickupPointsViewController))
@@ -19,7 +19,7 @@ struct DeliveryCoordinatorTests {
     @Test
     func addPickupPointEvent_pushesAddScreenAnimated() {
         let sut = makeSUT()
-        sut.coordinator.start(with: sut.router)
+        sut.coordinator.start(CoordinatorStartContext())
 
         sut.composer.pickupPointsEventHandler?(.onAddPickupPoint)
 
@@ -31,7 +31,7 @@ struct DeliveryCoordinatorTests {
     @Test
     func addPickupPointBackEvent_popsCurrentScreen() {
         let sut = makeSUT()
-        sut.coordinator.start(with: sut.router)
+        sut.coordinator.start(CoordinatorStartContext())
         sut.composer.pickupPointsEventHandler?(.onAddPickupPoint)
 
         sut.composer.addPickupPointEventHandler?(.onBackTap)
@@ -45,7 +45,7 @@ struct DeliveryCoordinatorTests {
         let pickupPoint = PickupPoint(id: 7, name: "ПВЗ 7")
         let input = MockPickupPointsInput()
 
-        sut.coordinator.start(with: sut.router)
+        sut.coordinator.start(CoordinatorStartContext())
         sut.composer.pickupPointsEventHandler?(.onFavoriteDeleteRequested(pickupPoint: pickupPoint, input: input))
 
         #expect(sut.router.presentedItem?.isWrapping(sut.composer.deleteConfirmationViewController) == true)
@@ -58,7 +58,7 @@ struct DeliveryCoordinatorTests {
         let pickupPoint = PickupPoint(id: 7, name: "ПВЗ 7")
         let input = MockPickupPointsInput()
 
-        sut.coordinator.start(with: sut.router)
+        sut.coordinator.start(CoordinatorStartContext())
         sut.composer.pickupPointsEventHandler?(.onFavoriteDeleteRequested(pickupPoint: pickupPoint, input: input))
 
         #expect(sut.composer.deleteConfirmationRequestedPickupPoint == pickupPoint)
@@ -70,7 +70,7 @@ struct DeliveryCoordinatorTests {
         let input = MockPickupPointsInput()
         let pickupPoint = PickupPoint(id: 7, name: "ПВЗ 7")
 
-        sut.coordinator.start(with: sut.router)
+        sut.coordinator.start(CoordinatorStartContext())
         sut.composer.pickupPointsEventHandler?(.onFavoriteDeleteRequested(pickupPoint: pickupPoint, input: input))
 
         sut.composer.deleteConfirmationOnConfirm?()
@@ -81,7 +81,7 @@ struct DeliveryCoordinatorTests {
 @MainActor
 private extension DeliveryCoordinatorTests {
     struct SUT {
-        let coordinator: DeliveryCoordinatingLogic<MockStackRouter>
+        let coordinator: DeliveryCoordinatingLogic
         let composer: MockDeliveryComposer
         let router: MockStackRouter
     }
@@ -89,7 +89,8 @@ private extension DeliveryCoordinatorTests {
     func makeSUT() -> SUT {
         let composer = MockDeliveryComposer()
         let router = MockStackRouter()
-        let coordinator = DeliveryCoordinatingLogic<MockStackRouter>(
+        let coordinator = DeliveryCoordinatingLogic(
+            router: router,
             composer: composer
         )
         return SUT(coordinator: coordinator, composer: composer, router: router)
@@ -134,10 +135,7 @@ private final class MockPickupPointsInput: PickupPointsInput {
 }
 
 @MainActor
-private final class MockStackRouter: StackRouting {
-    var root: RouterRoot { RouterRoot(UIViewController()) }
-    func extractRootUI() -> UIViewController { return UIViewController() }
-
+private final class MockStackRouter: StackNavigation {
     struct PushCall {
         let item: RouterItem
         let animated: Bool
@@ -150,6 +148,10 @@ private final class MockStackRouter: StackRouting {
 
     private(set) var presentedItem: RouterItem?
     private(set) var presentedAnimated: Bool = false
+
+    func setRoot(_ item: RouterItem, animated: Bool) {
+        items = [item]
+    }
 
     func push(_ item: RouterItem, animated: Bool, completion: (() -> Void)?) {
         pushCalls.append(PushCall(item: item, animated: animated))

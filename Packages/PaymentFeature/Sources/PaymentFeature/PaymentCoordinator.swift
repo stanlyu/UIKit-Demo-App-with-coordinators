@@ -14,23 +14,24 @@ enum PaymentRoute {
     case payment(eventHandler: PaymentPresenterEventHandler)
 }
 
-typealias PaymentInlineCoordinator = PaymentCoordinatingLogic<InlineRouter>
+typealias PaymentInlineCoordinator = PaymentCoordinatingLogic
 
 @MainActor
-final class PaymentCoordinatingLogic<Router: StackRouting>: Coordinator<Router, PaymentRoute> {
-    init(
+final class PaymentCoordinatingLogic: BaseCoordinator<any StackNavigation, PaymentRoute> {
+    init<C: Composing>(
+        router: any StackNavigation,
+        composer: C,
         onEvent: @escaping (PaymentNavigationOutputEvent) -> Void,
-        buildBlock: @MainActor @Sendable @escaping (PaymentRoute) -> UIViewController
-    ) {
+    ) where C.Route == PaymentRoute {
         self.onEvent = onEvent
-        super.init(buildBlock: buildBlock)
+        super.init(router: router, composer: composer)
     }
 
-    override func start(_ capability: StartCapability) {
+    override func start(_ context: CoordinatorStartContext) {
         let paymentItem = composer.makeItem(for: .payment(eventHandler: { [weak self] event in
             self?.handle(event: event)
         }))
-        router?.push(paymentItem, animated: false, completion: nil)
+        router.push(paymentItem, animated: false, completion: nil)
     }
 
     // MARK: - Private members

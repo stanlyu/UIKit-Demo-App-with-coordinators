@@ -9,7 +9,7 @@ struct PaymentCoordinatorTests {
     func start_pushesPaymentScreenWithoutAnimation() {
         let sut = makeSUT()
 
-        sut.coordinator.start(with: sut.router)
+        sut.coordinator.start(CoordinatorStartContext())
 
         #expect(sut.router.pushCalls.count == 1)
         #expect(sut.router.pushCalls[0].item.isWrapping(sut.paymentViewController))
@@ -20,7 +20,7 @@ struct PaymentCoordinatorTests {
     func backTap_forwardsCancelledEventToModuleOutput() {
         var receivedEvents: [PaymentNavigationOutputEvent] = []
         let sut = makeSUT(onEvent: { receivedEvents.append($0) })
-        sut.coordinator.start(with: sut.router)
+        sut.coordinator.start(CoordinatorStartContext())
 
         sut.paymentEventHandler(.onBackTap)
 
@@ -40,7 +40,7 @@ struct PaymentCoordinatorTests {
         let sut = makeSUT(onEvent: { receivedEvents.append($0) })
         let result = PaymentResult.failure(amount: 2500, error: .processingTimeout)
 
-        sut.coordinator.start(with: sut.router)
+        sut.coordinator.start(CoordinatorStartContext())
         sut.paymentEventHandler(.onPaymentCompleted(result))
 
         guard let event = receivedEvents.last else {
@@ -63,7 +63,7 @@ struct PaymentCoordinatorTests {
 @MainActor
 private extension PaymentCoordinatorTests {
     struct SUT {
-        let coordinator: PaymentCoordinatingLogic<MockStackRouter>
+        let coordinator: PaymentCoordinatingLogic
         let router: MockStackRouter
         let paymentViewController: UIViewController
         let paymentEventHandler: PaymentPresenterEventHandler
@@ -74,14 +74,16 @@ private extension PaymentCoordinatorTests {
         let vc = UIViewController()
         var extractedEventHandler: PaymentPresenterEventHandler?
 
-        let coordinator = PaymentCoordinatingLogic<MockStackRouter>(
-            onEvent: onEvent,
-            buildBlock: { @MainActor route in
-                if case .payment(let handler) = route {
-                    extractedEventHandler = handler
-                }
-                return vc
+        let composer = InlineComposer<PaymentRoute> { @MainActor route in
+            if case .payment(let handler) = route {
+                extractedEventHandler = handler
             }
+            return vc
+        }
+        let coordinator = PaymentCoordinatingLogic(
+            router: router,
+            composer: composer,
+            onEvent: onEvent
         )
         return SUT(
             coordinator: coordinator,
@@ -93,10 +95,7 @@ private extension PaymentCoordinatorTests {
 }
 
 @MainActor
-private final class MockStackRouter: StackRouting {
-    var root: RouterRoot { RouterRoot(UIViewController()) }
-    func extractRootUI() -> UIViewController { return UIViewController() }
-
+private final class MockStackRouter: StackNavigation {
     struct PushCall {
         let item: RouterItem
         let animated: Bool
@@ -104,6 +103,10 @@ private final class MockStackRouter: StackRouting {
 
     var items: [RouterItem] = []
     private(set) var pushCalls: [PushCall] = []
+
+    func setRoot(_ item: RouterItem, animated: Bool) {
+        items = [item]
+    }
 
     func push(_ item: RouterItem, animated: Bool, completion: (() -> Void)?) {
         pushCalls.append(PushCall(item: item, animated: animated))

@@ -14,12 +14,14 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
         guard let windowScene = (scene as? UIWindowScene) else { return }
-        let applicationComposer = ApplicationComposer()
-        let coordinator = ApplicationCoordinator(composer: applicationComposer)
-        let rootRouter = SwitchRouter(coordinator: coordinator)
+        resetPersistedStateIfNeeded()
+
+        let flow = Flow.switching(composer: ApplicationComposer()) { router, composer in
+            ApplicationCoordinator(router: router, composer: composer)
+        }
         
         let window = UIWindow(windowScene: windowScene)
-        window.rootViewController = rootRouter.extractRootUI()
+        window.rootViewController = flow.viewController
         self.window = window
         window.makeKeyAndVisible()
     }
@@ -50,5 +52,14 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         // Called as the scene transitions from the foreground to the background.
         // Use this method to save data, release shared resources, and store enough scene-specific state information
         // to restore the scene back to its current state.
+    }
+
+    private func resetPersistedStateIfNeeded() {
+        guard ProcessInfo.processInfo.environment["DEMO_APP_RESET_PERSISTED_STATE"] == "1",
+              let bundleIdentifier = Bundle.main.bundleIdentifier else {
+            return
+        }
+
+        UserDefaults.standard.removePersistentDomain(forName: bundleIdentifier)
     }
 }

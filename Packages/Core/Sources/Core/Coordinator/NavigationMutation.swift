@@ -1,5 +1,6 @@
 import UIKit
 
+/// Описание изменений UIKit-навигации, которые нужно отразить в дереве `FlowInstance`.
 @MainActor
 internal struct NavigationMutation {
     internal let insertedItems: [RouterItem]

@@ -1,5 +1,6 @@
 import UIKit
 
+/// Общие modal-команды, доступные всем типам навигации.
 @MainActor
 public protocol BaseNavigation: AnyObject {
     func present(_ item: RouterItem, animated: Bool, completion: (() -> Void)?)
@@ -16,6 +17,10 @@ public extension BaseNavigation {
     }
 }
 
+/// Навигация с линейным стеком экранов.
+///
+/// Используется и для `UINavigationController`, и для inline-flow внутри уже
+/// существующего navigation stack.
 @MainActor
 public protocol StackNavigation: BaseNavigation {
     var items: [RouterItem] { get }
@@ -46,6 +51,7 @@ public extension StackNavigation {
     }
 }
 
+/// Навигация вкладок на базе `UITabBarController`.
 @MainActor
 public protocol TabNavigation: BaseNavigation {
     var selectedIndex: Int { get }
@@ -56,6 +62,7 @@ public protocol TabNavigation: BaseNavigation {
     func selectItem(_ item: RouterItem)
 }
 
+/// Навигация, где активен только один root content.
 @MainActor
 public protocol SwitchNavigation: BaseNavigation {
     var currentItem: RouterItem? { get }

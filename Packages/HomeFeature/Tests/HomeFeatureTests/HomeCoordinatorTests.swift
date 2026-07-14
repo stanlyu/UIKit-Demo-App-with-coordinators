@@ -9,7 +9,7 @@ struct HomeCoordinatorTests {
     func start_pushesHomeRootWithoutAnimation() {
         let sut = makeSUT()
 
-        sut.coordinator.start(with: sut.router)
+        sut.coordinator.start(CoordinatorStartContext())
 
         #expect(sut.router.pushCalls.count == 1)
         #expect(sut.router.pushCalls[0].item.isWrapping(sut.composer.homeViewController))
@@ -24,7 +24,7 @@ struct HomeCoordinatorTests {
                 receivedOrderID = orderID
             }
         })
-        sut.coordinator.start(with: sut.router)
+        sut.coordinator.start(CoordinatorStartContext())
 
         sut.composer.homeEventHandler?(.onPlaceOrderTap(99))
 
@@ -39,7 +39,7 @@ struct HomeCoordinatorTests {
                 didReceivePickupPointsRequest = true
             }
         })
-        sut.coordinator.start(with: sut.router)
+        sut.coordinator.start(CoordinatorStartContext())
 
         sut.composer.homeEventHandler?(.onPickupPointTap)
 
@@ -54,7 +54,7 @@ struct HomeCoordinatorTests {
                 receivedOnClose = onClose
             }
         })
-        sut.coordinator.start(with: sut.router)
+        sut.coordinator.start(CoordinatorStartContext())
         sut.composer.homeEventHandler?(.onPickupPointTap)
 
         receivedOnClose?()
@@ -70,12 +70,13 @@ struct HomeCoordinatorTests {
                 receivedContext = context
             }
         })
-        sut.coordinator.start(with: sut.router)
+        sut.coordinator.start(CoordinatorStartContext())
 
         sut.composer.homeEventHandler?(.onPickupPointTap)
 
         let externalViewController = UIViewController()
-        receivedContext?.push(RouterItem(externalViewController), animated: true)
+        let externalRouterItem = RouterItem(externalViewController)
+        receivedContext?.push(externalRouterItem, animated: true)
 
         #expect(sut.router.pushCalls.count == 2)
         #expect(sut.router.pushCalls.last?.item.isWrapping(externalViewController) == true)
@@ -86,7 +87,7 @@ struct HomeCoordinatorTests {
 @MainActor
 private extension HomeCoordinatorTests {
     struct SUT {
-        let coordinator: HomeCoordinatingLogic<MockStackRouter>
+        let coordinator: HomeCoordinatingLogic
         let composer: MockHomeComposer
         let router: MockStackRouter
     }
@@ -94,7 +95,7 @@ private extension HomeCoordinatorTests {
     func makeSUT(onEvent: @escaping (HomeNavigationOutputEvent) -> Void = { _ in }) -> SUT {
         let composer = MockHomeComposer()
         let router = MockStackRouter()
-        let coordinator = HomeCoordinatingLogic<MockStackRouter>(composer: composer, onEvent: onEvent)
+        let coordinator = HomeCoordinatingLogic(router: router, composer: composer, onEvent: onEvent)
         return SUT(coordinator: coordinator, composer: composer, router: router)
     }
 }
@@ -115,10 +116,7 @@ private final class MockHomeComposer: HomeComposing {
 }
 
 @MainActor
-private final class MockStackRouter: StackRouting {
-    var root: RouterRoot { RouterRoot(UIViewController()) }
-    func extractRootUI() -> UIViewController { return UIViewController() }
-
+private final class MockStackRouter: StackNavigation {
     struct PushCall {
         let item: RouterItem
         let animated: Bool
@@ -127,6 +125,10 @@ private final class MockStackRouter: StackRouting {
     var items: [RouterItem] = []
     private(set) var pushCalls: [PushCall] = []
     private(set) var popCalls: [Bool] = []
+
+    func setRoot(_ item: RouterItem, animated: Bool) {
+        items = [item]
+    }
 
     func push(_ item: RouterItem, animated: Bool, completion: (() -> Void)?) {
         pushCalls.append(PushCall(item: item, animated: animated))

@@ -18,13 +18,19 @@ public enum HomeModule {
     public static func create(
         onEvent: @escaping (HomeNavigationOutputEvent) -> Void
     ) -> UIViewController {
-        let coordinator = HomeCoordinator(
-            composer: HomeComposer(),
-            onEvent: onEvent
-        )
-        let nav = UINavigationController()
-        nav.navigationBar.prefersLargeTitles = true
-        let router = StackRouter(coordinator: coordinator, navigationController: nav)
-        return router.extractRootUI()
+        Flow.stack(
+            makeNavigationController: {
+                let nav = UINavigationController()
+                nav.navigationBar.prefersLargeTitles = true
+                return nav
+            },
+            composer: HomeComposer()
+        ) { router, composer in
+            HomeCoordinator(
+                router: router,
+                composer: composer,
+                onEvent: onEvent
+            )
+        }.viewController
     }
 }

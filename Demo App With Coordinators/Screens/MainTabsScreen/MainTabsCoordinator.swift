@@ -4,13 +4,18 @@ import CartFeature
 import DeliveryFeature
 import Core
 
-typealias MainTabsCoordinator = MainTabsCoordinatingLogic<TabRouter>
+typealias MainTabsCoordinator = MainTabsCoordinatingLogic
 
-final class MainTabsCoordinatingLogic<Router: TabRouting>: Coordinator<Router, MainTabsRoute> {
+final class MainTabsCoordinatingLogic: BaseCoordinator<any TabNavigation, MainTabsRoute> {
 
-    override func start(_ capability: StartCapability) {
-        guard let router else { return }
+    init<C: MainTabsComposing>(
+        router: any TabNavigation,
+        composer: C
+    ) {
+        super.init(router: router, composer: composer)
+    }
 
+    override func start(_ context: CoordinatorStartContext) {
         let homeItem = composer.makeItem(
             for: .home(
                 onEvent: { [weak self] event in
@@ -41,7 +46,7 @@ final class MainTabsCoordinatingLogic<Router: TabRouting>: Coordinator<Router, M
         switch homeEvent {
         case .placeOrder(let orderID):
             guard let cartItem else { return }
-            router?.selectItem(cartItem)
+            router.selectItem(cartItem)
             cartNavigationInput?.placeOrder(orderID)
 
         case let .pickupPointsRequested(context, onClose):

@@ -18,9 +18,8 @@ public enum PaymentModule {
     public static func create(
         onEvent: @escaping (PaymentNavigationOutputEvent) -> Void
     ) -> UIViewController {
-        let coordinator = PaymentInlineCoordinator(
-            onEvent: onEvent,
-            buildBlock: { route in
+        Flow.inline(
+            composer: InlineComposer<PaymentRoute> { route in
                 switch route {
                 case .payment(let handler):
                     let interactor = PaymentInteractor(service: PaymentService())
@@ -30,8 +29,12 @@ public enum PaymentModule {
                     return viewController
                 }
             }
-        )
-        let router = InlineRouter(coordinator: coordinator)
-        return router.extractRootUI()
+        ) { router, composer in
+            PaymentInlineCoordinator(
+                router: router,
+                composer: composer,
+                onEvent: onEvent
+            )
+        }.viewController
     }
 }
