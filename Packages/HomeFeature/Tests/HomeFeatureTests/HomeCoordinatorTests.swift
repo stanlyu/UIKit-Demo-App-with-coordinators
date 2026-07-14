@@ -6,14 +6,14 @@ import Testing
 @MainActor
 struct HomeCoordinatorTests {
     @Test
-    func start_pushesHomeRootWithoutAnimation() {
+    func start_setsHomeRootWithoutAnimation() {
         let sut = makeSUT()
 
         sut.coordinator.start(CoordinatorStartContext())
 
-        #expect(sut.router.pushCalls.count == 1)
-        #expect(sut.router.pushCalls[0].item.isWrapping(sut.composer.homeViewController))
-        #expect(sut.router.pushCalls[0].animated == false)
+        #expect(sut.router.setRootCalls.count == 1)
+        #expect(sut.router.setRootCalls[0].item.isWrapping(sut.composer.homeViewController))
+        #expect(sut.router.setRootCalls[0].animated == false)
     }
 
     @Test
@@ -76,9 +76,9 @@ struct HomeCoordinatorTests {
 
         let externalViewController = UIViewController()
         let externalRouterItem = RouterItem(externalViewController)
-        receivedContext?.push(externalRouterItem, animated: true)
+        receivedContext?.push(externalViewController, animated: true)
 
-        #expect(sut.router.pushCalls.count == 2)
+        #expect(sut.router.pushCalls.count == 1)
         #expect(sut.router.pushCalls.last?.item.isWrapping(externalViewController) == true)
         #expect(sut.router.pushCalls.last?.animated == true)
     }
@@ -126,7 +126,14 @@ private final class MockStackRouter: StackNavigation {
     private(set) var pushCalls: [PushCall] = []
     private(set) var popCalls: [Bool] = []
 
+    struct SetRootCall {
+        let item: RouterItem
+        let animated: Bool
+    }
+    private(set) var setRootCalls: [SetRootCall] = []
+
     func setRoot(_ item: RouterItem, animated: Bool) {
+        setRootCalls.append(SetRootCall(item: item, animated: animated))
         items = [item]
     }
 

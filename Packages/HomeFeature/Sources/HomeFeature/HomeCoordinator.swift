@@ -13,8 +13,14 @@ final class HomeCoordinatingLogic: BaseCoordinator<any StackNavigation, HomeRout
         super.init(router: router, composer: composer)
     }
 
+    deinit {
+        print("[HomeCoordinator] deinit called")
+    }
+
     override func start(_ context: CoordinatorStartContext) {
+        print("[HomeCoordinator] start called")
         let item = composer.makeItem(for: .home(eventHandler: { [weak self] event in
+              print("[HomeCoordinator] home event received: \(event)")
               switch event {
               case .onPlaceOrderTap(let orderID):
                   self?.onEvent(.placeOrder(orderID: orderID))
@@ -22,14 +28,16 @@ final class HomeCoordinatingLogic: BaseCoordinator<any StackNavigation, HomeRout
                   self?.requestPickupPoints()
               }
           }))
-        router.push(item, animated: false, completion: nil)
+        router.setRoot(item, animated: false)
     }
 
     private let onEvent: (HomeNavigationOutputEvent) -> Void
 
     private func requestPickupPoints() {
+        print("[HomeCoordinator] requestPickupPoints called")
         let context = RouterNavigationStackContext(router: router)
         onEvent(.pickupPointsRequested(context: context, onClose: { [weak self] in
+            print("[HomeCoordinator] pickupPoints onClose callback called")
             self?.router.pop(animated: true, completion: nil)
         }))
     }

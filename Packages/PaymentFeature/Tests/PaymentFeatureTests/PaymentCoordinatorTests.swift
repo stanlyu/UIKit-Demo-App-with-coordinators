@@ -6,14 +6,14 @@ import Testing
 @MainActor
 struct PaymentCoordinatorTests {
     @Test
-    func start_pushesPaymentScreenWithoutAnimation() {
+    func start_setsPaymentScreenWithoutAnimation() {
         let sut = makeSUT()
 
         sut.coordinator.start(CoordinatorStartContext())
 
-        #expect(sut.router.pushCalls.count == 1)
-        #expect(sut.router.pushCalls[0].item.isWrapping(sut.paymentViewController))
-        #expect(sut.router.pushCalls[0].animated == false)
+        #expect(sut.router.setRootCalls.count == 1)
+        #expect(sut.router.setRootCalls[0].item.isWrapping(sut.paymentViewController))
+        #expect(sut.router.setRootCalls[0].animated == false)
     }
 
     @Test
@@ -104,7 +104,14 @@ private final class MockStackRouter: StackNavigation {
     var items: [RouterItem] = []
     private(set) var pushCalls: [PushCall] = []
 
+    struct SetRootCall {
+        let item: RouterItem
+        let animated: Bool
+    }
+    private(set) var setRootCalls: [SetRootCall] = []
+
     func setRoot(_ item: RouterItem, animated: Bool) {
+        setRootCalls.append(SetRootCall(item: item, animated: animated))
         items = [item]
     }
 

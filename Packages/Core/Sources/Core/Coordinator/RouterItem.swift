@@ -1,10 +1,3 @@
-//
-//  RouterItem.swift
-//  Core
-//
-//  Created by Codex on 27.02.2026.
-//
-
 import UIKit
 
 /// Непрозрачная единица отображения для координаторов/роутеров.
@@ -13,15 +6,10 @@ import UIKit
 /// и внешние модули работали через абстракцию роутера.
 @MainActor
 public struct RouterItem {
-    internal let viewController: UIViewController
-    internal let instance: (any FlowInstanceNode)?
+    public let viewController: UIViewController
 
-    internal init(
-        _ viewController: UIViewController,
-        instance: (any FlowInstanceNode)? = nil
-    ) {
+    internal init(_ viewController: UIViewController) {
         self.viewController = viewController
-        self.instance = instance
     }
 
     internal func isWrapping(_ viewController: UIViewController) -> Bool {

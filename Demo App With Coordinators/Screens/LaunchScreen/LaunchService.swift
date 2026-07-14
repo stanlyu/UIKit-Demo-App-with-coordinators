@@ -13,7 +13,7 @@ protocol LaunchServicing: Sendable {
 
 struct LaunchService: LaunchServicing {
     @concurrent func fetchData() async {
-        // Эмитируем загрузку необходимых данных для того, чтобы можно было обновить UI
-        try? await Task.sleep(nanoseconds: UInt64.random(in: 2_000_000_000...5_000_000_000))
+        // Эмитируем загрузку необходимых данных
+        try? await Task.sleep(nanoseconds: 10_000_000)
     }
 }

@@ -7,7 +7,7 @@ import Core
 struct NavigationStackContextPublicAPITests {
     @Test func contextAcceptsOpaqueItemWithoutUIViewControllerAccess() {
         let context = PublicNavigationStackContextSpy()
-        let flow = Flow.inline(
+        let flow = FlowBuilder.inline(
             composer: PublicNavigationStackItemTestComposer()
         ) { router, composer in
             PublicNavigationStackItemTestCoordinator(
@@ -66,7 +66,7 @@ private final class PublicNavigationStackItemTestCoordinator:
 
     func pushDetails(animated: Bool, completion: (() -> Void)?) {
         context.push(
-            composer.makeItem(for: .details),
+            composer.makeItem(for: .details).viewController,
             animated: animated,
             completion: completion
         )
@@ -74,7 +74,7 @@ private final class PublicNavigationStackItemTestCoordinator:
 
     func presentDetails(animated: Bool, completion: (() -> Void)?) {
         context.present(
-            composer.makeItem(for: .details),
+            composer.makeItem(for: .details).viewController,
             animated: animated,
             completion: completion
         )
@@ -90,13 +90,13 @@ private final class PublicNavigationStackContextSpy: NavigationStackContext {
     private(set) var lastPushAnimated: Bool?
     private(set) var lastPresentAnimated: Bool?
 
-    func push(_ item: RouterItem, animated: Bool, completion: (() -> Void)?) {
+    func push(_ viewController: UIViewController, animated: Bool, completion: (() -> Void)?) {
         pushCallCount += 1
         lastPushAnimated = animated
         completion?()
     }
 
-    func present(_ item: RouterItem, animated: Bool, completion: (() -> Void)?) {
+    func present(_ viewController: UIViewController, animated: Bool, completion: (() -> Void)?) {
         presentCallCount += 1
         lastPresentAnimated = animated
         completion?()

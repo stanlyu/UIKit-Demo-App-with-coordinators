@@ -6,14 +6,14 @@ import Testing
 @MainActor
 struct DeliveryCoordinatorTests {
     @Test
-    func start_pushesPickupPointsRootWithoutAnimation() {
+    func start_setsPickupPointsRootWithoutAnimation() {
         let sut = makeSUT()
 
         sut.coordinator.start(CoordinatorStartContext())
 
-        #expect(sut.router.pushCalls.count == 1)
-        #expect(sut.router.pushCalls[0].item.isWrapping(sut.composer.pickupPointsViewController))
-        #expect(sut.router.pushCalls[0].animated == false)
+        #expect(sut.router.setRootCalls.count == 1)
+        #expect(sut.router.setRootCalls[0].item.isWrapping(sut.composer.pickupPointsViewController))
+        #expect(sut.router.setRootCalls[0].animated == false)
     }
 
     @Test
@@ -23,9 +23,9 @@ struct DeliveryCoordinatorTests {
 
         sut.composer.pickupPointsEventHandler?(.onAddPickupPoint)
 
-        #expect(sut.router.pushCalls.count == 2)
-        #expect(sut.router.pushCalls[1].item.isWrapping(sut.composer.addPickupPointViewController))
-        #expect(sut.router.pushCalls[1].animated == true)
+        #expect(sut.router.pushCalls.count == 1)
+        #expect(sut.router.pushCalls[0].item.isWrapping(sut.composer.addPickupPointViewController))
+        #expect(sut.router.pushCalls[0].animated == true)
     }
 
     @Test
@@ -149,7 +149,14 @@ private final class MockStackRouter: StackNavigation {
     private(set) var presentedItem: RouterItem?
     private(set) var presentedAnimated: Bool = false
 
+    struct SetRootCall {
+        let item: RouterItem
+        let animated: Bool
+    }
+    private(set) var setRootCalls: [SetRootCall] = []
+
     func setRoot(_ item: RouterItem, animated: Bool) {
+        setRootCalls.append(SetRootCall(item: item, animated: animated))
         items = [item]
     }
 

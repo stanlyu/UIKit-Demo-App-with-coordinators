@@ -54,11 +54,8 @@ public extension UINavigationController {
 
         if animated, let coordinator = transitionCoordinator {
             coordinator.animate(alongsideTransition: nil) { context in
-                // Вызываем completion только если переход действительно завершился,
-                // а не был отменен (например, прерванный свайп назад).
-                if !context.isCancelled {
-                    completion()
-                }
+                // Вызываем completion в любом случае для сброса транзакции / завершения операции
+                completion()
             }
         } else {
             // Если анимации нет или координатор недоступен — выполняем сразу.

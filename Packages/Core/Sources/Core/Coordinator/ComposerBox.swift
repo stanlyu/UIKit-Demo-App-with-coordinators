@@ -14,25 +14,17 @@ import UIKit
 @MainActor
 public final class ComposerBox<Route> {
     internal init<C: Composing>(wrappedComposer: C) where C.Route == Route {
-        self.makeRouterItem = { route, attachmentManager in
+        self.makeRouterItem = { route in
             let viewController = wrappedComposer.makeViewController(for: route)
-            return RouterItem(
-                viewController,
-                instance: attachmentManager.instance(attachedTo: viewController)
-            )
+            return RouterItem(viewController)
         }
     }
 
-    internal func setAttachmentManager(_ attachmentManager: any FlowInstanceAttachmentStoring) {
-        self.attachmentManager = attachmentManager
-    }
-
     public final func makeItem(for route: Route) -> RouterItem {
-        makeRouterItem(route, attachmentManager)
+        makeRouterItem(route)
     }
 
     // MARK: - Private members
 
-    private var attachmentManager: any FlowInstanceAttachmentStoring = FlowInstanceAttachments.default
-    private let makeRouterItem: @MainActor (Route, any FlowInstanceAttachmentStoring) -> RouterItem
+    private let makeRouterItem: @MainActor (Route) -> RouterItem
 }

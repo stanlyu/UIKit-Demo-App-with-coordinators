@@ -39,7 +39,7 @@ public enum CartModule {
         dependencies: CartBusinessDependencies,
         onEvent: @escaping (CartNavigationOutputEvent) -> Void
     ) -> Instance {
-        let flow = Flow.stack(
+        let flow = FlowBuilder.stack(
             makeNavigationController: {
                 let nav = UINavigationController()
                 nav.navigationBar.prefersLargeTitles = true

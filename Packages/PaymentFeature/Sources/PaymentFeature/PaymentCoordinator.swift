@@ -31,7 +31,7 @@ final class PaymentCoordinatingLogic: BaseCoordinator<any StackNavigation, Payme
         let paymentItem = composer.makeItem(for: .payment(eventHandler: { [weak self] event in
             self?.handle(event: event)
         }))
-        router.push(paymentItem, animated: false, completion: nil)
+        router.setRoot(paymentItem, animated: false)
     }
 
     // MARK: - Private members

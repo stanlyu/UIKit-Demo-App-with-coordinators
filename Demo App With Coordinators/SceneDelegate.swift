@@ -11,14 +11,16 @@ import Core
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
     var window: UIWindow?
+    private var applicationCoordinator: AnyObject?
 
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
         guard let windowScene = (scene as? UIWindowScene) else { return }
         resetPersistedStateIfNeeded()
 
-        let flow = Flow.switching(composer: ApplicationComposer()) { router, composer in
+        let flow = FlowBuilder.switching(composer: ApplicationComposer()) { router, composer in
             ApplicationCoordinator(router: router, composer: composer)
         }
+        self.applicationCoordinator = flow.coordinator
         
         let window = UIWindow(windowScene: windowScene)
         window.rootViewController = flow.viewController

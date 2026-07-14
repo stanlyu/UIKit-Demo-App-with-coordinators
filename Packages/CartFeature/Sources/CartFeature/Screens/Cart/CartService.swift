@@ -12,6 +12,6 @@ protocol CartServicing: Sendable {
 struct CartService: CartServicing {
     @concurrent func fetchCartData() async {
         // Эмитируем загрузку данных
-        try? await Task.sleep(nanoseconds: UInt64.random(in: 500_000_000...3_500_000_000))
+        try? await Task.sleep(nanoseconds: 10_000_000)
     }
 }

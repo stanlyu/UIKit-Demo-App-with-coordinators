@@ -6,10 +6,10 @@ import Core
 
 typealias MainTabsCoordinator = MainTabsCoordinatingLogic
 
-final class MainTabsCoordinatingLogic: BaseCoordinator<any TabNavigation, MainTabsRoute> {
+final class MainTabsCoordinatingLogic: BaseCoordinator<any TabsNavigation, MainTabsRoute> {
 
     init<C: MainTabsComposing>(
-        router: any TabNavigation,
+        router: any TabsNavigation,
         composer: C
     ) {
         super.init(router: router, composer: composer)
@@ -43,6 +43,7 @@ final class MainTabsCoordinatingLogic: BaseCoordinator<any TabNavigation, MainTa
     private weak var cartNavigationInput: (any CartNavigationInput)?
 
     private func handle(homeEvent: HomeNavigationOutputEvent) {
+        print("[MainTabsCoordinator] handle homeEvent: \(homeEvent)")
         switch homeEvent {
         case .placeOrder(let orderID):
             guard let cartItem else { return }
@@ -59,7 +60,8 @@ final class MainTabsCoordinatingLogic: BaseCoordinator<any TabNavigation, MainTa
                     }
                 }
             ))
-            context.push(item, animated: true)
+            print("[MainTabsCoordinator] pushing pickupPoints in context: \(context)")
+            context.push(item.viewController, animated: true)
         }
     }
 
@@ -75,11 +77,11 @@ final class MainTabsCoordinatingLogic: BaseCoordinator<any TabNavigation, MainTa
                     }
                 }
             ))
-            context.present(item, animated: true)
+            context.present(item.viewController, animated: true)
 
         case let .paymentRequested(context, onComplete):
             let item = composer.makeItem(for: .payment(onComplete: onComplete))
-            context.push(item, animated: true)
+            context.push(item.viewController, animated: true)
         }
     }
 }

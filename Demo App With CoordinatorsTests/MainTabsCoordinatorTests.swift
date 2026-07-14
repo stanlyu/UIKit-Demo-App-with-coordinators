@@ -48,7 +48,7 @@ struct MainTabsCoordinatorTests {
 
         sut.composer.homeEventHandler?(.pickupPointsRequested(context: context, onClose: {}))
 
-        #expect(context.pushCalls.last?.item.isWrapping(sut.composer.pickupPointsViewController) == true)
+        #expect(context.pushCalls.last?.viewController === sut.composer.pickupPointsViewController)
         #expect(context.pushCalls.last?.animated == true)
         #expect(sut.composer.pickupPointsEmbeddedInNavigationStack == true)
     }
@@ -61,7 +61,7 @@ struct MainTabsCoordinatorTests {
 
         sut.composer.cartEventHandler?(.paymentRequested(context: context, onComplete: { _ in }))
 
-        #expect(context.pushCalls.last?.item.isWrapping(sut.composer.paymentViewController) == true)
+        #expect(context.pushCalls.last?.viewController === sut.composer.paymentViewController)
         #expect(context.pushCalls.last?.animated == true)
     }
 }
@@ -124,7 +124,7 @@ private extension MainTabsCoordinatorTests {
     @MainActor
     private final class MockNavigationStackContext: NavigationStackContext {
         struct Call {
-            let item: RouterItem
+            let viewController: UIViewController
             let animated: Bool
         }
 
@@ -133,13 +133,13 @@ private extension MainTabsCoordinatorTests {
         private(set) var popCalls: [Bool] = []
         private(set) var dismissCalls: [Bool] = []
 
-        func push(_ item: RouterItem, animated: Bool, completion: (() -> Void)?) {
-            pushCalls.append(Call(item: item, animated: animated))
+        func push(_ viewController: UIViewController, animated: Bool, completion: (() -> Void)?) {
+            pushCalls.append(Call(viewController: viewController, animated: animated))
             completion?()
         }
 
-        func present(_ item: RouterItem, animated: Bool, completion: (() -> Void)?) {
-            presentCalls.append(Call(item: item, animated: animated))
+        func present(_ viewController: UIViewController, animated: Bool, completion: (() -> Void)?) {
+            presentCalls.append(Call(viewController: viewController, animated: animated))
             completion?()
         }
 
@@ -155,7 +155,7 @@ private extension MainTabsCoordinatorTests {
     }
 
 @MainActor
-private final class MockTabRouter: TabNavigation {
+private final class MockTabRouter: TabsNavigation {
     struct SetItemsCall {
         let items: [RouterItem]
         let animated: Bool

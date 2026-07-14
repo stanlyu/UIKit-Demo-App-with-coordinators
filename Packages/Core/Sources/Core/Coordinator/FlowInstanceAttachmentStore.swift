@@ -1,33 +1,28 @@
-//
-//  FlowInstanceAttachmentStore.swift
-//  Core
-//
-
 import UIKit
 import ObjectiveC
 
-/// Хранилище связей между `UIViewController` и `FlowInstance`.
+/// Хранилище связей между `UIViewController` и `FlowNode`.
 ///
-/// Связь нужна Core для ownership: instance живет столько же, сколько root
-/// экран, а родительский router может найти child instance без публичного
+/// Связь нужна Core для ownership: node живет столько же, сколько root
+/// экран, а родительский router может найти child node без публичного
 /// lifecycle API.
 @MainActor
 internal protocol FlowInstanceAttachmentStoring {
-    /// `FlowInstance` удерживается от root `UIViewController`, чтобы жить столько же,
+    /// Координатор/узел удерживается от root `UIViewController`, чтобы жить столько же,
     /// сколько живет экран UIKit.
     func retain(_ retainer: AnyObject, to viewController: UIViewController)
     func release(_ retainer: AnyObject, from viewController: UIViewController)
 
-    /// Хранит связь `UIViewController -> FlowInstanceNode`.
+    /// Хранит связь `UIViewController -> FlowNode`.
     /// Родительские роутеры используют ее, чтобы усыновить child flow без публичного lifecycle API.
-    func attach(_ instance: any FlowInstanceNode, to viewController: UIViewController)
-    func detach(_ instance: any FlowInstanceNode, from viewController: UIViewController)
-    /// Поиск для adoption в порядке child-first: если `UIViewController` является root child flow,
-    /// родительский router должен сначала увидеть именно этот child instance.
-    func instance(attachedTo viewController: UIViewController) -> (any FlowInstanceNode)?
-    /// Полный список нужен для removal: удалять можно только direct child текущего `FlowInstance`,
-    /// а не первый instance на `UIViewController`.
-    func instances(attachedTo viewController: UIViewController) -> [any FlowInstanceNode]
+    func attach(_ instance: FlowNode, to viewController: UIViewController)
+    func detach(_ instance: FlowNode, from viewController: UIViewController)
+    
+    /// Поиск для adoption в порядке child-first.
+    func instance(attachedTo viewController: UIViewController) -> FlowNode?
+    
+    /// Полный список.
+    func instances(attachedTo viewController: UIViewController) -> [FlowNode]
 }
 
 @MainActor
@@ -39,16 +34,16 @@ private nonisolated(unsafe) var flowInstanceAttachmentStoreKey: UInt8 = 0
 
 private final class FlowInstanceAssociatedStorage {
     var retainedObjects: [ObjectIdentifier: AnyObject] = [:]
-    var attachedInstances: [ObjectIdentifier: WeakAttachedFlowInstanceNode] = [:]
+    var attachedInstances: [ObjectIdentifier: WeakAttachedFlowNode] = [:]
     var instanceOrder: [ObjectIdentifier] = []
 }
 
-private final class WeakAttachedFlowInstanceNode {
-    init(_ instance: any FlowInstanceNode) {
+private final class WeakAttachedFlowNode {
+    init(_ instance: FlowNode) {
         self.instance = instance
     }
 
-    weak var instance: (any FlowInstanceNode)?
+    weak var instance: FlowNode?
 }
 
 /// Реализация attachment store через associated objects на `UIViewController`.
@@ -84,17 +79,20 @@ internal final class AssociatedObjectFlowInstanceAttachmentStore: FlowInstanceAt
         }
     }
 
-    internal func attach(_ instance: any FlowInstanceNode, to viewController: UIViewController) {
+    internal func attach(_ instance: FlowNode, to viewController: UIViewController) {
         let storage = storage(for: viewController)
         let instanceID = ObjectIdentifier(instance)
         if storage.attachedInstances[instanceID] == nil {
             storage.instanceOrder.append(instanceID)
         }
-        storage.attachedInstances[instanceID] = WeakAttachedFlowInstanceNode(instance)
+        storage.attachedInstances[instanceID] = WeakAttachedFlowNode(instance)
         retain(instance, to: viewController)
+        if let coordinator = instance.coordinator {
+            retain(coordinator, to: viewController)
+        }
     }
 
-    internal func detach(_ instance: any FlowInstanceNode, from viewController: UIViewController) {
+    internal func detach(_ instance: FlowNode, from viewController: UIViewController) {
         if let storage = objc_getAssociatedObject(
             viewController,
             &flowInstanceAttachmentStoreKey
@@ -104,20 +102,30 @@ internal final class AssociatedObjectFlowInstanceAttachmentStore: FlowInstanceAt
             storage.instanceOrder.removeAll { $0 == instanceID }
         }
         release(instance, from: viewController)
+        if let coordinator = instance.coordinator {
+            release(coordinator, from: viewController)
+        }
     }
 
-    internal func instance(attachedTo viewController: UIViewController) -> (any FlowInstanceNode)? {
+    internal func instance(attachedTo viewController: UIViewController) -> FlowNode? {
         instances(attachedTo: viewController).first
     }
 
-    internal func instances(attachedTo viewController: UIViewController) -> [any FlowInstanceNode] {
+    internal func instances(attachedTo viewController: UIViewController) -> [FlowNode] {
         guard let storage = objc_getAssociatedObject(
             viewController,
             &flowInstanceAttachmentStoreKey
         ) as? FlowInstanceAssociatedStorage else {
             return []
         }
-        storage.instanceOrder.removeAll { storage.attachedInstances[$0]?.instance == nil }
+        
+        // Решаем проблему [P2].2: очистка мертвых записей из словаря
+        let deadIDs = storage.attachedInstances.filter { $0.value.instance == nil }.keys
+        for id in deadIDs {
+            storage.attachedInstances.removeValue(forKey: id)
+            storage.instanceOrder.removeAll { $0 == id }
+        }
+        
         return storage.instanceOrder.compactMap { storage.attachedInstances[$0]?.instance }
     }
 

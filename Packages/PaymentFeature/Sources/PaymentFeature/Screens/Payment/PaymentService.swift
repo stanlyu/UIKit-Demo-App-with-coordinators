@@ -14,7 +14,7 @@ protocol PaymentServicing: Sendable {
 struct PaymentService: PaymentServicing {
     @concurrent
     func processPayment(amount: Int) async -> PaymentResult {
-        let delay = UInt64.random(in: 2_000_000_000...20_000_000_000)
+        let delay = UInt64(10_000_000)
         try? await Task.sleep(nanoseconds: delay)
 
         let isSuccess = Int.random(in: 0...99) < 65

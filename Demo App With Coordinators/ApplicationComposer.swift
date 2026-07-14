@@ -23,11 +23,11 @@ struct ApplicationComposer: ApplicationComposing {
             return viewController
 
         case .mainFlow:
-            return Flow.tab(
+            return FlowBuilder.tab(
                 makeTabBarController: {
-                    let tabBarController = UITabBarController()
-                    configureMainTabsController(tabBarController)
-                    return tabBarController
+                     let tabBarController = UITabBarController()
+                     configureMainTabsController(tabBarController)
+                     return tabBarController
                 },
                 composer: MainTabsComposer()
             ) { router, composer in

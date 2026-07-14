@@ -53,7 +53,7 @@ public extension StackNavigation {
 
 /// Навигация вкладок на базе `UITabBarController`.
 @MainActor
-public protocol TabNavigation: BaseNavigation {
+public protocol TabsNavigation: BaseNavigation {
     var selectedIndex: Int { get }
     var selectedItem: RouterItem? { get }
 

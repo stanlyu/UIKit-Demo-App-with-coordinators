@@ -38,6 +38,7 @@ extension CartPresenter: CartViewOutput {
     }
 
     func placeOrderButtonDidTap() {
+        print("[CartPresenter] placeOrderButtonDidTap called")
         onEvent(.onPlaceOrderTap(interactor.orderID))
     }
 }

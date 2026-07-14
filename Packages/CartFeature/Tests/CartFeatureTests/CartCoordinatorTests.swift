@@ -6,14 +6,14 @@ import Testing
 @MainActor
 struct CartCoordinatorTests {
     @Test
-    func start_pushesCartRootWithoutAnimation() {
+    func start_setsCartRootWithoutAnimation() {
         let sut = makeSUT()
 
         sut.coordinator.start(CoordinatorStartContext())
 
-        #expect(sut.router.pushCalls.count == 1)
-        #expect(sut.router.pushCalls[0].item.isWrapping(sut.composer.cartViewController))
-        #expect(sut.router.pushCalls[0].animated == false)
+        #expect(sut.router.setRootCalls.count == 1)
+        #expect(sut.router.setRootCalls[0].item.isWrapping(sut.composer.cartViewController))
+        #expect(sut.router.setRootCalls[0].animated == false)
     }
 
     @Test
@@ -43,9 +43,9 @@ struct CartCoordinatorTests {
 
         sut.coordinator.placeOrder(42)
 
-        #expect(sut.router.pushCalls.count == 2)
-        #expect(sut.router.pushCalls[1].item.isWrapping(sut.composer.placeOrderViewController))
-        #expect(sut.router.pushCalls[1].animated == true)
+        #expect(sut.router.pushCalls.count == 1)
+        #expect(sut.router.pushCalls[0].item.isWrapping(sut.composer.placeOrderViewController))
+        #expect(sut.router.pushCalls[0].animated == true)
     }
 
     @Test
@@ -80,7 +80,7 @@ struct CartCoordinatorTests {
         let pickupPointsViewController = UIViewController()
         let pickupPointsRouterItem = RouterItem(pickupPointsViewController)
 
-        sut.output.pickupPointsContext?.present(pickupPointsRouterItem, animated: true)
+        sut.output.pickupPointsContext?.present(pickupPointsRouterItem.viewController, animated: true)
 
         #expect(sut.router.presentedItem?.isWrapping(pickupPointsViewController) == true)
         #expect(sut.router.presentedAnimated == true)
@@ -118,11 +118,11 @@ struct CartCoordinatorTests {
         sut.composer.placeOrderEventHandler?(.onContinueToPayment)
         let paymentViewController = UIViewController()
         let paymentRouterItem = RouterItem(paymentViewController)
-        sut.output.paymentContext?.push(paymentRouterItem, animated: true)
+        sut.output.paymentContext?.push(paymentRouterItem.viewController, animated: true)
 
-        #expect(sut.router.pushCalls.count == 3)
-        #expect(sut.router.pushCalls[2].item.isWrapping(paymentViewController))
-        #expect(sut.router.pushCalls[2].animated == true)
+        #expect(sut.router.pushCalls.count == 2)
+        #expect(sut.router.pushCalls[1].item.isWrapping(paymentViewController))
+        #expect(sut.router.pushCalls[1].animated == true)
     }
 
     @Test
@@ -159,9 +159,9 @@ struct CartCoordinatorTests {
 
         sut.output.paymentOnComplete?(.success(amount: 1200))
 
-        #expect(sut.router.pushCalls.count == 3)
-        #expect(sut.router.pushCalls[2].item.isWrapping(sut.composer.orderConfirmationViewController))
-        #expect(sut.router.pushCalls[2].animated == true)
+        #expect(sut.router.pushCalls.count == 2)
+        #expect(sut.router.pushCalls[1].item.isWrapping(sut.composer.orderConfirmationViewController))
+        #expect(sut.router.pushCalls[1].animated == true)
     }
 
     @Test
@@ -286,7 +286,14 @@ private final class MockStackRouter: StackNavigation {
     private(set) var presentedAnimated: Bool = false
     private(set) var dismissCalls: [Bool] = []
 
+    struct SetRootCall {
+        let item: RouterItem
+        let animated: Bool
+    }
+    private(set) var setRootCalls: [SetRootCall] = []
+
     func setRoot(_ item: RouterItem, animated: Bool) {
+        setRootCalls.append(SetRootCall(item: item, animated: animated))
         items = [item]
     }
 

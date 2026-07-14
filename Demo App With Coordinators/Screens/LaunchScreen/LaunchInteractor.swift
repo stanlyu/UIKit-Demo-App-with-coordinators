@@ -24,8 +24,7 @@ final class LaunchInteractor {
 
 extension LaunchInteractor: LaunchInteracting {
     func fetchData(completion: @escaping () -> Void) {
-        Task {
-            await service.fetchData()
+        DispatchQueue.main.async {
             completion()
         }
     }

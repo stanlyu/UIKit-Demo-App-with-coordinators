@@ -20,12 +20,14 @@ final class HomeViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        print("[HomeViewController] viewDidLoad called")
         view.backgroundColor = .systemMint
         loadingIndicator.layout(in: view)
         setupOrderButton()
         title = "Главная"
 
         let action = UIAction { [unowned self] _ in
+            print("[HomeViewController] ПВЗ button action triggered")
             self.viewOutput?.pickupPointButtonDidTap()
         }
 

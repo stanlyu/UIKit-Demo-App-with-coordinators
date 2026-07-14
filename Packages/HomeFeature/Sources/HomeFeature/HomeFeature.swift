@@ -18,7 +18,7 @@ public enum HomeModule {
     public static func create(
         onEvent: @escaping (HomeNavigationOutputEvent) -> Void
     ) -> UIViewController {
-        Flow.stack(
+        FlowBuilder.stack(
             makeNavigationController: {
                 let nav = UINavigationController()
                 nav.navigationBar.prefersLargeTitles = true

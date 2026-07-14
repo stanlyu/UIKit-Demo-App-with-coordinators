@@ -18,7 +18,7 @@ public enum PaymentModule {
     public static func create(
         onEvent: @escaping (PaymentNavigationOutputEvent) -> Void
     ) -> UIViewController {
-        Flow.inline(
+        FlowBuilder.inline(
             composer: InlineComposer<PaymentRoute> { route in
                 switch route {
                 case .payment(let handler):

@@ -18,7 +18,7 @@ final class DeliveryCoordinatingLogic: BaseCoordinator<any StackNavigation, Deli
         let item = composer.makeItem(for: .pickupPoints(eventHandler: { [weak self] event in
             self?.handle(event: event)
         }))
-        router.push(item, animated: false, completion: nil)
+        router.setRoot(item, animated: false)
     }
     
     private let onEvent: ((PickupPointNavigationOutputEvent) -> Void)?

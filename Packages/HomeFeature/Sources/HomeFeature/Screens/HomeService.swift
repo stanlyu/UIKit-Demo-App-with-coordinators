@@ -12,6 +12,6 @@ protocol HomeServicing: Sendable {
 struct HomeService: HomeServicing {
     @concurrent func fetchHomeData() async {
         // Эмитируем загрузку данных
-        try? await Task.sleep(nanoseconds: 2_500_000_000)
+        try? await Task.sleep(nanoseconds: 10_000_000)
     }
 }

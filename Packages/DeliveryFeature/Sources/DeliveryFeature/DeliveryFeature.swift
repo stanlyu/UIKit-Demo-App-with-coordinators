@@ -24,7 +24,7 @@ public enum PickupPointModule {
         onEvent: ((PickupPointNavigationOutputEvent) -> Void)? = nil
     ) -> UIViewController {
         if embeddedInNavigationStack {
-            return Flow.inline(
+            return FlowBuilder.inline(
                 composer: DeliveryComposer(dependencies: dependencies, rootNavigationControl: .backButton)
             ) { router, composer in
                 DeliveryCoordinator(
@@ -34,7 +34,7 @@ public enum PickupPointModule {
                 )
             }.viewController
         } else {
-            return Flow.stack(
+            return FlowBuilder.stack(
                 makeNavigationController: {
                     let nav = UINavigationController()
                     nav.navigationBar.prefersLargeTitles = true

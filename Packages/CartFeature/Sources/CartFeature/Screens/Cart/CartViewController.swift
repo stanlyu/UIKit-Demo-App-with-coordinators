@@ -20,6 +20,7 @@ final class CartViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        print("[CartViewController] viewDidLoad called")
         view.backgroundColor = .systemOrange
         loadingIndicator.layout(in: view)
         setupOrderButton()
@@ -41,6 +42,7 @@ final class CartViewController: UIViewController {
             title: "Оформить заказ",
             backgroundColor: .systemPurple
         ) { [weak self] in
+            print("[CartViewController] Оформить заказ button did tap")
             self?.viewOutput?.placeOrderButtonDidTap()
         }
         button.translatesAutoresizingMaskIntoConstraints = false

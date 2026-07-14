@@ -13,14 +13,20 @@ final class CartCoordinatingLogic: BaseCoordinator<any StackNavigation, CartRout
         super.init(router: router, composer: composer)
     }
 
+    deinit {
+        print("[CartCoordinator] deinit called")
+    }
+
     override func start(_ context: CoordinatorStartContext) {
+        print("[CartCoordinator] start called")
         let item = composer.makeItem(for: .cart(eventHandler: { [weak self] event in
+            print("[CartCoordinator] cart event received: \(event)")
             switch event {
             case .onPlaceOrderTap(let orderID):
                 self?.placeOrder(orderID)
             }
         }))
-        router.push(item, animated: false, completion: nil)
+        router.setRoot(item, animated: false)
     }
 
     private let onEvent: (CartNavigationOutputEvent) -> Void

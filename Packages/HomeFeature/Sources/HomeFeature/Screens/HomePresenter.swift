@@ -45,6 +45,7 @@ extension HomePresenter: HomeViewOutput {
     }
 
     func pickupPointButtonDidTap() {
+        print("[HomePresenter] pickupPointButtonDidTap called")
         onEvent(.onPickupPointTap)
     }
 }

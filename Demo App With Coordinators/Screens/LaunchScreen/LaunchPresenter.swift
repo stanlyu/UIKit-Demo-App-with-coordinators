@@ -25,8 +25,10 @@ final class LaunchPresenter {
 
 extension LaunchPresenter: LaunchViewOutput {
     func viewDidLoad() {
+        print("[LaunchPresenter] viewDidLoad called")
         view?.startAnimation()
         interactor.fetchData { [weak self] in
+            print("[LaunchPresenter] interactor.fetchData completed")
             self?.view?.stopAnimation()
             self?.onEvent(.mainFlowStarted)
         }
