@@ -32,7 +32,7 @@ class BaseRouter<Parent: UIViewController>: NSObject, BaseNavigation, UIAdaptive
 
     // BaseNavigation (present/dismiss) с поддержкой поиска презентующего контроллера
     func present(_ item: RouterItem, animated: Bool, completion: (() -> Void)?) {
-        guard let root = parentRouterItem?.viewController ?? childRouterItems.first?.viewController else { return }
+        guard let root = parentViewController else { return }
         
         item.viewController.presentationController?.delegate = self
         
@@ -40,7 +40,7 @@ class BaseRouter<Parent: UIViewController>: NSObject, BaseNavigation, UIAdaptive
     }
 
     func dismiss(animated: Bool, completion: (() -> Void)?) {
-        guard let root = parentRouterItem?.viewController ?? childRouterItems.first?.viewController else { return }
+        guard let root = parentViewController else { return }
         root.dismiss(animated: animated, completion: completion)
     }
 

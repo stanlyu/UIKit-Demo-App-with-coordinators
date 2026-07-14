@@ -98,7 +98,8 @@ struct StackRouterTests {
         let manager = FlowNodesManager(coordinator: coordinator, attachmentStore: store)
         
         let nav = UINavigationController()
-        let router = StackRouter(makeNavigationController: { nav }, nodesManager: manager)
+        let router = StackRouter(makeNavigationController: { nav })
+        router.setNodesManager(manager)
         manager.setRootViewController(nav)
         
         let item1 = RouterItem(UIViewController())
@@ -127,7 +128,8 @@ struct InlineRouterTests {
         let manager = FlowNodesManager(coordinator: coordinator, attachmentStore: store)
         
         let nav = UINavigationController()
-        let router = InlineRouter(nodesManager: manager)
+        let router = InlineRouter()
+        router.setNodesManager(manager)
         
         let item1 = RouterItem(UIViewController())
         let item2 = RouterItem(UIViewController())
@@ -157,7 +159,8 @@ struct TabsRouterTests {
         let manager = FlowNodesManager(coordinator: coordinator, attachmentStore: store)
         
         let tabController = UITabBarController()
-        let router = TabsRouter(makeTabBarController: { tabController }, nodesManager: manager)
+        let router = TabsRouter(makeTabBarController: { tabController })
+        router.setNodesManager(manager)
         
         let item1 = RouterItem(UIViewController())
         let item2 = RouterItem(UIViewController())
@@ -179,7 +182,8 @@ struct SwitchRouterTests {
         let coordinator = NSObject()
         let manager = FlowNodesManager(coordinator: coordinator, attachmentStore: store)
         
-        let router = SwitchRouter(nodesManager: manager)
+        let router = SwitchRouter()
+        router.setNodesManager(manager)
         
         let item1 = RouterItem(UIViewController())
         let item2 = RouterItem(UIViewController())
