@@ -17,12 +17,17 @@ class BaseRouter<Parent: UIViewController>: NSObject, BaseNavigation, UIAdaptive
 
     func setNodesManager(_ nodesManager: any FlowNodesManaging) {
         self.nodesManager = nodesManager
+        if let vc = parentRouterItem?.viewController {
+            nodesManager.attach(to: vc)
+        }
     }
 
     // API для наследников
     func updateParent(_ item: RouterItem?) {
         self.parentRouterItem = item
-        nodesManager?.updateParentViewController(item?.viewController)
+        if let vc = item?.viewController {
+            nodesManager?.attach(to: vc)
+        }
     }
 
     func updateChildren(_ items: [RouterItem]) {

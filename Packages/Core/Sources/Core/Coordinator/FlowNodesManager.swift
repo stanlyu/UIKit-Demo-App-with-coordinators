@@ -13,17 +13,10 @@ internal final class FlowNodesManager: FlowNodesManaging {
         self.attachmentStore = attachmentStore
     }
 
-    internal func setRootViewController(_ viewController: UIViewController) {
+    internal func attach(to viewController: UIViewController) {
         attachmentStore.attach(node, to: viewController)
     }
 
-    internal func updateParentViewController(_ parentVC: UIViewController?) {
-        guard let parentVC, let parentNode = attachmentStore.instance(attachedTo: parentVC) as? FlowNode else {
-            node.setParent(nil)
-            return
-        }
-        parentNode.adopt(node)
-    }
 
     internal func updateChildViewControllers(_ childVCs: [UIViewController]) {
         // Находим все дочерние ноды, привязанные к переданным контроллерам

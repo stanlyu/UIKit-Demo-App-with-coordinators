@@ -69,22 +69,19 @@ struct FlowNodesManagerTests {
         let childCoordinator = NSObject()
         
         let parentManager = FlowNodesManager(coordinator: parentCoordinator, attachmentStore: store)
-        parentManager.setRootViewController(parentVC)
+        parentManager.attach(to: parentVC)
         
         let childManager = FlowNodesManager(coordinator: childCoordinator, attachmentStore: store)
-        childManager.setRootViewController(childVC)
+        childManager.attach(to: childVC)
         
-        // Связываем родителя
-        childManager.updateParentViewController(parentVC)
-        #expect(childManager.node.parent === parentManager.node)
-        #expect(parentManager.node.children.contains { $0 === childManager.node })
-        
-        // Обновляем детей
+        // Связываем снизу вверх через родителя
         parentManager.updateChildViewControllers([childVC])
+        #expect(childManager.node.parent === parentManager.node)
         #expect(parentManager.node.children.contains { $0 === childManager.node })
         
         // Убираем ребенка
         parentManager.updateChildViewControllers([])
+        #expect(childManager.node.parent == nil)
         #expect(!parentManager.node.children.contains { $0 === childManager.node })
     }
 }
@@ -100,7 +97,7 @@ struct StackRouterTests {
         let nav = UINavigationController()
         let router = StackRouter(makeNavigationController: { nav })
         router.setNodesManager(manager)
-        manager.setRootViewController(nav)
+        manager.attach(to: nav)
         
         let item1 = RouterItem(UIViewController())
         let item2 = RouterItem(UIViewController())
@@ -137,7 +134,7 @@ struct InlineRouterTests {
         // Встраиваем в навигейшн
         nav.setViewControllers([item1.viewController], animated: false)
         router.updateRootViewController(item1.viewController)
-        manager.setRootViewController(item1.viewController)
+        manager.attach(to: item1.viewController)
         
         #expect(router.items.count == 1)
         #expect(router.items.first?.viewController === item1.viewController)

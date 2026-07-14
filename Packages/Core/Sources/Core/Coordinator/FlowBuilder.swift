@@ -40,7 +40,6 @@ public enum FlowBuilder {
 
         let flowNodesManager = FlowNodesManager(coordinator: coordinator, attachmentStore: attachmentStore)
         router.setNodesManager(flowNodesManager)
-        flowNodesManager.setRootViewController(router.parentViewController!)
 
         coordinator.start(CoordinatorStartContext())
 
@@ -85,7 +84,6 @@ public enum FlowBuilder {
 
         let actualManager = FlowNodesManager(coordinator: coordinator, attachmentStore: attachmentStore)
         router.setNodesManager(actualManager)
-        actualManager.setRootViewController(router.parentViewController!)
 
         coordinator.start(CoordinatorStartContext())
 
@@ -130,7 +128,6 @@ public enum FlowBuilder {
             fatalError("Coordinator must set root content (setRoot) during start(_:).")
         }
 
-        flowNodesManager.setRootViewController(rootVC)
         router.updateRootViewController(rootVC)
 
         return CreatedFlow(viewController: rootVC, coordinator: coordinator)
@@ -173,8 +170,6 @@ public enum FlowBuilder {
         guard let rootVC = router.parentViewController else {
             fatalError("Coordinator must set root content (switchTo) during start(_:).")
         }
-
-        flowNodesManager.setRootViewController(rootVC)
 
         return CreatedFlow(viewController: rootVC, coordinator: coordinator)
     }
