@@ -40,11 +40,11 @@ public enum FlowBuilder {
 
         let flowNodesManager = FlowNodesManager(coordinator: coordinator, attachmentStore: attachmentStore)
         router.setNodesManager(flowNodesManager)
-        flowNodesManager.setRootViewController(router.navigationController)
+        flowNodesManager.setRootViewController(router.parentViewController!)
 
         coordinator.start(CoordinatorStartContext())
 
-        return CreatedFlow(viewController: router.navigationController, coordinator: coordinator)
+        return CreatedFlow(viewController: router.parentViewController!, coordinator: coordinator)
     }
 
     /// Собирает flow на базе `UITabBarController`.
@@ -85,11 +85,11 @@ public enum FlowBuilder {
 
         let actualManager = FlowNodesManager(coordinator: coordinator, attachmentStore: attachmentStore)
         router.setNodesManager(actualManager)
-        actualManager.setRootViewController(router.tabBarController)
+        actualManager.setRootViewController(router.parentViewController!)
 
         coordinator.start(CoordinatorStartContext())
 
-        return CreatedFlow(viewController: router.tabBarController, coordinator: coordinator)
+        return CreatedFlow(viewController: router.parentViewController!, coordinator: coordinator)
     }
 
     /// Собирает flow, root которого является обычным `UIViewController`.
@@ -126,7 +126,7 @@ public enum FlowBuilder {
 
         coordinator.start(CoordinatorStartContext())
 
-        guard let rootVC = router.rootViewController else {
+        guard let rootVC = router.parentViewController else {
             fatalError("Coordinator must set root content (setRoot) during start(_:).")
         }
 
@@ -170,7 +170,7 @@ public enum FlowBuilder {
 
         coordinator.start(CoordinatorStartContext())
 
-        guard let rootVC = router.rootViewController else {
+        guard let rootVC = router.parentViewController else {
             fatalError("Coordinator must set root content (switchTo) during start(_:).")
         }
 

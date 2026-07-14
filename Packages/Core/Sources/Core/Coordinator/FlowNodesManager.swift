@@ -4,7 +4,6 @@ import UIKit
 internal final class FlowNodesManager: FlowNodesManaging {
     internal let node: FlowNode
     private let attachmentStore: any FlowInstanceAttachmentStoring
-    private weak var rootViewController: UIViewController?
 
     internal init(
         coordinator: AnyObject,
@@ -15,7 +14,6 @@ internal final class FlowNodesManager: FlowNodesManaging {
     }
 
     internal func setRootViewController(_ viewController: UIViewController) {
-        self.rootViewController = viewController
         attachmentStore.attach(node, to: viewController)
     }
 
