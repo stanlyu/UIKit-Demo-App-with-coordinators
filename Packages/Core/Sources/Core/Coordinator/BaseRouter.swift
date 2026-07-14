@@ -1,22 +1,18 @@
 import UIKit
 
 @MainActor
-open class BaseRouter<Parent: UIViewController>: NSObject, BaseNavigation, UIAdaptivePresentationControllerDelegate {
-    public private(set) var parentRouterItem: RouterItem?
-    public private(set) var childRouterItems: [RouterItem] = []
+class BaseRouter<Parent: UIViewController>: NSObject, BaseNavigation, UIAdaptivePresentationControllerDelegate {
+    private(set) var parentRouterItem: RouterItem?
+    private(set) var childRouterItems: [RouterItem] = []
 
     private(set) var nodesManager: (any FlowNodesManaging)?
 
-    public var parentViewController: Parent? {
+    var parentViewController: Parent? {
         parentRouterItem?.viewController as? Parent
     }
 
-    public var childViewControllers: [UIViewController] {
+    var childViewControllers: [UIViewController] {
         childRouterItems.map(\.viewController)
-    }
-
-    public override init() {
-        super.init()
     }
 
     func setNodesManager(_ nodesManager: any FlowNodesManaging) {
@@ -35,23 +31,22 @@ open class BaseRouter<Parent: UIViewController>: NSObject, BaseNavigation, UIAda
     }
 
     // BaseNavigation (present/dismiss) с поддержкой поиска презентующего контроллера
-    open func present(_ item: RouterItem, animated: Bool, completion: (() -> Void)?) {
+    func present(_ item: RouterItem, animated: Bool, completion: (() -> Void)?) {
         guard let root = parentRouterItem?.viewController ?? childRouterItems.first?.viewController else { return }
         
-        // Решаем проблему [P1].4 свайпа вниз модального контроллера
         item.viewController.presentationController?.delegate = self
         
         root.present(item.viewController, animated: animated, completion: completion)
     }
 
-    open func dismiss(animated: Bool, completion: (() -> Void)?) {
+    func dismiss(animated: Bool, completion: (() -> Void)?) {
         guard let root = parentRouterItem?.viewController ?? childRouterItems.first?.viewController else { return }
         root.dismiss(animated: animated, completion: completion)
     }
 
     // MARK: - UIAdaptivePresentationControllerDelegate
 
-    public func presentationControllerDidDismiss(_ presentationController: UIPresentationController) {
+    func presentationControllerDidDismiss(_ presentationController: UIPresentationController) {
         let dismissedVC = presentationController.presentedViewController
         if let dismissedNode = FlowInstanceAttachments.default.instance(attachedTo: dismissedVC) as? FlowNode {
             dismissedNode.parent?.removeChild(dismissedNode)

@@ -1,19 +1,19 @@
 import UIKit
 
 @MainActor
-public final class StackRouter: BaseRouter<UINavigationController>, StackNavigation {
-    public var navigationController: UINavigationController {
+final class StackRouter: BaseRouter<UINavigationController>, StackNavigation {
+    var navigationController: UINavigationController {
         guard let nav = parentViewController else {
             fatalError("UINavigationController is not configured in StackRouter")
         }
         return nav
     }
 
-    public var items: [RouterItem] {
+    var items: [RouterItem] {
         childRouterItems
     }
 
-    public init(makeNavigationController: () -> UINavigationController = { UINavigationController() }) {
+    init(makeNavigationController: () -> UINavigationController = { UINavigationController() }) {
         let nav = makeNavigationController()
         super.init()
         updateParent(RouterItem(nav))
@@ -21,14 +21,14 @@ public final class StackRouter: BaseRouter<UINavigationController>, StackNavigat
         dispatcher.addDelegate(self, category: .instance)
     }
 
-    public func setRoot(_ item: RouterItem, animated: Bool) {
+    func setRoot(_ item: RouterItem, animated: Bool) {
         navigationController.setViewControllers([item.viewController], animated: animated) { [weak self] in
             self?.syncChildRouterItems(with: self?.navigationController.viewControllers ?? [])
         }
         syncChildRouterItems(with: navigationController.viewControllers)
     }
 
-    public func push(_ item: RouterItem, animated: Bool, completion: (() -> Void)?) {
+    func push(_ item: RouterItem, animated: Bool, completion: (() -> Void)?) {
         let shouldAnimate = navigationController.viewControllers.isEmpty ? false : animated
         navigationController.pushViewController(item.viewController, animated: shouldAnimate) { [weak self] in
             self?.syncChildRouterItems(with: self?.navigationController.viewControllers ?? [])
@@ -37,7 +37,7 @@ public final class StackRouter: BaseRouter<UINavigationController>, StackNavigat
         syncChildRouterItems(with: navigationController.viewControllers)
     }
 
-    public func pop(animated: Bool, completion: (() -> Void)?) {
+    func pop(animated: Bool, completion: (() -> Void)?) {
         navigationController.popViewController(animated: animated) { [weak self] in
             self?.syncChildRouterItems(with: self?.navigationController.viewControllers ?? [])
             completion?()
@@ -45,7 +45,7 @@ public final class StackRouter: BaseRouter<UINavigationController>, StackNavigat
         syncChildRouterItems(with: navigationController.viewControllers)
     }
 
-    public func popToRoot(animated: Bool, completion: (() -> Void)?) {
+    func popToRoot(animated: Bool, completion: (() -> Void)?) {
         navigationController.popToRootViewController(animated: animated) { [weak self] in
             self?.syncChildRouterItems(with: self?.navigationController.viewControllers ?? [])
             completion?()
@@ -53,7 +53,7 @@ public final class StackRouter: BaseRouter<UINavigationController>, StackNavigat
         syncChildRouterItems(with: navigationController.viewControllers)
     }
 
-    public func popTo(_ item: RouterItem, animated: Bool, completion: (() -> Void)?) {
+    func popTo(_ item: RouterItem, animated: Bool, completion: (() -> Void)?) {
         guard navigationController.viewControllers.contains(item.viewController) else {
             completion?()
             return
@@ -65,7 +65,7 @@ public final class StackRouter: BaseRouter<UINavigationController>, StackNavigat
         syncChildRouterItems(with: navigationController.viewControllers)
     }
 
-    public func setStack(_ items: [RouterItem], animated: Bool) {
+    func setStack(_ items: [RouterItem], animated: Bool) {
         navigationController.setViewControllers(items.map(\.viewController), animated: animated) { [weak self] in
             self?.syncChildRouterItems(with: self?.navigationController.viewControllers ?? [])
         }
@@ -85,7 +85,7 @@ public final class StackRouter: BaseRouter<UINavigationController>, StackNavigat
 }
 
 extension StackRouter: UINavigationControllerDelegate {
-    public func navigationController(
+    func navigationController(
         _ navigationController: UINavigationController,
         didShow viewController: UIViewController,
         animated: Bool

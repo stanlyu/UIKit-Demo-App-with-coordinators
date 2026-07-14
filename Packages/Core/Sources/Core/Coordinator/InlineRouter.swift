@@ -1,12 +1,12 @@
 import UIKit
 
 @MainActor
-public final class InlineRouter: BaseRouter<UIViewController>, StackNavigation {
-    public var rootViewController: UIViewController? {
+final class InlineRouter: BaseRouter<UIViewController>, StackNavigation {
+    var rootViewController: UIViewController? {
         parentViewController
     }
 
-    public var items: [RouterItem] {
+    var items: [RouterItem] {
         childRouterItems
     }
 
@@ -14,7 +14,7 @@ public final class InlineRouter: BaseRouter<UIViewController>, StackNavigation {
         rootViewController?.navigationController
     }
 
-    public func updateRootViewController(_ vc: UIViewController) {
+    func updateRootViewController(_ vc: UIViewController) {
         updateParent(RouterItem(vc))
         if let nav = vc.navigationController {
             let dispatcher = NavigationControllerDelegateDispatcher.install(on: nav)
@@ -23,7 +23,7 @@ public final class InlineRouter: BaseRouter<UIViewController>, StackNavigation {
         syncChildRouterItems()
     }
 
-    public func setRoot(_ item: RouterItem, animated: Bool) {
+    func setRoot(_ item: RouterItem, animated: Bool) {
         let oldRoot = rootViewController
         updateParent(item)
         
@@ -38,7 +38,7 @@ public final class InlineRouter: BaseRouter<UIViewController>, StackNavigation {
         syncChildRouterItems()
     }
 
-    public func push(_ item: RouterItem, animated: Bool, completion: (() -> Void)?) {
+    func push(_ item: RouterItem, animated: Bool, completion: (() -> Void)?) {
         guard let nav = navigationController else {
             assertionFailure("Inline Router: content is not embedded in UINavigationController.")
             completion?()
@@ -52,7 +52,7 @@ public final class InlineRouter: BaseRouter<UIViewController>, StackNavigation {
         syncChildRouterItems()
     }
 
-    public func pop(animated: Bool, completion: (() -> Void)?) {
+    func pop(animated: Bool, completion: (() -> Void)?) {
         guard let rootVC = rootViewController,
               let nav = navigationController else {
             completion?()
@@ -72,7 +72,7 @@ public final class InlineRouter: BaseRouter<UIViewController>, StackNavigation {
         syncChildRouterItems()
     }
 
-    public func popToRoot(animated: Bool, completion: (() -> Void)?) {
+    func popToRoot(animated: Bool, completion: (() -> Void)?) {
         guard let rootVC = rootViewController else {
             completion?()
             return
@@ -80,7 +80,7 @@ public final class InlineRouter: BaseRouter<UIViewController>, StackNavigation {
         popTo(RouterItem(rootVC), animated: animated, completion: completion)
     }
 
-    public func popTo(_ item: RouterItem, animated: Bool, completion: (() -> Void)?) {
+    func popTo(_ item: RouterItem, animated: Bool, completion: (() -> Void)?) {
         guard let rootVC = rootViewController,
               let nav = navigationController,
               let rootIndex = nav.viewControllers.firstIndex(of: rootVC),
@@ -102,7 +102,7 @@ public final class InlineRouter: BaseRouter<UIViewController>, StackNavigation {
         syncChildRouterItems()
     }
 
-    public func setStack(_ items: [RouterItem], animated: Bool) {
+    func setStack(_ items: [RouterItem], animated: Bool) {
         guard let firstItem = items.first else { return }
         let oldRoot = rootViewController
         updateParent(firstItem)
@@ -140,7 +140,7 @@ public final class InlineRouter: BaseRouter<UIViewController>, StackNavigation {
 }
 
 extension InlineRouter: UINavigationControllerDelegate {
-    public func navigationController(
+    func navigationController(
         _ navigationController: UINavigationController,
         didShow viewController: UIViewController,
         animated: Bool

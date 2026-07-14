@@ -1,6 +1,6 @@
 import UIKit
 
-public typealias SwitchTransitionHandler = @MainActor @Sendable (
+typealias SwitchTransitionHandler = @MainActor @Sendable (
     _ oldViewController: UIViewController,
     _ newViewController: UIViewController,
     _ animated: Bool,
@@ -8,23 +8,23 @@ public typealias SwitchTransitionHandler = @MainActor @Sendable (
 ) -> Bool
 
 @MainActor
-public final class SwitchRouter: BaseRouter<UIViewController>, SwitchNavigation {
-    public var rootViewController: UIViewController? {
+final class SwitchRouter: BaseRouter<UIViewController>, SwitchNavigation {
+    var rootViewController: UIViewController? {
         parentViewController
     }
 
-    public var currentItem: RouterItem? {
+    var currentItem: RouterItem? {
         parentRouterItem
     }
 
     private var oldContentRetainers: Set<UIViewController> = []
     private var transitionHandler: SwitchTransitionHandler?
 
-    public func setTransitionHandler(_ handler: SwitchTransitionHandler?) {
+    func setTransitionHandler(_ handler: SwitchTransitionHandler?) {
         self.transitionHandler = handler
     }
 
-    public func switchTo(_ item: RouterItem, animated: Bool, completion: (() -> Void)?) {
+    func switchTo(_ item: RouterItem, animated: Bool, completion: (() -> Void)?) {
         print("[SwitchRouter] switchTo called for VC: \(item.viewController)")
         let newVC = item.viewController
         guard let oldVC = rootViewController else {
