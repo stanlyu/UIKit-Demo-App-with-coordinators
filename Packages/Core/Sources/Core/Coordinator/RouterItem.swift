@@ -8,11 +8,11 @@ import UIKit
 public struct RouterItem {
     public let viewController: UIViewController
 
-    internal init(_ viewController: UIViewController) {
+    init(_ viewController: UIViewController) {
         self.viewController = viewController
     }
 
-    internal func isWrapping(_ viewController: UIViewController) -> Bool {
+    func isWrapping(_ viewController: UIViewController) -> Bool {
         self.viewController === viewController
     }
 }

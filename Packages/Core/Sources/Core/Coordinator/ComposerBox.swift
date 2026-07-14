@@ -13,7 +13,7 @@ import UIKit
 /// по route. Доступ к `UIViewController` остается внутри `Core`.
 @MainActor
 public final class ComposerBox<Route> {
-    internal init<C: Composing>(wrappedComposer: C) where C.Route == Route {
+    init<C: Composing>(wrappedComposer: C) where C.Route == Route {
         self.makeRouterItem = { route in
             let viewController = wrappedComposer.makeViewController(for: route)
             return RouterItem(viewController)

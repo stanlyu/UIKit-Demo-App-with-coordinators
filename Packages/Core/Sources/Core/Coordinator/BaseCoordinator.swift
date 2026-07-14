@@ -5,7 +5,7 @@ import UIKit
 /// Создается только инфраструктурой `Core`, поэтому внешний код не может
 /// вручную запустить координатор через `start(_:)`.
 public struct CoordinatorStartContext {
-    internal init() {}
+    init() {}
 }
 
 /// Базовый координатор новой flow-модели.

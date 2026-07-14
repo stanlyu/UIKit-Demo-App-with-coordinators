@@ -7,7 +7,7 @@ import ObjectiveC
 /// экран, а родительский router может найти child node без публичного
 /// lifecycle API.
 @MainActor
-internal protocol FlowInstanceAttachmentStoring {
+protocol FlowInstanceAttachmentStoring {
     /// Координатор/узел удерживается от root `UIViewController`, чтобы жить столько же,
     /// сколько живет экран UIKit.
     func retain(_ retainer: AnyObject, to viewController: UIViewController)
@@ -26,8 +26,8 @@ internal protocol FlowInstanceAttachmentStoring {
 }
 
 @MainActor
-internal enum FlowInstanceAttachments {
-    internal static let `default`: any FlowInstanceAttachmentStoring = AssociatedObjectFlowInstanceAttachmentStore()
+enum FlowInstanceAttachments {
+    static let `default`: any FlowInstanceAttachmentStoring = AssociatedObjectFlowInstanceAttachmentStore()
 }
 
 private nonisolated(unsafe) var flowInstanceAttachmentStoreKey: UInt8 = 0
@@ -48,10 +48,10 @@ private final class WeakAttachedFlowNode {
 
 /// Реализация attachment store через associated objects на `UIViewController`.
 @MainActor
-internal final class AssociatedObjectFlowInstanceAttachmentStore: FlowInstanceAttachmentStoring {
-    internal init() {}
+final class AssociatedObjectFlowInstanceAttachmentStore: FlowInstanceAttachmentStoring {
+    init() {}
 
-    internal func retain(_ retainer: AnyObject, to viewController: UIViewController) {
+    func retain(_ retainer: AnyObject, to viewController: UIViewController) {
         let storage: FlowInstanceAssociatedStorage
         if let existing = objc_getAssociatedObject(
             viewController,
@@ -70,7 +70,7 @@ internal final class AssociatedObjectFlowInstanceAttachmentStore: FlowInstanceAt
         storage.retainedObjects[ObjectIdentifier(retainer)] = retainer
     }
 
-    internal func release(_ retainer: AnyObject, from viewController: UIViewController) {
+    func release(_ retainer: AnyObject, from viewController: UIViewController) {
         if let storage = objc_getAssociatedObject(
             viewController,
             &flowInstanceAttachmentStoreKey
@@ -79,7 +79,7 @@ internal final class AssociatedObjectFlowInstanceAttachmentStore: FlowInstanceAt
         }
     }
 
-    internal func attach(_ instance: FlowNode, to viewController: UIViewController) {
+    func attach(_ instance: FlowNode, to viewController: UIViewController) {
         let storage = storage(for: viewController)
         let instanceID = ObjectIdentifier(instance)
         if storage.attachedInstances[instanceID] == nil {
@@ -92,7 +92,7 @@ internal final class AssociatedObjectFlowInstanceAttachmentStore: FlowInstanceAt
         }
     }
 
-    internal func detach(_ instance: FlowNode, from viewController: UIViewController) {
+    func detach(_ instance: FlowNode, from viewController: UIViewController) {
         if let storage = objc_getAssociatedObject(
             viewController,
             &flowInstanceAttachmentStoreKey
@@ -107,11 +107,11 @@ internal final class AssociatedObjectFlowInstanceAttachmentStore: FlowInstanceAt
         }
     }
 
-    internal func instance(attachedTo viewController: UIViewController) -> FlowNode? {
+    func instance(attachedTo viewController: UIViewController) -> FlowNode? {
         instances(attachedTo: viewController).first
     }
 
-    internal func instances(attachedTo viewController: UIViewController) -> [FlowNode] {
+    func instances(attachedTo viewController: UIViewController) -> [FlowNode] {
         guard let storage = objc_getAssociatedObject(
             viewController,
             &flowInstanceAttachmentStoreKey

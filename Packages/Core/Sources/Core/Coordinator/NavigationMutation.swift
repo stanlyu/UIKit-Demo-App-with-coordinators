@@ -2,11 +2,11 @@ import UIKit
 
 /// Описание изменений UIKit-навигации, которые нужно отразить в дереве `FlowInstance`.
 @MainActor
-internal struct NavigationMutation {
-    internal let insertedItems: [RouterItem]
-    internal let removedViewControllers: [UIViewController]
+struct NavigationMutation {
+    let insertedItems: [RouterItem]
+    let removedViewControllers: [UIViewController]
 
-    internal init(
+    init(
         insertedItems: [RouterItem] = [],
         removedViewControllers: [UIViewController] = []
     ) {
@@ -14,11 +14,11 @@ internal struct NavigationMutation {
         self.removedViewControllers = removedViewControllers
     }
 
-    internal var isEmpty: Bool {
+    var isEmpty: Bool {
         insertedItems.isEmpty && removedViewControllers.isEmpty
     }
 
-    internal static func stackDelta(
+    static func stackDelta(
         oldStack: [UIViewController],
         newStack: [UIViewController],
         newItems: [RouterItem]
@@ -39,7 +39,7 @@ internal struct NavigationMutation {
         )
     }
 
-    internal static func externalStackDelta(
+    static func externalStackDelta(
         oldStack: [UIViewController],
         newStack: [UIViewController]
     ) -> NavigationMutation {

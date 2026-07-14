@@ -10,18 +10,18 @@ public final class FlowNode: AnyObject {
         self.coordinator = coordinator
     }
 
-    internal func setParent(_ parent: FlowNode?) {
+    func setParent(_ parent: FlowNode?) {
         self.parent = parent
     }
 
-    internal func adopt(_ child: FlowNode) {
+    func adopt(_ child: FlowNode) {
         if child === self { return }
         child.parent?.removeChild(child)
         children.append(child)
         child.setParent(self)
     }
 
-    internal func removeChild(_ child: FlowNode) {
+    func removeChild(_ child: FlowNode) {
         children.removeAll { $0 === child }
         if child.parent === self {
             child.setParent(nil)

@@ -10,7 +10,7 @@ public struct CreatedFlow<Coordinator: AnyObject> {
     public let viewController: UIViewController
     public let coordinator: Coordinator
 
-    internal init(viewController: UIViewController, coordinator: Coordinator) {
+    init(viewController: UIViewController, coordinator: Coordinator) {
         self.viewController = viewController
         self.coordinator = coordinator
     }

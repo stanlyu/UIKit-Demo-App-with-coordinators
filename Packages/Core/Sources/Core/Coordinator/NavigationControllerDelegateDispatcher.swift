@@ -1,11 +1,11 @@
 import UIKit
 
 @MainActor
-internal final class NavigationControllerDelegateDispatcher: NSObject {
+final class NavigationControllerDelegateDispatcher: NSObject {
     // UINavigationController умеет хранить только одного delegate.
     // Dispatcher оставляет внешний delegate на месте логически, но пропускает
     // через себя события, которые нужны Core для синхронизации дерева FlowInstance.
-    internal static func install(on navigationController: UINavigationController) -> NavigationControllerDelegateDispatcher {
+    static func install(on navigationController: UINavigationController) -> NavigationControllerDelegateDispatcher {
         if let dispatcher = navigationController.delegate as? NavigationControllerDelegateDispatcher {
             return dispatcher
         }
@@ -18,7 +18,7 @@ internal final class NavigationControllerDelegateDispatcher: NSObject {
         return dispatcher
     }
 
-    internal func addDelegate(
+    func addDelegate(
         _ delegate: any UINavigationControllerDelegate,
         category: DelegateCategory = .application
     ) {
@@ -29,7 +29,7 @@ internal final class NavigationControllerDelegateDispatcher: NSObject {
         delegates.append(WeakNavigationControllerDelegate(delegate, category: category))
     }
 
-    internal func removeDelegate(_ delegate: any UINavigationControllerDelegate) {
+    func removeDelegate(_ delegate: any UINavigationControllerDelegate) {
         let delegateID = ObjectIdentifier(delegate as AnyObject)
         delegates.removeAll { $0.delegate == nil || $0.id == delegateID }
     }
@@ -69,7 +69,7 @@ internal final class NavigationControllerDelegateDispatcher: NSObject {
 }
 
 extension NavigationControllerDelegateDispatcher: UINavigationControllerDelegate {
-    internal func navigationController(
+    func navigationController(
         _ navigationController: UINavigationController,
         willShow viewController: UIViewController,
         animated: Bool
@@ -79,7 +79,7 @@ extension NavigationControllerDelegateDispatcher: UINavigationControllerDelegate
         }
     }
 
-    internal func navigationController(
+    func navigationController(
         _ navigationController: UINavigationController,
         didShow viewController: UIViewController,
         animated: Bool
@@ -89,7 +89,7 @@ extension NavigationControllerDelegateDispatcher: UINavigationControllerDelegate
         }
     }
 
-    internal func navigationController(
+    func navigationController(
         _ navigationController: UINavigationController,
         animationControllerFor operation: UINavigationController.Operation,
         from fromVC: UIViewController,
@@ -108,7 +108,7 @@ extension NavigationControllerDelegateDispatcher: UINavigationControllerDelegate
         return nil
     }
 
-    internal func navigationController(
+    func navigationController(
         _ navigationController: UINavigationController,
         interactionControllerFor animationController: any UIViewControllerAnimatedTransitioning
     ) -> (any UIViewControllerInteractiveTransitioning)? {
@@ -123,7 +123,7 @@ extension NavigationControllerDelegateDispatcher: UINavigationControllerDelegate
         return nil
     }
 
-    internal func navigationControllerSupportedInterfaceOrientations(
+    func navigationControllerSupportedInterfaceOrientations(
         _ navigationController: UINavigationController
     ) -> UIInterfaceOrientationMask {
         for delegate in activeDelegates(orderedBy: .applicationFirst) {
@@ -136,7 +136,7 @@ extension NavigationControllerDelegateDispatcher: UINavigationControllerDelegate
         return navigationController.topViewController?.supportedInterfaceOrientations ?? .allButUpsideDown
     }
 
-    internal func navigationControllerPreferredInterfaceOrientationForPresentation(
+    func navigationControllerPreferredInterfaceOrientationForPresentation(
         _ navigationController: UINavigationController
     ) -> UIInterfaceOrientation {
         for delegate in activeDelegates(orderedBy: .applicationFirst) {
@@ -151,7 +151,7 @@ extension NavigationControllerDelegateDispatcher: UINavigationControllerDelegate
 }
 
 extension NavigationControllerDelegateDispatcher {
-    internal enum DelegateCategory {
+    enum DelegateCategory {
         /// Delegate, который приложение уже назначило на `UINavigationController`.
         case application
         /// Внутренний observer Core для cleanup дерева FlowInstance после native back.

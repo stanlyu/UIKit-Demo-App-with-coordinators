@@ -1,11 +1,11 @@
 import UIKit
 
 @MainActor
-internal final class FlowNodesManager: FlowNodesManaging {
-    internal let node: FlowNode
+final class FlowNodesManager: FlowNodesManaging {
+    let node: FlowNode
     private let attachmentStore: any FlowInstanceAttachmentStoring
 
-    internal init(
+    init(
         coordinator: AnyObject,
         attachmentStore: any FlowInstanceAttachmentStoring = FlowInstanceAttachments.default
     ) {
@@ -13,12 +13,12 @@ internal final class FlowNodesManager: FlowNodesManaging {
         self.attachmentStore = attachmentStore
     }
 
-    internal func attach(to viewController: UIViewController) {
+    func attach(to viewController: UIViewController) {
         attachmentStore.attach(node, to: viewController)
     }
 
 
-    internal func updateChildViewControllers(_ childVCs: [UIViewController]) {
+    func updateChildViewControllers(_ childVCs: [UIViewController]) {
         // Находим все дочерние ноды, привязанные к переданным контроллерам
         let activeChildNodes = childVCs.compactMap { vc in
             attachmentStore.instance(attachedTo: vc) as? FlowNode
