@@ -8,11 +8,13 @@ public typealias SwitchTransitionHandler = @MainActor @Sendable (
 ) -> Bool
 
 @MainActor
-public final class SwitchRouter: BaseRouter, SwitchNavigation {
-    public private(set) weak var rootViewController: UIViewController?
+public final class SwitchRouter: BaseRouter<UIViewController>, SwitchNavigation {
+    public var rootViewController: UIViewController? {
+        parentViewController
+    }
 
     public var currentItem: RouterItem? {
-        rootViewController.map { RouterItem($0) }
+        parentRouterItem
     }
 
     private var oldContentRetainers: Set<UIViewController> = []
@@ -27,13 +29,13 @@ public final class SwitchRouter: BaseRouter, SwitchNavigation {
         let newVC = item.viewController
         guard let oldVC = rootViewController else {
             print("[SwitchRouter] setting initial rootViewController: \(newVC)")
-            rootViewController = newVC
+            updateParent(item)
             updateChildren([item])
             completion?()
             return
         }
 
-        rootViewController = newVC
+        updateParent(item)
         oldContentRetainers.insert(oldVC)
         updateChildren([item])
 

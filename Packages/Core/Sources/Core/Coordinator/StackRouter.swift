@@ -1,17 +1,23 @@
 import UIKit
 
 @MainActor
-public final class StackRouter: BaseRouter, StackNavigation {
-    public let navigationController: UINavigationController
+public final class StackRouter: BaseRouter<UINavigationController>, StackNavigation {
+    public var navigationController: UINavigationController {
+        guard let nav = parentViewController else {
+            fatalError("UINavigationController is not configured in StackRouter")
+        }
+        return nav
+    }
 
     public var items: [RouterItem] {
         childRouterItems
     }
 
     public init(makeNavigationController: () -> UINavigationController = { UINavigationController() }) {
-        self.navigationController = makeNavigationController()
+        let nav = makeNavigationController()
         super.init()
-        let dispatcher = NavigationControllerDelegateDispatcher.install(on: navigationController)
+        updateParent(RouterItem(nav))
+        let dispatcher = NavigationControllerDelegateDispatcher.install(on: nav)
         dispatcher.addDelegate(self, category: .instance)
     }
 

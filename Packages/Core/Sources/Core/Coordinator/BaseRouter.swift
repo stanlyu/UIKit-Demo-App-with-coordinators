@@ -1,11 +1,23 @@
 import UIKit
 
 @MainActor
-open class BaseRouter: NSObject, BaseNavigation, UIAdaptivePresentationControllerDelegate {
-    private(set) var parentRouterItem: RouterItem?
-    private(set) var childRouterItems: [RouterItem] = []
+open class BaseRouter<Parent: UIViewController>: NSObject, BaseNavigation, UIAdaptivePresentationControllerDelegate {
+    public private(set) var parentRouterItem: RouterItem?
+    public private(set) var childRouterItems: [RouterItem] = []
 
     private(set) var nodesManager: (any FlowNodesManaging)?
+
+    public var parentViewController: Parent? {
+        parentRouterItem?.viewController as? Parent
+    }
+
+    public var childViewControllers: [UIViewController] {
+        childRouterItems.map(\.viewController)
+    }
+
+    public override init() {
+        super.init()
+    }
 
     func setNodesManager(_ nodesManager: any FlowNodesManaging) {
         self.nodesManager = nodesManager

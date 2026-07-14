@@ -1,8 +1,10 @@
 import UIKit
 
 @MainActor
-public final class InlineRouter: BaseRouter, StackNavigation {
-    public private(set) weak var rootViewController: UIViewController?
+public final class InlineRouter: BaseRouter<UIViewController>, StackNavigation {
+    public var rootViewController: UIViewController? {
+        parentViewController
+    }
 
     public var items: [RouterItem] {
         childRouterItems
@@ -13,7 +15,7 @@ public final class InlineRouter: BaseRouter, StackNavigation {
     }
 
     public func updateRootViewController(_ vc: UIViewController) {
-        self.rootViewController = vc
+        updateParent(RouterItem(vc))
         if let nav = vc.navigationController {
             let dispatcher = NavigationControllerDelegateDispatcher.install(on: nav)
             dispatcher.addDelegate(self, category: .instance)
@@ -23,7 +25,7 @@ public final class InlineRouter: BaseRouter, StackNavigation {
 
     public func setRoot(_ item: RouterItem, animated: Bool) {
         let oldRoot = rootViewController
-        rootViewController = item.viewController
+        updateParent(item)
         
         if let oldRoot,
            let nav = oldRoot.navigationController,
@@ -103,7 +105,7 @@ public final class InlineRouter: BaseRouter, StackNavigation {
     public func setStack(_ items: [RouterItem], animated: Bool) {
         guard let firstItem = items.first else { return }
         let oldRoot = rootViewController
-        rootViewController = firstItem.viewController
+        updateParent(firstItem)
         
         if let oldRoot,
            let nav = oldRoot.navigationController,

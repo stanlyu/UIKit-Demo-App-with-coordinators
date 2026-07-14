@@ -1,8 +1,13 @@
 import UIKit
 
 @MainActor
-public final class TabsRouter: BaseRouter, TabsNavigation {
-    public let tabBarController: UITabBarController
+public final class TabsRouter: BaseRouter<UITabBarController>, TabsNavigation {
+    public var tabBarController: UITabBarController {
+        guard let tab = parentViewController else {
+            fatalError("UITabBarController is not configured in TabsRouter")
+        }
+        return tab
+    }
 
     public var selectedIndex: Int {
         tabBarController.selectedIndex
@@ -19,8 +24,9 @@ public final class TabsRouter: BaseRouter, TabsNavigation {
     }
 
     public init(makeTabBarController: () -> UITabBarController = { UITabBarController() }) {
-        self.tabBarController = makeTabBarController()
+        let tab = makeTabBarController()
         super.init()
+        updateParent(RouterItem(tab))
     }
 
     public func setItems(_ items: [RouterItem], animated: Bool) {
