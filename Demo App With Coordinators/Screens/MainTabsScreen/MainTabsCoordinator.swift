@@ -43,7 +43,6 @@ final class MainTabsCoordinatingLogic: BaseCoordinator<any TabsNavigation, MainT
     private weak var cartNavigationInput: (any CartNavigationInput)?
 
     private func handle(homeEvent: HomeNavigationOutputEvent) {
-        print("[MainTabsCoordinator] handle homeEvent: \(homeEvent)")
         switch homeEvent {
         case .placeOrder(let orderID):
             guard let cartItem else { return }
