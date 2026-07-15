@@ -18,22 +18,14 @@ final class NavigationControllerDelegateDispatcher: NSObject {
         return dispatcher
     }
 
-    static func isInstalled(on navigationController: UINavigationController, delegate: any UINavigationControllerDelegate) -> Bool {
-        guard let dispatcher = navigationController.delegate as? NavigationControllerDelegateDispatcher else {
-            return false
-        }
-        return dispatcher.contains(delegate)
-    }
-
     func addDelegate(
         _ delegate: any UINavigationControllerDelegate,
         category: DelegateCategory = .application
     ) {
         removeReleasedDelegates()
-
-        let delegateID = ObjectIdentifier(delegate as AnyObject)
-        guard !delegates.contains(where: { $0.id == delegateID }) else { return }
-        delegates.append(WeakNavigationControllerDelegate(delegate, category: category))
+        if !contains(delegate) {
+            delegates.append(WeakNavigationControllerDelegate(delegate, category: category))
+        }
     }
 
     func removeDelegate(_ delegate: any UINavigationControllerDelegate) {
@@ -41,7 +33,7 @@ final class NavigationControllerDelegateDispatcher: NSObject {
         delegates.removeAll { $0.delegate == nil || $0.id == delegateID }
     }
 
-    func contains(_ delegate: any UINavigationControllerDelegate) -> Bool {
+    private func contains(_ delegate: any UINavigationControllerDelegate) -> Bool {
         let delegateID = ObjectIdentifier(delegate as AnyObject)
         return delegates.contains(where: { $0.id == delegateID })
     }
@@ -190,4 +182,20 @@ private final class WeakNavigationControllerDelegate {
     let id: ObjectIdentifier
     let category: NavigationControllerDelegateDispatcher.DelegateCategory
     weak var delegate: (any UINavigationControllerDelegate)?
+}
+
+extension UINavigationController {
+    func addDelegateIfNeeded(
+        _ delegate: any UINavigationControllerDelegate,
+        category: NavigationControllerDelegateDispatcher.DelegateCategory = .application
+    ) {
+        let dispatcher = NavigationControllerDelegateDispatcher.install(on: self)
+        dispatcher.addDelegate(delegate, category: category)
+    }
+
+    func removeDelegateIfNeeded(_ delegate: any UINavigationControllerDelegate) {
+        if let dispatcher = self.delegate as? NavigationControllerDelegateDispatcher {
+            dispatcher.removeDelegate(delegate)
+        }
+    }
 }

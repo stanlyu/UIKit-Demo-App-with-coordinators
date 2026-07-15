@@ -17,8 +17,7 @@ final class StackRouter: BaseRouter<UINavigationController>, StackNavigation {
         let nav = makeNavigationController()
         super.init()
         updateParent(RouterItem(nav))
-        let dispatcher = NavigationControllerDelegateDispatcher.install(on: nav)
-        dispatcher.addDelegate(self, category: .instance)
+        nav.addDelegateIfNeeded(self, category: .instance)
     }
 
     func setRoot(_ item: RouterItem, animated: Bool) {

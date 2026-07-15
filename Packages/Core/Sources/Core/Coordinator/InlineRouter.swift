@@ -8,15 +8,8 @@ final class InlineRouter: BaseRouter<UIViewController>, StackNavigation {
 
     private var navigationController: UINavigationController? {
         guard let nav = parentViewController?.navigationController else { return nil }
-        setupDelegateIfNeeded(on: nav)
+        nav.addDelegateIfNeeded(self, category: .instance)
         return nav
-    }
-
-    private func setupDelegateIfNeeded(on nav: UINavigationController) {
-        if !NavigationControllerDelegateDispatcher.isInstalled(on: nav, delegate: self) {
-            let dispatcher = NavigationControllerDelegateDispatcher.install(on: nav)
-            dispatcher.addDelegate(self, category: .instance)
-        }
     }
 
     func setRoot(_ item: RouterItem, animated: Bool) {
@@ -25,7 +18,7 @@ final class InlineRouter: BaseRouter<UIViewController>, StackNavigation {
         
         if let oldRoot,
            let nav = oldRoot.navigationController {
-            setupDelegateIfNeeded(on: nav)
+            nav.addDelegateIfNeeded(self, category: .instance)
             if let rootIndex = nav.viewControllers.firstIndex(of: oldRoot) {
                 let nextNavigationStack = Array(nav.viewControllers.prefix(upTo: rootIndex)) + [item.viewController]
                 nav.setViewControllers(nextNavigationStack, animated: animated, completion: nil)
@@ -91,7 +84,7 @@ final class InlineRouter: BaseRouter<UIViewController>, StackNavigation {
         
         if let oldRoot,
            let nav = oldRoot.navigationController {
-            setupDelegateIfNeeded(on: nav)
+            nav.addDelegateIfNeeded(self, category: .instance)
             if let rootIndex = nav.viewControllers.firstIndex(of: oldRoot) {
                 let nextNavigationStack = Array(nav.viewControllers.prefix(upTo: rootIndex)) + items.map(\.viewController)
                 nav.setViewControllers(nextNavigationStack, animated: animated, completion: nil)
