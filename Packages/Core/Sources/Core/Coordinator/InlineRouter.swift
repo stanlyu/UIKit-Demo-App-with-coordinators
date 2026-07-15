@@ -54,7 +54,7 @@ extension InlineRouter: StackNavigation {
 
     func push(_ item: RouterItem, animated: Bool, completion: (() -> Void)?) {
         guard let nav = parentViewController.navigationController else {
-            assertionFailure("Inline Router: content is not embedded in UINavigationController.")
+            assertionFailure("InlineRouter: контент не встроен в UINavigationController.")
             completion?()
             return
         }
@@ -71,7 +71,7 @@ extension InlineRouter: StackNavigation {
         }
         nav.addDelegateIfNeeded(self, category: .instance)
         guard nav.topViewController !== rootVC else {
-            assertionFailure("Inline Router cannot pop its root content.")
+            assertionFailure("InlineRouter не может извлечь свой корневой контент.")
             completion?()
             return
         }
@@ -93,7 +93,7 @@ extension InlineRouter: StackNavigation {
         }
         nav.addDelegateIfNeeded(self, category: .instance)
         guard targetIndex >= rootIndex else {
-            assertionFailure("Inline Router cannot navigate outside of its flow stack.")
+            assertionFailure("InlineRouter не может выполнять навигацию за пределами своего flow-стека.")
             completion?()
             return
         }

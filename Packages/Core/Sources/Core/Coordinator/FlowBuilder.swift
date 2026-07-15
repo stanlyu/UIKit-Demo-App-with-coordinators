@@ -44,7 +44,7 @@ public enum FlowBuilder {
         coordinator.start(CoordinatorStartContext())
 
         guard let rootVC = router.extractParentViewController() else {
-            fatalError("StackRouter must configure parent UIViewController")
+            fatalError("StackRouter должен настроить родительский UIViewController")
         }
         return CreatedFlow(viewController: rootVC, coordinator: coordinator)
     }
@@ -91,7 +91,7 @@ public enum FlowBuilder {
         coordinator.start(CoordinatorStartContext())
 
         guard let rootVC = router.extractParentViewController() else {
-            fatalError("TabsRouter must configure parent UIViewController")
+            fatalError("TabsRouter должен настроить родительский UIViewController")
         }
         return CreatedFlow(viewController: rootVC, coordinator: coordinator)
     }
@@ -131,7 +131,7 @@ public enum FlowBuilder {
         coordinator.start(CoordinatorStartContext())
 
         guard let rootVC = router.extractParentViewController() else {
-            fatalError("Coordinator must set root content (setRoot) during start(_:).")
+            fatalError("Координатор должен установить корневой контент (setRoot) во время start(_:).")
         }
 
         return CreatedFlow(viewController: rootVC, coordinator: coordinator)
@@ -172,7 +172,7 @@ public enum FlowBuilder {
         coordinator.start(CoordinatorStartContext())
 
         guard let rootVC = router.extractParentViewController() else {
-            fatalError("Coordinator must set root content (switchTo) during start(_:).")
+            fatalError("Координатор должен установить корневой контент (switchTo) во время start(_:).")
         }
 
         return CreatedFlow(viewController: rootVC, coordinator: coordinator)

@@ -12,7 +12,7 @@ class BaseRouter<Parent: UIViewController>: NSObject, UIAdaptivePresentationCont
     
     var parentViewController: Parent {
         guard let parent = _parentViewController else {
-            fatalError("Parent view controller of type \(Parent.self) is not configured or has been deallocated")
+            fatalError("Родительский view controller типа \(Parent.self) не настроен или был освобождён")
         }
         return parent
     }
