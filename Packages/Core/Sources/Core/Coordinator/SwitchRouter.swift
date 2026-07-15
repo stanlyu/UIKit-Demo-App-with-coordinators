@@ -14,13 +14,9 @@ extension RouterProvider {
 }
 
 @MainActor
-private final class SwitchRouter: BaseRouter<UIViewController>, SwitchNavigation {
+private final class SwitchRouter: BaseRouter<UIViewController> {
     var rootViewController: UIViewController? {
         parentRouterItem?.viewController
-    }
-
-    var currentItem: RouterItem? {
-        parentRouterItem
     }
 
     var oldContentRetainer: UIViewController?
@@ -28,28 +24,6 @@ private final class SwitchRouter: BaseRouter<UIViewController>, SwitchNavigation
 
     func setTransitionHandler(_ handler: SwitchTransitionHandler?) {
         self.transitionHandler = handler
-    }
-
-    func switchTo(_ item: RouterItem, animated: Bool, completion: (() -> Void)?) {
-        print("[SwitchRouter] switchTo called for VC: \(item.viewController)")
-        let newVC = item.viewController
-        guard let oldVC = rootViewController else {
-            print("[SwitchRouter] setting initial rootViewController: \(newVC)")
-            updateParent(item)
-            completion?()
-            return
-        }
-
-        updateParent(item)
-        oldContentRetainer = oldVC
-
-        performTransition(from: oldVC, to: newVC, animated: animated) { [weak self] in
-            guard let self else { return }
-            if self.oldContentRetainer === oldVC {
-                self.oldContentRetainer = nil
-            }
-            completion?()
-        }
     }
 
     func performTransition(
@@ -114,6 +88,34 @@ private final class SwitchRouter: BaseRouter<UIViewController>, SwitchNavigation
             UIView.setAnimationsEnabled(animationsEnabled)
         } completion: { _ in
             completion()
+        }
+    }
+}
+
+extension SwitchRouter: SwitchNavigation {
+    var currentItem: RouterItem? {
+        parentRouterItem
+    }
+    
+    func switchTo(_ item: RouterItem, animated: Bool, completion: (() -> Void)?) {
+        print("[SwitchRouter] switchTo called for VC: \(item.viewController)")
+        let newVC = item.viewController
+        guard let oldVC = rootViewController else {
+            print("[SwitchRouter] setting initial rootViewController: \(newVC)")
+            updateParent(item)
+            completion?()
+            return
+        }
+
+        updateParent(item)
+        oldContentRetainer = oldVC
+
+        performTransition(from: oldVC, to: newVC, animated: animated) { [weak self] in
+            guard let self else { return }
+            if self.oldContentRetainer === oldVC {
+                self.oldContentRetainer = nil
+            }
+            completion?()
         }
     }
 }
