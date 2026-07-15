@@ -24,13 +24,13 @@ final class NavigationControllerDelegateDispatcher: NSObject {
     ) {
         removeReleasedDelegates()
         if !contains(delegate) {
-            delegates.append(WeakNavigationControllerDelegate(delegate, category: category))
+            delegates.append(WeakNavigationControllerDelegate(delegate, context: category))
         }
     }
 
     func removeDelegate(_ delegate: any UINavigationControllerDelegate) {
         let delegateID = ObjectIdentifier(delegate as AnyObject)
-        delegates.removeAll { $0.delegate == nil || $0.id == delegateID }
+        delegates.removeAll { $0.object == nil || $0.id == delegateID }
     }
 
     private func contains(_ delegate: any UINavigationControllerDelegate) -> Bool {
@@ -43,7 +43,7 @@ final class NavigationControllerDelegateDispatcher: NSObject {
         switch order {
         case .registration:
             // willShow остается в порядке регистрации: Core не меняет состояние дерева на willShow.
-            return delegates.compactMap(\.delegate)
+            return delegates.compactMap(\.object)
         case .instanceFirst:
             // didShow сначала нужен Core: после native back application delegate
             // должен читать уже обновленное дерево FlowInstance.
@@ -60,14 +60,16 @@ final class NavigationControllerDelegateDispatcher: NSObject {
     ) -> [any UINavigationControllerDelegate] {
         categories.flatMap { category in
             delegates
-                .filter { $0.category == category }
-                .compactMap(\.delegate)
+                .filter { $0.context == category }
+                .compactMap(\.object)
         }
     }
 
     private func removeReleasedDelegates() {
-        delegates.removeAll { $0.delegate == nil }
+        delegates.removeAll { $0.object == nil }
     }
+    
+    fileprivate typealias WeakNavigationControllerDelegate = WeakContainer<any UINavigationControllerDelegate, DelegateCategory>
 
     private var delegates: [WeakNavigationControllerDelegate] = []
 }
@@ -167,21 +169,6 @@ private enum DelegateDispatchOrder {
     case registration
     case instanceFirst
     case applicationFirst
-}
-
-private final class WeakNavigationControllerDelegate {
-    init(
-        _ delegate: any UINavigationControllerDelegate,
-        category: NavigationControllerDelegateDispatcher.DelegateCategory
-    ) {
-        self.id = ObjectIdentifier(delegate as AnyObject)
-        self.delegate = delegate
-        self.category = category
-    }
-
-    let id: ObjectIdentifier
-    let category: NavigationControllerDelegateDispatcher.DelegateCategory
-    weak var delegate: (any UINavigationControllerDelegate)?
 }
 
 extension UINavigationController {

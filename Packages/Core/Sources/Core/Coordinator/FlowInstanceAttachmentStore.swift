@@ -38,13 +38,8 @@ private final class FlowInstanceAssociatedStorage {
     var instanceOrder: [ObjectIdentifier] = []
 }
 
-private final class WeakAttachedFlowNode {
-    init(_ instance: FlowNode) {
-        self.instance = instance
-    }
+private typealias WeakAttachedFlowNode = WeakContainer<FlowNode, Void>
 
-    weak var instance: FlowNode?
-}
 
 /// Реализация attachment store через associated objects на `UIViewController`.
 @MainActor
@@ -120,13 +115,13 @@ final class AssociatedObjectFlowInstanceAttachmentStore: FlowInstanceAttachmentS
         }
         
         // Решаем проблему [P2].2: очистка мертвых записей из словаря
-        let deadIDs = storage.attachedInstances.filter { $0.value.instance == nil }.keys
+        let deadIDs = storage.attachedInstances.filter { $0.value.object == nil }.keys
         for id in deadIDs {
             storage.attachedInstances.removeValue(forKey: id)
             storage.instanceOrder.removeAll { $0 == id }
         }
         
-        return storage.instanceOrder.compactMap { storage.attachedInstances[$0]?.instance }
+        return storage.instanceOrder.compactMap { storage.attachedInstances[$0]?.object }
     }
 
     private func storage(for viewController: UIViewController) -> FlowInstanceAssociatedStorage {
