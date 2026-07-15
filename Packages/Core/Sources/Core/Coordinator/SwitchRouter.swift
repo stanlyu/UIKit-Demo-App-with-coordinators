@@ -32,9 +32,7 @@ private final class SwitchRouter: BaseRouter<UIViewController> {
         animated: Bool,
         completion: @escaping @MainActor @Sendable () -> Void
     ) {
-        print("[SwitchRouter] performTransition from: \(oldVC) to: \(newVC)")
         if transitionHandler?(oldVC, newVC, animated, completion) == true {
-            print("[SwitchRouter] transition handled by custom handler")
             return
         }
 
@@ -74,7 +72,6 @@ private final class SwitchRouter: BaseRouter<UIViewController> {
         animated: Bool,
         completion: @escaping @MainActor @Sendable () -> Void
     ) {
-        print("[SwitchRouter] transitionInWindow to: \(newVC), animated: \(animated)")
         guard animated else {
             window.rootViewController = newVC
             completion()
@@ -98,10 +95,8 @@ extension SwitchRouter: SwitchNavigation {
     }
     
     func switchTo(_ item: RouterItem, animated: Bool, completion: (() -> Void)?) {
-        print("[SwitchRouter] switchTo called for VC: \(item.viewController)")
         let newVC = item.viewController
         guard let oldVC = rootViewController else {
-            print("[SwitchRouter] setting initial rootViewController: \(newVC)")
             updateParent(item)
             completion?()
             return
