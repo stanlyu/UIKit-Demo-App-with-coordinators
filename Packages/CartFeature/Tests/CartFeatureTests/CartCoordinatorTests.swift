@@ -80,7 +80,7 @@ struct CartCoordinatorTests {
         let pickupPointsViewController = UIViewController()
         let pickupPointsRouterItem = RouterItem(pickupPointsViewController)
 
-        sut.output.pickupPointsContext?.present(pickupPointsRouterItem.viewController, animated: true)
+        sut.output.pickupPointsContext?.present(pickupPointsRouterItem, animated: true)
 
         #expect(sut.router.presentedItem?.isWrapping(pickupPointsViewController) == true)
         #expect(sut.router.presentedAnimated == true)
@@ -118,7 +118,7 @@ struct CartCoordinatorTests {
         sut.composer.placeOrderEventHandler?(.onContinueToPayment)
         let paymentViewController = UIViewController()
         let paymentRouterItem = RouterItem(paymentViewController)
-        sut.output.paymentContext?.push(paymentRouterItem.viewController, animated: true)
+        sut.output.paymentContext?.push(paymentRouterItem, animated: true)
 
         #expect(sut.router.pushCalls.count == 2)
         #expect(sut.router.pushCalls[1].item.isWrapping(paymentViewController))

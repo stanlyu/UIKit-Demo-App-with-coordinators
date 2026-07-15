@@ -66,7 +66,7 @@ private final class PublicNavigationStackItemTestCoordinator:
 
     func pushDetails(animated: Bool, completion: (() -> Void)?) {
         context.push(
-            composer.makeItem(for: .details).viewController,
+            composer.makeItem(for: .details),
             animated: animated,
             completion: completion
         )
@@ -74,7 +74,7 @@ private final class PublicNavigationStackItemTestCoordinator:
 
     func presentDetails(animated: Bool, completion: (() -> Void)?) {
         context.present(
-            composer.makeItem(for: .details).viewController,
+            composer.makeItem(for: .details),
             animated: animated,
             completion: completion
         )
@@ -102,11 +102,15 @@ private final class PublicNavigationStackContextSpy: NavigationStackContext {
         completion?()
     }
 
-    func pop(animated: Bool, completion: (() -> Void)?) {
+    func push(_ item: RouterItem, animated: Bool, completion: (() -> Void)?) {
+        pushCallCount += 1
+        lastPushAnimated = animated
         completion?()
     }
 
-    func dismiss(animated: Bool, completion: (() -> Void)?) {
+    func present(_ item: RouterItem, animated: Bool, completion: (() -> Void)?) {
+        presentCallCount += 1
+        lastPresentAnimated = animated
         completion?()
     }
 }

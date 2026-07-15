@@ -130,8 +130,6 @@ private extension MainTabsCoordinatorTests {
 
         private(set) var pushCalls: [Call] = []
         private(set) var presentCalls: [Call] = []
-        private(set) var popCalls: [Bool] = []
-        private(set) var dismissCalls: [Bool] = []
 
         func push(_ viewController: UIViewController, animated: Bool, completion: (() -> Void)?) {
             pushCalls.append(Call(viewController: viewController, animated: animated))
@@ -143,13 +141,13 @@ private extension MainTabsCoordinatorTests {
             completion?()
         }
 
-        func pop(animated: Bool, completion: (() -> Void)?) {
-            popCalls.append(animated)
+        func push(_ item: RouterItem, animated: Bool, completion: (() -> Void)?) {
+            pushCalls.append(Call(viewController: item.viewController, animated: animated))
             completion?()
         }
 
-        func dismiss(animated: Bool, completion: (() -> Void)?) {
-            dismissCalls.append(animated)
+        func present(_ item: RouterItem, animated: Bool, completion: (() -> Void)?) {
+            presentCalls.append(Call(viewController: item.viewController, animated: animated))
             completion?()
         }
     }

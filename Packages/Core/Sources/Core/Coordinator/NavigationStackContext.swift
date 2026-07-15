@@ -6,8 +6,8 @@ import UIKit
 public protocol NavigationStackContext: AnyObject {
     func push(_ viewController: UIViewController, animated: Bool, completion: (() -> Void)?)
     func present(_ viewController: UIViewController, animated: Bool, completion: (() -> Void)?)
-    func pop(animated: Bool, completion: (() -> Void)?)
-    func dismiss(animated: Bool, completion: (() -> Void)?)
+    func push(_ item: RouterItem, animated: Bool, completion: (() -> Void)?)
+    func present(_ item: RouterItem, animated: Bool, completion: (() -> Void)?)
 }
 
 public extension NavigationStackContext {
@@ -19,12 +19,12 @@ public extension NavigationStackContext {
         present(viewController, animated: animated, completion: nil)
     }
 
-    func pop(animated: Bool) {
-        pop(animated: animated, completion: nil)
+    func push(_ item: RouterItem, animated: Bool) {
+        push(item, animated: animated, completion: nil)
     }
 
-    func dismiss(animated: Bool) {
-        dismiss(animated: animated, completion: nil)
+    func present(_ item: RouterItem, animated: Bool) {
+        present(item, animated: animated, completion: nil)
     }
 }
 
@@ -43,12 +43,12 @@ public final class RouterNavigationStackContext: NavigationStackContext {
         router?.present(RouterItem(viewController), animated: animated, completion: completion)
     }
 
-    public func pop(animated: Bool, completion: (() -> Void)?) {
-        router?.pop(animated: animated, completion: completion)
+    public func push(_ item: RouterItem, animated: Bool, completion: (() -> Void)?) {
+        router?.push(item, animated: animated, completion: completion)
     }
 
-    public func dismiss(animated: Bool, completion: (() -> Void)?) {
-        router?.dismiss(animated: animated, completion: completion)
+    public func present(_ item: RouterItem, animated: Bool, completion: (() -> Void)?) {
+        router?.present(item, animated: animated, completion: completion)
     }
 
     // MARK: - Private members

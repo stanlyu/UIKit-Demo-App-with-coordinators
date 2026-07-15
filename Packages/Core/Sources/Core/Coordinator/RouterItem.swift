@@ -6,7 +6,7 @@ import UIKit
 /// и внешние модули работали через абстракцию роутера.
 @MainActor
 public struct RouterItem {
-    public let viewController: UIViewController
+    let viewController: UIViewController
 
     init(_ viewController: UIViewController) {
         self.viewController = viewController
