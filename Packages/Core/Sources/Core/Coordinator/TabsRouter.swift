@@ -1,14 +1,24 @@
 import UIKit
 
 @MainActor
-final class TabsRouter: BaseRouter<UITabBarController>, TabsNavigation {
-    var tabBarController: UITabBarController {
+final class TabsRouter: BaseRouter<UITabBarController> {
+    init(makeTabBarController: () -> UITabBarController = { UITabBarController() }) {
+        let tab = makeTabBarController()
+        super.init()
+        updateParent(RouterItem(tab))
+    }
+    
+    // MARK: - Private members
+    
+    private var tabBarController: UITabBarController {
         guard let tab = parentViewController else {
             fatalError("UITabBarController is not configured in TabsRouter")
         }
         return tab
     }
+}
 
+extension TabsRouter: TabsNavigation {
     var selectedIndex: Int {
         tabBarController.selectedIndex
     }
@@ -18,13 +28,7 @@ final class TabsRouter: BaseRouter<UITabBarController>, TabsNavigation {
         guard index >= 0, index < childRouterItems.count else { return nil }
         return childRouterItems[index]
     }
-
-    init(makeTabBarController: () -> UITabBarController = { UITabBarController() }) {
-        let tab = makeTabBarController()
-        super.init()
-        updateParent(RouterItem(tab))
-    }
-
+    
     func setItems(_ items: [RouterItem], animated: Bool) {
         tabBarController.setViewControllers(items.map(\.viewController), animated: animated)
         updateChildren(items)

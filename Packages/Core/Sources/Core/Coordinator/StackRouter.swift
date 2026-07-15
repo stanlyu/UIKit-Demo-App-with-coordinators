@@ -1,17 +1,7 @@
 import UIKit
 
 @MainActor
-final class StackRouter: BaseRouter<UINavigationController>, StackNavigation {
-    var navigationController: UINavigationController {
-        guard let nav = parentViewController else {
-            fatalError("UINavigationController is not configured in StackRouter")
-        }
-        return nav
-    }
-
-    var items: [RouterItem] {
-        childRouterItems
-    }
+final class StackRouter: BaseRouter<UINavigationController> {
 
     init(makeNavigationController: () -> UINavigationController = { UINavigationController() }) {
         let nav = makeNavigationController()
@@ -19,7 +9,33 @@ final class StackRouter: BaseRouter<UINavigationController>, StackNavigation {
         updateParent(RouterItem(nav))
         nav.addDelegateIfNeeded(self, category: .instance)
     }
+    
+    // MARK: - Private members
 
+    private var navigationController: UINavigationController {
+        guard let nav = parentViewController else {
+            fatalError("UINavigationController is not configured in StackRouter")
+        }
+        return nav
+    }
+
+    private func syncChildRouterItems(with newStack: [UIViewController]) {
+        let updatedItems = newStack.map { vc in
+            if let existing = childRouterItems.first(where: { $0.isWrapping(vc) }) {
+                return existing
+            } else {
+                return RouterItem(vc)
+            }
+        }
+        updateChildren(updatedItems)
+    }
+}
+
+extension StackRouter: StackNavigation {
+    var items: [RouterItem] {
+        childRouterItems
+    }
+    
     func setRoot(_ item: RouterItem, animated: Bool) {
         navigationController.setViewControllers([item.viewController], animated: animated, completion: nil)
         syncChildRouterItems(with: navigationController.viewControllers)
@@ -53,17 +69,6 @@ final class StackRouter: BaseRouter<UINavigationController>, StackNavigation {
     func setStack(_ items: [RouterItem], animated: Bool) {
         navigationController.setViewControllers(items.map(\.viewController), animated: animated, completion: nil)
         syncChildRouterItems(with: navigationController.viewControllers)
-    }
-
-    private func syncChildRouterItems(with newStack: [UIViewController]) {
-        let updatedItems = newStack.map { vc in
-            if let existing = childRouterItems.first(where: { $0.isWrapping(vc) }) {
-                return existing
-            } else {
-                return RouterItem(vc)
-            }
-        }
-        updateChildren(updatedItems)
     }
 }
 
