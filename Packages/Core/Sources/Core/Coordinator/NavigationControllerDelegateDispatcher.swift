@@ -18,6 +18,13 @@ final class NavigationControllerDelegateDispatcher: NSObject {
         return dispatcher
     }
 
+    static func isInstalled(on navigationController: UINavigationController, delegate: any UINavigationControllerDelegate) -> Bool {
+        guard let dispatcher = navigationController.delegate as? NavigationControllerDelegateDispatcher else {
+            return false
+        }
+        return dispatcher.contains(delegate)
+    }
+
     func addDelegate(
         _ delegate: any UINavigationControllerDelegate,
         category: DelegateCategory = .application
@@ -32,6 +39,11 @@ final class NavigationControllerDelegateDispatcher: NSObject {
     func removeDelegate(_ delegate: any UINavigationControllerDelegate) {
         let delegateID = ObjectIdentifier(delegate as AnyObject)
         delegates.removeAll { $0.delegate == nil || $0.id == delegateID }
+    }
+
+    func contains(_ delegate: any UINavigationControllerDelegate) -> Bool {
+        let delegateID = ObjectIdentifier(delegate as AnyObject)
+        return delegates.contains(where: { $0.id == delegateID })
     }
 
     private func activeDelegates(orderedBy order: DelegateDispatchOrder) -> [any UINavigationControllerDelegate] {

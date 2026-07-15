@@ -6,8 +6,6 @@ final class InlineRouter: BaseRouter<UIViewController>, StackNavigation {
         [parentRouterItem].compactMap { $0 } + childRouterItems
     }
 
-    private weak var activeNavigationController: UINavigationController?
-
     private var navigationController: UINavigationController? {
         guard let nav = parentViewController?.navigationController else { return nil }
         setupDelegateIfNeeded(on: nav)
@@ -15,10 +13,10 @@ final class InlineRouter: BaseRouter<UIViewController>, StackNavigation {
     }
 
     private func setupDelegateIfNeeded(on nav: UINavigationController) {
-        guard activeNavigationController !== nav else { return }
-        activeNavigationController = nav
-        let dispatcher = NavigationControllerDelegateDispatcher.install(on: nav)
-        dispatcher.addDelegate(self, category: .instance)
+        if !NavigationControllerDelegateDispatcher.isInstalled(on: nav, delegate: self) {
+            let dispatcher = NavigationControllerDelegateDispatcher.install(on: nav)
+            dispatcher.addDelegate(self, category: .instance)
+        }
     }
 
     func setRoot(_ item: RouterItem, animated: Bool) {
