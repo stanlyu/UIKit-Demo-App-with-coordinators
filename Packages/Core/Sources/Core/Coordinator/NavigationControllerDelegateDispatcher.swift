@@ -77,6 +77,20 @@ import ObjectiveC
 /// `addDelegateIfNeeded(_:category:)`: это явно выражает намерение и не
 /// зависит от swizzling.
 ///
+/// - Important (сюрприз для внешнего кода): после `nav.delegate = nil`
+///   свойство `delegate` **НЕ** читается как `nil` — обёртка возвращает
+///   dispatcher обратно в слот, поэтому `nav.delegate` читается как
+///   `NavigationControllerDelegateDispatcher`. Это сознательное решение:
+///   так `Core` сохраняет `.instance`-наблюдатель и дерево `FlowInstance`
+///   продолжает обновляться (didShow после native back). Проверять
+///   «делегат снят» через `nav.delegate == nil` бесполезно — условие
+///   ложно. Для **полной** отписки и удаления конкретного наблюдателя
+///   используйте `removeDelegateIfNeeded(_:)` (или
+///   `removeDelegate(_:)` напрямую у dispatcher), а не присваивание
+///   `nil` свойству `delegate`. Аналогично, после `nav.delegate = foreign`
+///   свойство читается как dispatcher (не как foreign): foreign получает
+///   события как `.application`, а слот занят dispatcher'ом.
+///
 /// # Ограничения и риски
 ///
 /// - **Конфликт с другими либами**, которые также swizzle-ят

@@ -4,6 +4,14 @@ import UIKit
 
 // MARK: - Test doubles
 
+/// Общий лог порядка вызовов (reference-тип), в который делегаты аппендят свою
+/// метку при срабатывании `didShow`. Нужен для тестов ОТНОСИТЕЛЬНОГО порядка
+/// доставки событий (instance раньше application и т.п.).
+@MainActor
+private final class OrderLog {
+    var entries: [String] = []
+}
+
 /// Записывает вызовы `UINavigationControllerDelegate` и опционально
 /// возвращает тестовый animator/interaction/orientation.
 @MainActor
@@ -24,6 +32,12 @@ private final class RecordingDelegate: NSObject, UINavigationControllerDelegate 
     var stubbedOrientations: UIInterfaceOrientationMask?
     var stubbedPreferredOrientation: UIInterfaceOrientation?
 
+    /// Общий лог порядка для тестов относительного порядка didShow.
+    /// Опциональный — в большинстве тестов не задаётся и не влияет на поведение.
+    var didShowOrderLog: OrderLog?
+    /// Метка, которую делегат аппендит в `didShowOrderLog` при срабатывании didShow.
+    var didShowOrderLabel: String = ""
+
     func navigationController(
         _ navigationController: UINavigationController,
         willShow viewController: UIViewController,
@@ -37,6 +51,9 @@ private final class RecordingDelegate: NSObject, UINavigationControllerDelegate 
         didShow viewController: UIViewController,
         animated: Bool
     ) {
+        if let didShowOrderLog {
+            didShowOrderLog.entries.append(didShowOrderLabel)
+        }
         calls.append(.didShow(viewController: viewController, animated: animated))
     }
 
@@ -114,10 +131,20 @@ struct NavigationControllerDelegateDispatcherTests {
     /// didShow: instance-наблюдатель получает событие РАНЬШЕ application delegate.
     /// Это критично: после native back application delegate должен читать уже
     /// обновленное дерево FlowInstance.
+    ///
+    /// Проверяется ОТНОСИТЕЛЬНЫЙ порядок (а не просто факт вызова): оба делегата
+    /// аппендят себя в общий лог при didShow, и мы требуем, чтобы индекс instance
+    /// был строго меньше индекса application. Это ловит регрессию, если кто-то
+    /// случайно поменяет `DelegateDispatchOrder.instanceFirst` на `.registration`.
     @Test func didShowIsInstanceFirst() {
         let dispatcher = NavigationControllerDelegateDispatcher()
         let application = RecordingDelegate()
         let instance = RecordingDelegate()
+        let orderLog = OrderLog()
+        application.didShowOrderLog = orderLog
+        application.didShowOrderLabel = "application"
+        instance.didShowOrderLog = orderLog
+        instance.didShowOrderLabel = "instance"
         // Намеренно регистрируем application раньше — порядок регистрации не должен
         // влиять на instanceFirst.
         dispatcher.addDelegate(application, category: .application)
@@ -126,10 +153,19 @@ struct NavigationControllerDelegateDispatcherTests {
         let nav = UINavigationController()
         dispatcher.navigationController(nav, didShow: UIViewController(), animated: false)
 
+        // Каждый делегат получил ровно один didShow.
         #expect(application.calls.count == 1)
         #expect(instance.calls.count == 1)
-        if case .didShow = instance.calls[0] {} else {
-            Issue.record("instance delegate должен получить didShow первым")
+        // Оба делегата отметились в общем логе.
+        let applicationIndex = orderLog.entries.firstIndex(of: "application")
+        let instanceIndex = orderLog.entries.firstIndex(of: "instance")
+        #expect(applicationIndex != nil)
+        #expect(instanceIndex != nil)
+        // ОТНОСИТЕЛЬНЫЙ порядок: instance строго раньше application.
+        if let applicationIndex, let instanceIndex {
+            #expect(instanceIndex < applicationIndex)
+        } else {
+            Issue.record("Оба делегата должны отметиться в общем логе порядка didShow")
         }
     }
 
@@ -298,6 +334,23 @@ struct NavigationControllerDelegateDispatcherTests {
         #expect(instance.calls.count == 1)
     }
 
+    /// Идемпотентность `reconcile`: повторная установка того же foreign не
+    /// создаёт дубль в массиве delegates. Поведение проверяется через диспетчеризацию:
+    /// foreign получает didShow ровно один раз (а не дважды) после двух вызовов
+    /// `reconcile` с тем же объектом.
+    @Test func reconcileSameForeignTwiceIsIdempotent() {
+        let dispatcher = NavigationControllerDelegateDispatcher()
+        let foreign = RecordingDelegate()
+
+        _ = dispatcher.reconcile(externalDelegate: foreign)
+        _ = dispatcher.reconcile(externalDelegate: foreign)
+
+        // foreign зарегистрирован ровно один раз — получает событие один раз.
+        let nav = UINavigationController()
+        dispatcher.navigationController(nav, didShow: UIViewController(), animated: false)
+        #expect(foreign.calls.count == 1)
+    }
+
     /// Полный сценарий P1: внешний код назначает делегата, затем nil —
     /// внутренний наблюдатель Core выживает в обоих случаях.
     @Test func instanceObserverSurvivesApplicationDelegateChanges() {
@@ -313,6 +366,61 @@ struct NavigationControllerDelegateDispatcherTests {
         dispatcher.navigationController(nav, didShow: UIViewController(), animated: false)
         // .instance получил событие несмотря на смену/сброс application delegate.
         #expect(instance.calls.count == 1)
+    }
+
+    // MARK: - End-to-end swizzling (через РЕАЛЬНЫЙ setter `delegate`)
+
+    /// Интеграционный тест P1: перехват `nav.delegate = foreign` / `= nil` через
+    /// РЕАЛЬНЫЙ setter (swizzling подключается автоматически при первом `install`).
+    ///
+    /// В отличие от тестов `reconcile*`, здесь события и установка делегата идут
+    /// через настоящий `nav.delegate` (setter после swizzling), а не через прямой
+    /// вызов `dispatcher.reconcile`. Верифицируется контракт P1:
+    /// - после `nav.delegate = foreign` слот читается как dispatcher (не foreign),
+    ///   foreign тем не менее получает события как `.application`;
+    /// - после `nav.delegate = nil` слот читается как dispatcher (не nil),
+    ///   instance-наблюдатель Core не теряется, foreign больше не получает события;
+    /// - доставка `didShow` instance-наблюдателю survives обеих операций.
+    @Test func setDelegateInterceptorKeepsDispatcherInSlotAndSurvivesReset() {
+        let nav = UINavigationController()
+        // install запускает swizzling (один раз на процесс) и ставит dispatcher в слот.
+        let dispatcher = NavigationControllerDelegateDispatcher.install(on: nav)
+
+        // Регистрируем instance-наблюдатель Core (как это делает StackRouter/InlineRouter).
+        let instance = RecordingDelegate()
+        dispatcher.addDelegate(instance, category: .instance)
+
+        // Внешний код назначает своего делегата через РЕАЛЬНЫЙ setter.
+        let foreign = RecordingDelegate()
+        nav.delegate = foreign
+
+        // Сознательное поведение обёртки: dispatcher возвращён в слот, поэтому
+        // nav.delegate читается как dispatcher, а не как foreign.
+        let slotAfterForeign = nav.delegate as? NavigationControllerDelegateDispatcher
+        #expect(slotAfterForeign === dispatcher)
+
+        // foreign получает события как .application, instance — как .instance,
+        // через реальный вызов делегата nav (как это делает UIKit).
+        let shown = UIViewController()
+        nav.delegate?.navigationController?(nav, didShow: shown, animated: false)
+        #expect(foreign.calls.count == 1)
+        #expect(instance.calls.count == 1)
+
+        // Внешний код сбрасывает делегата в nil через РЕАЛЬНЫЙ setter.
+        nav.delegate = nil
+
+        // Сюрприз для внешнего кода (см. документацию контракта): слот НЕ nil —
+        // там снова dispatcher. Core сохраняет instance-наблюдатель.
+        let slotAfterNil = nav.delegate as? NavigationControllerDelegateDispatcher
+        #expect(slotAfterNil === dispatcher)
+        #expect(nav.delegate != nil)
+
+        // foreign больше не получает события (снят как .application)...
+        let shown2 = UIViewController()
+        nav.delegate?.navigationController?(nav, didShow: shown2, animated: false)
+        #expect(foreign.calls.count == 1)
+        // ...а instance-наблюдатель продолжает работать после сброса делегата.
+        #expect(instance.calls.count == 2)
     }
 }
 
