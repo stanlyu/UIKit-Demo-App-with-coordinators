@@ -35,7 +35,7 @@ public enum FlowBuilder {
         ) -> Coordinator
     ) -> CreatedFlow<Coordinator>
     where Coordinator: BaseCoordinator<any StackNavigation, Composer.Route>, Composer: Composing {
-        let router = StackRouter(makeNavigationController: makeNavigationController)
+        let router: any StackNavigation & FlowLifecycleRouter = StackRouter(makeNavigationController: makeNavigationController)
         let coordinator = makeCoordinator(router, composer)
 
         let flowNodesManager = FlowNodesManager(coordinator: coordinator, attachmentStore: attachmentStore)
@@ -43,7 +43,10 @@ public enum FlowBuilder {
 
         coordinator.start(CoordinatorStartContext())
 
-        return CreatedFlow(viewController: router.parentViewController!, coordinator: coordinator)
+        guard let rootVC = router.extractParentViewController() else {
+            fatalError("StackRouter must configure parent UIViewController")
+        }
+        return CreatedFlow(viewController: rootVC, coordinator: coordinator)
     }
 
     /// Собирает flow на базе `UITabBarController`.
@@ -79,7 +82,7 @@ public enum FlowBuilder {
         ) -> Coordinator
     ) -> CreatedFlow<Coordinator>
     where Coordinator: BaseCoordinator<any TabsNavigation, Composer.Route>, Composer: Composing {
-        let router = TabsRouter(makeTabBarController: makeTabBarController)
+        let router: any TabsNavigation & FlowLifecycleRouter = TabsRouter(makeTabBarController: makeTabBarController)
         let coordinator = makeCoordinator(router, composer)
 
         let actualManager = FlowNodesManager(coordinator: coordinator, attachmentStore: attachmentStore)
@@ -87,7 +90,10 @@ public enum FlowBuilder {
 
         coordinator.start(CoordinatorStartContext())
 
-        return CreatedFlow(viewController: router.parentViewController!, coordinator: coordinator)
+        guard let rootVC = router.extractParentViewController() else {
+            fatalError("TabsRouter must configure parent UIViewController")
+        }
+        return CreatedFlow(viewController: rootVC, coordinator: coordinator)
     }
 
     /// Собирает flow, root которого является обычным `UIViewController`.
@@ -116,7 +122,7 @@ public enum FlowBuilder {
         ) -> Coordinator
     ) -> CreatedFlow<Coordinator>
     where Coordinator: BaseCoordinator<any StackNavigation, Composer.Route>, Composer: Composing {
-        let router = InlineRouter()
+        let router: any StackNavigation & FlowLifecycleRouter = InlineRouter()
         let coordinator = makeCoordinator(router, composer)
 
         let flowNodesManager = FlowNodesManager(coordinator: coordinator, attachmentStore: attachmentStore)
@@ -124,7 +130,7 @@ public enum FlowBuilder {
 
         coordinator.start(CoordinatorStartContext())
 
-        guard let rootVC = router.parentViewController else {
+        guard let rootVC = router.extractParentViewController() else {
             fatalError("Coordinator must set root content (setRoot) during start(_:).")
         }
 
@@ -157,7 +163,7 @@ public enum FlowBuilder {
         ) -> Coordinator
     ) -> CreatedFlow<Coordinator>
     where Coordinator: BaseCoordinator<any SwitchNavigation, Composer.Route>, Composer: Composing {
-        let router = SwitchRouter()
+        let router: any SwitchNavigation & FlowLifecycleRouter = SwitchRouter()
         let coordinator = makeCoordinator(router, composer)
 
         let flowNodesManager = FlowNodesManager(coordinator: coordinator, attachmentStore: attachmentStore)
@@ -165,7 +171,7 @@ public enum FlowBuilder {
 
         coordinator.start(CoordinatorStartContext())
 
-        guard let rootVC = router.parentViewController else {
+        guard let rootVC = router.extractParentViewController() else {
             fatalError("Coordinator must set root content (switchTo) during start(_:).")
         }
 

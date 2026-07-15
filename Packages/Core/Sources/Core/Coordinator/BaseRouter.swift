@@ -1,9 +1,15 @@
 import UIKit
 
 @MainActor
-class BaseRouter<Parent: UIViewController>: NSObject, BaseNavigation, UIAdaptivePresentationControllerDelegate {
-    private weak var _parentViewController: UIViewController?
-    private var _temporaryStrongParentViewController: UIViewController?
+protocol FlowLifecycleRouter: AnyObject {
+    func extractParentViewController() -> UIViewController?
+    func setNodesManager(_ nodesManager: any FlowNodesManaging)
+}
+
+@MainActor
+class BaseRouter<Parent: UIViewController>: NSObject, BaseNavigation, UIAdaptivePresentationControllerDelegate, FlowLifecycleRouter {
+    private weak var _parentViewController: Parent?
+    private var _temporaryStrongParentViewController: Parent?
     private(set) var childRouterItems: [RouterItem] = []
 
     var parentRouterItem: RouterItem? {
@@ -13,7 +19,7 @@ class BaseRouter<Parent: UIViewController>: NSObject, BaseNavigation, UIAdaptive
     private(set) var nodesManager: (any FlowNodesManaging)?
 
     var parentViewController: Parent? {
-        _parentViewController as? Parent
+        _parentViewController
     }
 
     var childViewControllers: [UIViewController] {
@@ -29,15 +35,18 @@ class BaseRouter<Parent: UIViewController>: NSObject, BaseNavigation, UIAdaptive
 
     // API для наследников
     func updateParent(_ item: RouterItem?) {
-        let vc = item?.viewController
+        let vc = item?.viewController as? Parent
         _parentViewController = vc
         if let vc {
             _temporaryStrongParentViewController = vc
-            Task { @MainActor in
-                self._temporaryStrongParentViewController = nil
-            }
             nodesManager?.attach(to: vc)
         }
+    }
+
+    func extractParentViewController() -> UIViewController? {
+        let vc = _temporaryStrongParentViewController
+        _temporaryStrongParentViewController = nil
+        return vc
     }
 
     func updateChildren(_ items: [RouterItem]) {
