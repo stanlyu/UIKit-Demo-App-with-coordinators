@@ -6,7 +6,7 @@ final class FlowNodesManager: FlowNodesManaging {
     private let attachmentStore: any FlowInstanceAttachmentStoring
 
     init(
-        coordinator: AnyObject,
+        coordinator: any Coordinating,
         attachmentStore: any FlowInstanceAttachmentStoring = FlowInstanceAttachments.default
     ) {
         self.node = FlowNode(coordinator: coordinator)

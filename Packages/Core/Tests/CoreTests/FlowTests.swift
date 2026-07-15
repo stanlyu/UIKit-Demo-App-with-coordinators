@@ -2,6 +2,11 @@ import Testing
 import UIKit
 @testable import Core
 
+/// Минимальный тестовый координатор-заглушка, соответствующий `Coordinating`.
+/// Используется вместо `NSObject` там, где требуется `any Coordinating`.
+@MainActor
+private final class StubCoordinator: Coordinating {}
+
 private enum TestRoute {
     case root
     case details
@@ -33,8 +38,8 @@ private final class TestStackCoordinator: BaseCoordinator<any StackNavigation, T
 @Suite("FlowNode Tests")
 struct FlowNodeTests {
     @Test func nodeCreationAndAdoption() {
-        let rootCoordinator = NSObject()
-        let childCoordinator = NSObject()
+        let rootCoordinator = StubCoordinator()
+        let childCoordinator = StubCoordinator()
         
         let rootNode = FlowNode(coordinator: rootCoordinator)
         let childNode = FlowNode(coordinator: childCoordinator)
@@ -65,8 +70,8 @@ struct FlowNodesManagerTests {
         let parentVC = UIViewController()
         let childVC = UIViewController()
         
-        let parentCoordinator = NSObject()
-        let childCoordinator = NSObject()
+        let parentCoordinator = StubCoordinator()
+        let childCoordinator = StubCoordinator()
         
         let parentManager = FlowNodesManager(coordinator: parentCoordinator, attachmentStore: store)
         parentManager.attach(to: parentVC)
@@ -91,7 +96,7 @@ struct FlowNodesManagerTests {
 struct StackRouterTests {
     @Test func stackRouterNavigation() {
         let store = AssociatedObjectFlowInstanceAttachmentStore()
-        let coordinator = NSObject()
+        let coordinator = StubCoordinator()
         let manager = FlowNodesManager(coordinator: coordinator, attachmentStore: store)
         
         let nav = UINavigationController()
@@ -121,7 +126,7 @@ struct StackRouterTests {
 struct InlineRouterTests {
     @Test func inlineRouterNavigation() {
         let store = AssociatedObjectFlowInstanceAttachmentStore()
-        let coordinator = NSObject()
+        let coordinator = StubCoordinator()
         let manager = FlowNodesManager(coordinator: coordinator, attachmentStore: store)
         
         let nav = UINavigationController()
@@ -151,7 +156,7 @@ struct InlineRouterTests {
 struct TabsRouterTests {
     @Test func tabsRouterNavigation() {
         let store = AssociatedObjectFlowInstanceAttachmentStore()
-        let coordinator = NSObject()
+        let coordinator = StubCoordinator()
         let manager = FlowNodesManager(coordinator: coordinator, attachmentStore: store)
         
         let tabController = UITabBarController()
@@ -175,7 +180,7 @@ struct TabsRouterTests {
 struct SwitchRouterTests {
     @Test func switchRouterNavigation() {
         let store = AssociatedObjectFlowInstanceAttachmentStore()
-        let coordinator = NSObject()
+        let coordinator = StubCoordinator()
         let manager = FlowNodesManager(coordinator: coordinator, attachmentStore: store)
         
         let router = RouterProvider.switch()

@@ -13,8 +13,12 @@ public struct CoordinatorStartContext {
 /// Координатор хранит навигационный интерфейс и type-erased composer.
 /// Concrete composer может создавать `UIViewController`, но координатор
 /// получает только `RouterItem` через `ComposerBox`.
+///
+/// Соответствует `Coordinating`: по умолчанию не обрабатывает интенты
+/// (`receive(_:) -> false`). Наследники могут переопределить `receive(_:)`,
+/// чтобы реагировать на пушы/диплинки/universal links.
 @MainActor
-open class BaseCoordinator<Navigation, Route> {
+open class BaseCoordinator<Navigation, Route>: Coordinating {
     public let router: Navigation
     public let composer: ComposerBox<Route>
 
