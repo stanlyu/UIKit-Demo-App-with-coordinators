@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		C4FABF4FF9D150973CE87E36 /* DemoAppNavigationUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9297EE660B1EDF156666077 /* DemoAppNavigationUITests.swift */; };
+		AA1B2C3D4E5F60718293A4B5 /* NavigationDelegateRegressionUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB1C2D3E4F5A61728394B5C6 /* NavigationDelegateRegressionUITests.swift */; };
 		F02186A72EF5592A00C6E14A /* HomeFeature in Frameworks */ = {isa = PBXBuildFile; productRef = F02186A62EF5592A00C6E14A /* HomeFeature */; };
 		F02186AA2EF5596F00C6E14A /* CartFeature in Frameworks */ = {isa = PBXBuildFile; productRef = F02186A92EF5596F00C6E14A /* CartFeature */; };
 		F05EEFEB2EF9449D00ECE500 /* DeliveryFeature in Frameworks */ = {isa = PBXBuildFile; productRef = F05EEFEA2EF9449D00ECE500 /* DeliveryFeature */; };
@@ -42,6 +43,7 @@
 /* Begin PBXFileReference section */
 		0C6C1F71318EA9215B5334B5 /* Demo App With CoordinatorsUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Demo App With CoordinatorsUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		A9297EE660B1EDF156666077 /* DemoAppNavigationUITests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DemoAppNavigationUITests.swift; sourceTree = "<group>"; };
+		BB1C2D3E4F5A61728394B5C6 /* NavigationDelegateRegressionUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationDelegateRegressionUITests.swift; sourceTree = "<group>"; };
 		F0BFB2612EF1C21C006D4954 /* Demo App With Coordinators.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Demo App With Coordinators.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		F1D000012F21000100A1B2C3 /* Demo App With CoordinatorsTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Demo App With CoordinatorsTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		F1D000032F21000100A1B2C3 /* ApplicationCoordinatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplicationCoordinatorTests.swift; sourceTree = "<group>"; };
@@ -108,6 +110,7 @@
 			isa = PBXGroup;
 			children = (
 				A9297EE660B1EDF156666077 /* DemoAppNavigationUITests.swift */,
+				BB1C2D3E4F5A61728394B5C6 /* NavigationDelegateRegressionUITests.swift */,
 			);
 			path = "Demo App With CoordinatorsUITests";
 			sourceTree = "<group>";
@@ -295,6 +298,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				C4FABF4FF9D150973CE87E36 /* DemoAppNavigationUITests.swift in Sources */,
+				AA1B2C3D4E5F60718293A4B5 /* NavigationDelegateRegressionUITests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
