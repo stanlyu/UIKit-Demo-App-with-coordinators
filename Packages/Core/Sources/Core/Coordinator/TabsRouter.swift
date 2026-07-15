@@ -14,13 +14,9 @@ final class TabsRouter: BaseRouter<UITabBarController>, TabsNavigation {
     }
 
     var selectedItem: RouterItem? {
-        tabBarController.selectedViewController.map { vc in
-            if let existing = childRouterItems.first(where: { $0.isWrapping(vc) }) {
-                return existing
-            } else {
-                return RouterItem(vc)
-            }
-        }
+        let index = tabBarController.selectedIndex
+        guard index >= 0, index < childRouterItems.count else { return nil }
+        return childRouterItems[index]
     }
 
     init(makeTabBarController: () -> UITabBarController = { UITabBarController() }) {

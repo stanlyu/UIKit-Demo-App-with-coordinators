@@ -133,8 +133,7 @@ struct InlineRouterTests {
         
         // Встраиваем в навигейшн
         nav.setViewControllers([item1.viewController], animated: false)
-        router.updateRootViewController(item1.viewController)
-        manager.attach(to: item1.viewController)
+        router.updateParent(item1)
         
         #expect(router.items.count == 1)
         #expect(router.items.first?.viewController === item1.viewController)
