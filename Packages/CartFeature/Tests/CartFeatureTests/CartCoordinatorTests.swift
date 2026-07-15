@@ -60,29 +60,14 @@ struct CartCoordinatorTests {
     }
 
     @Test
-    func changePickupPointEvent_forwardsPickupPointsRequestToModuleOutput() {
+    func changePickupPointEvent_presentsPickupPointsScreen() {
         let sut = makeSUT()
         sut.coordinator.start(CoordinatorStartContext())
         sut.coordinator.placeOrder(42)
 
         sut.composer.placeOrderEventHandler?(.onChangePickupPointTap)
 
-        #expect(sut.output.pickupPointsContext != nil)
-    }
-
-    @Test
-    func pickupPointsContext_presentsExternalScreenAnimated() {
-        let sut = makeSUT()
-        sut.coordinator.start(CoordinatorStartContext())
-        sut.coordinator.placeOrder(42)
-
-        sut.composer.placeOrderEventHandler?(.onChangePickupPointTap)
-        let pickupPointsViewController = UIViewController()
-        let pickupPointsRouterItem = RouterItem(pickupPointsViewController)
-
-        sut.output.pickupPointsContext?.present(pickupPointsRouterItem, animated: true)
-
-        #expect(sut.router.presentedItem?.isWrapping(pickupPointsViewController) == true)
+        #expect(sut.router.presentedItem?.isWrapping(sut.composer.pickupPointsViewController) == true)
         #expect(sut.router.presentedAnimated == true)
     }
 
@@ -91,37 +76,23 @@ struct CartCoordinatorTests {
         let sut = makeSUT()
         sut.coordinator.start(CoordinatorStartContext())
         sut.coordinator.placeOrder(42)
-
         sut.composer.placeOrderEventHandler?(.onChangePickupPointTap)
-        sut.output.pickupPointsOnClose?()
+
+        sut.composer.pickupPointsOnClose?()
 
         #expect(sut.router.dismissCalls == [true])
     }
 
     @Test
-    func continueToPaymentEvent_forwardsPaymentRequestToModuleOutput() {
+    func continueToPaymentEvent_pushesPaymentScreen() {
         let sut = makeSUT()
         sut.coordinator.start(CoordinatorStartContext())
         sut.coordinator.placeOrder(42)
 
         sut.composer.placeOrderEventHandler?(.onContinueToPayment)
-
-        #expect(sut.output.paymentContext != nil)
-    }
-
-    @Test
-    func paymentContext_pushesExternalScreenAnimated() {
-        let sut = makeSUT()
-        sut.coordinator.start(CoordinatorStartContext())
-        sut.coordinator.placeOrder(42)
-
-        sut.composer.placeOrderEventHandler?(.onContinueToPayment)
-        let paymentViewController = UIViewController()
-        let paymentRouterItem = RouterItem(paymentViewController)
-        sut.output.paymentContext?.push(paymentRouterItem, animated: true)
 
         #expect(sut.router.pushCalls.count == 2)
-        #expect(sut.router.pushCalls[1].item.isWrapping(paymentViewController))
+        #expect(sut.router.pushCalls[1].item.isWrapping(sut.composer.paymentViewController) == true)
         #expect(sut.router.pushCalls[1].animated == true)
     }
 
@@ -132,7 +103,7 @@ struct CartCoordinatorTests {
         sut.coordinator.placeOrder(42)
         sut.composer.placeOrderEventHandler?(.onContinueToPayment)
 
-        sut.output.paymentOnComplete?(nil)
+        sut.composer.paymentOnComplete?(nil)
 
         #expect(sut.router.popCalls.last == true)
     }
@@ -145,7 +116,7 @@ struct CartCoordinatorTests {
         sut.composer.placeOrderEventHandler?(.onContinueToPayment)
 
         let result: CartPaymentResult = .success(amount: 1200)
-        sut.output.paymentOnComplete?(result)
+        sut.composer.paymentOnComplete?(result)
 
         #expect(sut.composer.receivedPaymentResult != nil)
     }
@@ -157,7 +128,7 @@ struct CartCoordinatorTests {
         sut.coordinator.placeOrder(42)
         sut.composer.placeOrderEventHandler?(.onContinueToPayment)
 
-        sut.output.paymentOnComplete?(.success(amount: 1200))
+        sut.composer.paymentOnComplete?(.success(amount: 1200))
 
         #expect(sut.router.pushCalls.count == 2)
         #expect(sut.router.pushCalls[1].item.isWrapping(sut.composer.orderConfirmationViewController))
@@ -172,7 +143,7 @@ struct CartCoordinatorTests {
 
         sut.coordinator.placeOrder(42)
         sut.composer.placeOrderEventHandler?(.onContinueToPayment)
-        sut.output.paymentOnComplete?(.success(amount: 1200))
+        sut.composer.paymentOnComplete?(.success(amount: 1200))
 
         #expect(sut.router.setStackCalls.count == 1)
         #expect(sut.router.setStackCalls[0].animated == false)
@@ -188,7 +159,7 @@ struct CartCoordinatorTests {
 
         sut.coordinator.placeOrder(42)
         sut.composer.placeOrderEventHandler?(.onContinueToPayment)
-        sut.output.paymentOnComplete?(.success(amount: 1200))
+        sut.composer.paymentOnComplete?(.success(amount: 1200))
         sut.composer.orderConfirmationEventHandler?(.onReturnTap)
 
         #expect(sut.router.popToRootCalls.last == true)
@@ -221,12 +192,16 @@ private final class MockCartComposer: CartComposing {
     let cartViewController = UIViewController()
     let placeOrderViewController = UIViewController()
     let orderConfirmationViewController = UIViewController()
+    let pickupPointsViewController = UIViewController()
+    let paymentViewController = UIViewController()
 
     private(set) var requestedOrderIDs: [Int] = []
     private(set) var receivedPaymentResult: CartPaymentResult?
 
     var placeOrderEventHandler: PlaceOrderEventHandler?
     var orderConfirmationEventHandler: OrderConfirmationEventHandler?
+    var pickupPointsOnClose: (() -> Void)?
+    var paymentOnComplete: ((CartPaymentResult?) -> Void)?
 
     func makeViewController(for route: CartRoute) -> UIViewController {
         switch route {
@@ -240,26 +215,20 @@ private final class MockCartComposer: CartComposing {
             receivedPaymentResult = paymentResult
             orderConfirmationEventHandler = eventHandler
             return orderConfirmationViewController
+        case .pickupPoints(let onClose):
+            pickupPointsOnClose = onClose
+            return pickupPointsViewController
+        case .payment(let onComplete):
+            paymentOnComplete = onComplete
+            return paymentViewController
         }
     }
 }
 
 @MainActor
 private final class CartOutputSpy {
-    private(set) var pickupPointsContext: (any NavigationStackContext)?
-    private(set) var pickupPointsOnClose: (() -> Void)?
-    private(set) var paymentContext: (any NavigationStackContext)?
-    private(set) var paymentOnComplete: ((CartPaymentResult?) -> Void)?
-
     func handle(_ event: CartNavigationOutputEvent) {
-        switch event {
-        case let .pickupPointsRequested(context, onClose):
-            pickupPointsContext = context
-            pickupPointsOnClose = onClose
-        case let .paymentRequested(context, onComplete):
-            paymentContext = context
-            paymentOnComplete = onComplete
-        }
+        switch event {}
     }
 }
 

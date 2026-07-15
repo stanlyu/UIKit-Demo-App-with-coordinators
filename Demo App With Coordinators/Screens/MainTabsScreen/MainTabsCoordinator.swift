@@ -49,39 +49,10 @@ final class MainTabsCoordinatingLogic: BaseCoordinator<any TabsNavigation, MainT
             guard let cartItem else { return }
             router.selectItem(cartItem)
             cartNavigationInput?.placeOrder(orderID)
-
-        case let .pickupPointsRequested(context, onClose):
-            let item = composer.makeItem(for: .pickupPoints(
-                embeddedInNavigationStack: true,
-                onEvent: { event in
-                    switch event {
-                    case .didClose:
-                        onClose()
-                    }
-                }
-            ))
-            print("[MainTabsCoordinator] pushing pickupPoints in context: \(context)")
-            context.push(item, animated: true)
         }
     }
 
     private func handle(cartEvent: CartNavigationOutputEvent) {
-        switch cartEvent {
-        case let .pickupPointsRequested(context, onClose):
-            let item = composer.makeItem(for: .pickupPoints(
-                embeddedInNavigationStack: false,
-                onEvent: { event in
-                    switch event {
-                    case .didClose:
-                        onClose()
-                    }
-                }
-            ))
-            context.present(item, animated: true)
-
-        case let .paymentRequested(context, onComplete):
-            let item = composer.makeItem(for: .payment(onComplete: onComplete))
-            context.push(item, animated: true)
-        }
+        switch cartEvent {}
     }
 }

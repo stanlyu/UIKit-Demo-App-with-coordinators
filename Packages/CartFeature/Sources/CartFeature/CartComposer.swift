@@ -9,6 +9,8 @@ enum CartRoute {
     case cart(eventHandler: CartEventHandler)
     case placeOrder(orderID: Int, eventHandler: PlaceOrderEventHandler)
     case orderConfirmation(paymentResult: CartPaymentResult, eventHandler: OrderConfirmationEventHandler)
+    case pickupPoints(onClose: () -> Void)
+    case payment(onComplete: (CartPaymentResult?) -> Void)
 }
 
 @MainActor
@@ -51,6 +53,10 @@ struct CartComposer: CartComposing {
             viewController.viewOutput = presenter
             return viewController
 
+        case .pickupPoints(let onClose):
+            return dependencies.externalScreensProvider.makePickupPointsViewController(onClose: onClose)
+        case .payment(let onComplete):
+            return dependencies.externalScreensProvider.makePaymentViewController(onComplete: onComplete)
         }
     }
 

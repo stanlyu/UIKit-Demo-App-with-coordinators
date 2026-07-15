@@ -5,7 +5,7 @@
 //  Created by Любченко Станислав Валерьевич on 19.02.2026.
 //
 
-import Foundation
+import UIKit
 
 public struct CartPickupPoint: Equatable, Sendable {
     public let id: Int
@@ -24,12 +24,21 @@ public protocol CartSelectedPickupPointProviding: AnyObject {
 }
 
 @MainActor
+public protocol CartExternalScreensProvider: AnyObject {
+    func makePickupPointsViewController(onClose: @escaping () -> Void) -> UIViewController
+    func makePaymentViewController(onComplete: @escaping (CartPaymentResult?) -> Void) -> UIViewController
+}
+
+@MainActor
 public struct CartBusinessDependencies {
     let selectedPickupPointProvider: CartSelectedPickupPointProviding
+    public let externalScreensProvider: any CartExternalScreensProvider
 
     public init(
-        selectedPickupPointProvider: CartSelectedPickupPointProviding
+        selectedPickupPointProvider: CartSelectedPickupPointProviding,
+        externalScreensProvider: any CartExternalScreensProvider
     ) {
         self.selectedPickupPointProvider = selectedPickupPointProvider
+        self.externalScreensProvider = externalScreensProvider
     }
 }

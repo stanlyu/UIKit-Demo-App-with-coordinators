@@ -32,55 +32,26 @@ struct HomeCoordinatorTests {
     }
 
     @Test
-    func pickupPointTap_forwardsPickupPointsRequestToModuleOutput() {
-        var didReceivePickupPointsRequest = false
-        let sut = makeSUT(onEvent: { event in
-            if case .pickupPointsRequested = event {
-                didReceivePickupPointsRequest = true
-            }
-        })
+    func pickupPointTap_pushesPickupPointsScreen() {
+        let sut = makeSUT()
         sut.coordinator.start(CoordinatorStartContext())
 
         sut.composer.homeEventHandler?(.onPickupPointTap)
 
-        #expect(didReceivePickupPointsRequest == true)
+        #expect(sut.router.pushCalls.count == 1)
+        #expect(sut.router.pushCalls[0].item.isWrapping(sut.composer.pickupPointsViewController))
+        #expect(sut.router.pushCalls[0].animated == true)
     }
 
     @Test
     func pickupPointsOnCloseCallback_popsCurrentScreen() {
-        var receivedOnClose: (() -> Void)?
-        let sut = makeSUT(onEvent: { event in
-            if case let .pickupPointsRequested(_, onClose) = event {
-                receivedOnClose = onClose
-            }
-        })
+        let sut = makeSUT()
         sut.coordinator.start(CoordinatorStartContext())
         sut.composer.homeEventHandler?(.onPickupPointTap)
 
-        receivedOnClose?()
+        sut.composer.pickupPointsOnClose?()
 
         #expect(sut.router.popCalls.last == true)
-    }
-
-    @Test
-    func pickupPointTap_passesNavigationContextToModuleOutput() {
-        var receivedContext: (any NavigationStackContext)?
-        let sut = makeSUT(onEvent: { event in
-            if case let .pickupPointsRequested(context, _) = event {
-                receivedContext = context
-            }
-        })
-        sut.coordinator.start(CoordinatorStartContext())
-
-        sut.composer.homeEventHandler?(.onPickupPointTap)
-
-        let externalViewController = UIViewController()
-        let externalRouterItem = RouterItem(externalViewController)
-        receivedContext?.push(externalViewController, animated: true)
-
-        #expect(sut.router.pushCalls.count == 1)
-        #expect(sut.router.pushCalls.last?.item.isWrapping(externalViewController) == true)
-        #expect(sut.router.pushCalls.last?.animated == true)
     }
 }
 
@@ -103,14 +74,19 @@ private extension HomeCoordinatorTests {
 @MainActor
 private final class MockHomeComposer: HomeComposing {
     let homeViewController = UIViewController()
+    let pickupPointsViewController = UIViewController()
 
     var homeEventHandler: HomePresenterEventHandler?
+    var pickupPointsOnClose: (() -> Void)?
 
     func makeViewController(for route: HomeRoute) -> UIViewController {
         switch route {
         case .home(let eventHandler):
             homeEventHandler = eventHandler
             return homeViewController
+        case .pickupPoints(let onClose):
+            pickupPointsOnClose = onClose
+            return pickupPointsViewController
         }
     }
 }

@@ -30,25 +30,28 @@ final class CartCoordinatingLogic: BaseCoordinator<any StackNavigation, CartRout
     }
 
     private let onEvent: (CartNavigationOutputEvent) -> Void
+    private var pickupPointsItem: RouterItem?
+    private var paymentItem: RouterItem?
 
     private func requestPickupPoints() {
-        let context = RouterNavigationStackContext(router: router)
-        onEvent(.pickupPointsRequested(context: context, onClose: { [weak self] in
+        let item = composer.makeItem(for: .pickupPoints(onClose: { [weak self] in
             self?.router.dismiss(animated: true, completion: nil)
         }))
+        self.pickupPointsItem = item
+        router.present(item, animated: true, completion: nil)
     }
 
     private func requestPayment() {
-        let context = RouterNavigationStackContext(router: router)
-        onEvent(.paymentRequested(context: context, onComplete: { [weak self] result in
+        let item = composer.makeItem(for: .payment(onComplete: { [weak self] result in
             guard let self else { return }
-
-            if let result {
+            if let result = result {
                 self.completePayment(with: result)
             } else {
                 self.router.pop(animated: true, completion: nil)
             }
         }))
+        self.paymentItem = item
+        router.push(item, animated: true, completion: nil)
     }
 
     private func completePayment(with result: CartPaymentResult) {

@@ -39,31 +39,6 @@ struct MainTabsCoordinatorTests {
 
         #expect(sut.composer.mockCartNavigationInput.placeOrderCalls == [42])
     }
-
-    @Test
-    func homePickupPointsRequest_pushesPickupPointsInProvidedContext() {
-        let sut = makeSUT()
-        let context = MockNavigationStackContext()
-        sut.coordinator.start(CoordinatorStartContext())
-
-        sut.composer.homeEventHandler?(.pickupPointsRequested(context: context, onClose: {}))
-
-        #expect(context.pushCalls.last?.viewController === sut.composer.pickupPointsViewController)
-        #expect(context.pushCalls.last?.animated == true)
-        #expect(sut.composer.pickupPointsEmbeddedInNavigationStack == true)
-    }
-
-    @Test
-    func cartPaymentRequest_pushesPaymentInProvidedContext() {
-        let sut = makeSUT()
-        let context = MockNavigationStackContext()
-        sut.coordinator.start(CoordinatorStartContext())
-
-        sut.composer.cartEventHandler?(.paymentRequested(context: context, onComplete: { _ in }))
-
-        #expect(context.pushCalls.last?.viewController === sut.composer.paymentViewController)
-        #expect(context.pushCalls.last?.animated == true)
-    }
 }
 
 @MainActor
@@ -121,36 +96,7 @@ private extension MainTabsCoordinatorTests {
         }
     }
 
-    @MainActor
-    private final class MockNavigationStackContext: NavigationStackContext {
-        struct Call {
-            let viewController: UIViewController
-            let animated: Bool
-        }
 
-        private(set) var pushCalls: [Call] = []
-        private(set) var presentCalls: [Call] = []
-
-        func push(_ viewController: UIViewController, animated: Bool, completion: (() -> Void)?) {
-            pushCalls.append(Call(viewController: viewController, animated: animated))
-            completion?()
-        }
-
-        func present(_ viewController: UIViewController, animated: Bool, completion: (() -> Void)?) {
-            presentCalls.append(Call(viewController: viewController, animated: animated))
-            completion?()
-        }
-
-        func push(_ item: RouterItem, animated: Bool, completion: (() -> Void)?) {
-            pushCalls.append(Call(viewController: item.viewController, animated: animated))
-            completion?()
-        }
-
-        func present(_ item: RouterItem, animated: Bool, completion: (() -> Void)?) {
-            presentCalls.append(Call(viewController: item.viewController, animated: animated))
-            completion?()
-        }
-    }
 
 @MainActor
 private final class MockTabRouter: TabsNavigation {

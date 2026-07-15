@@ -26,10 +26,7 @@ public protocol CartNavigationInput: AnyObject {
     func placeOrder(_ orderID: Int)
 }
 
-public enum CartNavigationOutputEvent {
-    case pickupPointsRequested(context: any NavigationStackContext, onClose: () -> Void)
-    case paymentRequested(context: any NavigationStackContext, onComplete: (CartPaymentResult?) -> Void)
-}
+public enum CartNavigationOutputEvent {}
 
 @MainActor
 public enum CartModule {

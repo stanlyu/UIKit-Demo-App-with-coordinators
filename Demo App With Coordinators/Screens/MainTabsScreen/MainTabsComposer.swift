@@ -19,13 +19,17 @@ final class MainTabsComposer: MainTabsComposing {
     func makeViewController(for route: MainTabsRoute) -> UIViewController {
         switch route {
         case .home(let onEvent):
-            let homeViewController = HomeModule.create(onEvent: onEvent)
+            let homeViewController = HomeModule.create(
+                dependencies: HomeBusinessDependencies(externalScreensProvider: HomeExternalScreensProviderProxy(composer: self)),
+                onEvent: onEvent
+            )
             homeViewController.tabBarItem = UITabBarItem(title: "Главная", image: nil, selectedImage: nil)
             return homeViewController
             
         case let .cart(onCreated, onEvent):
             let dependencies = CartBusinessDependencies(
-                selectedPickupPointProvider: deliveryToCartSelectedPickupPointProvider
+                selectedPickupPointProvider: deliveryToCartSelectedPickupPointProvider,
+                externalScreensProvider: CartExternalScreensProviderProxy(composer: self)
             )
             let cartModule = CartModule.create(dependencies: dependencies, onEvent: onEvent)
             cartModule.viewController.tabBarItem = UITabBarItem(title: "Корзина", image: nil, selectedImage: nil)
@@ -52,8 +56,55 @@ final class MainTabsComposer: MainTabsComposing {
             }
         }
     }
+
+    func makeHomePickupPointsViewController(onClose: @escaping () -> Void) -> UIViewController {
+        makeViewController(for: .pickupPoints(embeddedInNavigationStack: true, onEvent: { event in
+            switch event {
+            case .didClose:
+                onClose()
+            }
+        }))
+    }
+
+    func makeCartPickupPointsViewController(onClose: @escaping () -> Void) -> UIViewController {
+        makeViewController(for: .pickupPoints(embeddedInNavigationStack: false, onEvent: { event in
+            switch event {
+            case .didClose:
+                onClose()
+            }
+        }))
+    }
+
+    func makePaymentViewController(onComplete: @escaping (CartPaymentResult?) -> Void) -> UIViewController {
+        makeViewController(for: .payment(onComplete: onComplete))
+    }
     
     private lazy var pickupPointsManager: PickupPointsManaging = PickupPointModule.makePickupPointsManager()
     private lazy var deliveryToCartSelectedPickupPointProvider: CartSelectedPickupPointProviding =
         DeliveryToCartSelectedPickupPointProviderAdapter(pickupPointsManager: pickupPointsManager)
+}
+
+@MainActor
+private final class CartExternalScreensProviderProxy: CartExternalScreensProvider {
+    private weak var composer: MainTabsComposer?
+    init(composer: MainTabsComposer) {
+        self.composer = composer
+    }
+    func makePickupPointsViewController(onClose: @escaping () -> Void) -> UIViewController {
+        composer?.makeCartPickupPointsViewController(onClose: onClose) ?? UIViewController()
+    }
+    func makePaymentViewController(onComplete: @escaping (CartPaymentResult?) -> Void) -> UIViewController {
+        composer?.makePaymentViewController(onComplete: onComplete) ?? UIViewController()
+    }
+}
+
+@MainActor
+private final class HomeExternalScreensProviderProxy: HomeExternalScreensProvider {
+    private weak var composer: MainTabsComposer?
+    init(composer: MainTabsComposer) {
+        self.composer = composer
+    }
+    func makePickupPointsViewController(onClose: @escaping () -> Void) -> UIViewController {
+        composer?.makeHomePickupPointsViewController(onClose: onClose) ?? UIViewController()
+    }
 }

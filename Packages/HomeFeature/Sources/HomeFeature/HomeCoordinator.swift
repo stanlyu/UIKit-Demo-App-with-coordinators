@@ -32,13 +32,15 @@ final class HomeCoordinatingLogic: BaseCoordinator<any StackNavigation, HomeRout
     }
 
     private let onEvent: (HomeNavigationOutputEvent) -> Void
+    private var pickupPointsItem: RouterItem?
 
     private func requestPickupPoints() {
         print("[HomeCoordinator] requestPickupPoints called")
-        let context = RouterNavigationStackContext(router: router)
-        onEvent(.pickupPointsRequested(context: context, onClose: { [weak self] in
+        let item = composer.makeItem(for: .pickupPoints(onClose: { [weak self] in
             print("[HomeCoordinator] pickupPoints onClose callback called")
             self?.router.pop(animated: true, completion: nil)
         }))
+        self.pickupPointsItem = item
+        router.push(item, animated: true, completion: nil)
     }
 }

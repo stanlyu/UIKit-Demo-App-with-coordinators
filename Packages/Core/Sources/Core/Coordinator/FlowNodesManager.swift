@@ -21,7 +21,7 @@ final class FlowNodesManager: FlowNodesManaging {
     func updateChildViewControllers(_ childVCs: [UIViewController]) {
         // Находим все дочерние ноды, привязанные к переданным контроллерам
         let activeChildNodes = childVCs.compactMap { vc in
-            attachmentStore.instance(attachedTo: vc) as? FlowNode
+            attachmentStore.instance(attachedTo: vc)
         }
 
         // Усыновляем новые ноды

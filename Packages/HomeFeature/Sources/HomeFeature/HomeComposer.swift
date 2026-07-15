@@ -5,12 +5,19 @@ typealias HomePresenterEventHandler = (HomePresenter.Event) -> Void
 
 enum HomeRoute {
     case home(eventHandler: HomePresenterEventHandler)
+    case pickupPoints(onClose: () -> Void)
 }
 
 @MainActor
 protocol HomeComposing: Composing where Route == HomeRoute {}
 
 struct HomeComposer: HomeComposing {
+    private let dependencies: HomeBusinessDependencies
+
+    init(dependencies: HomeBusinessDependencies) {
+        self.dependencies = dependencies
+    }
+
     func makeViewController(for route: HomeRoute) -> UIViewController {
         switch route {
         case .home(let eventHandler):
@@ -22,6 +29,8 @@ struct HomeComposer: HomeComposing {
             homeViewController.viewOutput = homePresenter
             return homeViewController
 
+        case .pickupPoints(let onClose):
+            return dependencies.externalScreensProvider.makePickupPointsViewController(onClose: onClose)
         }
     }
 }

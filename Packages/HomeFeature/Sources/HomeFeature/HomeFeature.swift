@@ -8,14 +8,27 @@
 import UIKit
 import Core
 
+@MainActor
+public protocol HomeExternalScreensProvider: AnyObject {
+    func makePickupPointsViewController(onClose: @escaping () -> Void) -> UIViewController
+}
+
+@MainActor
+public struct HomeBusinessDependencies {
+    public let externalScreensProvider: any HomeExternalScreensProvider
+    public init(externalScreensProvider: any HomeExternalScreensProvider) {
+        self.externalScreensProvider = externalScreensProvider
+    }
+}
+
 public enum HomeNavigationOutputEvent {
     case placeOrder(orderID: Int)
-    case pickupPointsRequested(context: any NavigationStackContext, onClose: () -> Void)
 }
 
 @MainActor
 public enum HomeModule {
     public static func create(
+        dependencies: HomeBusinessDependencies,
         onEvent: @escaping (HomeNavigationOutputEvent) -> Void
     ) -> UIViewController {
         FlowBuilder.stack(
@@ -24,7 +37,7 @@ public enum HomeModule {
                 nav.navigationBar.prefersLargeTitles = true
                 return nav
             },
-            composer: HomeComposer()
+            composer: HomeComposer(dependencies: dependencies)
         ) { router, composer in
             HomeCoordinator(
                 router: router,
