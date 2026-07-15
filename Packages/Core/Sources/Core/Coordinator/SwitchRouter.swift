@@ -23,7 +23,7 @@ private final class SwitchRouter: BaseRouter<UIViewController>, SwitchNavigation
         parentRouterItem
     }
 
-    var oldContentRetainers: Set<UIViewController> = []
+    var oldContentRetainer: UIViewController?
     var transitionHandler: SwitchTransitionHandler?
 
     func setTransitionHandler(_ handler: SwitchTransitionHandler?) {
@@ -36,18 +36,18 @@ private final class SwitchRouter: BaseRouter<UIViewController>, SwitchNavigation
         guard let oldVC = rootViewController else {
             print("[SwitchRouter] setting initial rootViewController: \(newVC)")
             updateParent(item)
-            updateChildren([item])
             completion?()
             return
         }
 
         updateParent(item)
-        oldContentRetainers.insert(oldVC)
-        updateChildren([item])
+        oldContentRetainer = oldVC
 
         performTransition(from: oldVC, to: newVC, animated: animated) { [weak self] in
             guard let self else { return }
-            self.oldContentRetainers.remove(oldVC)
+            if self.oldContentRetainer === oldVC {
+                self.oldContentRetainer = nil
+            }
             completion?()
         }
     }
