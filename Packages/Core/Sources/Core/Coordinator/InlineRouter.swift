@@ -3,17 +3,11 @@ import UIKit
 @MainActor
 final class InlineRouter: BaseRouter<UIViewController>, StackNavigation {
     var items: [RouterItem] {
-        [parentRouterItem].compactMap { $0 } + childRouterItems
-    }
-
-    private var navigationController: UINavigationController? {
-        guard let nav = parentViewController?.navigationController else { return nil }
-        nav.addDelegateIfNeeded(self, category: .instance)
-        return nav
+        [subclassParentRouterItem].compactMap { $0 } + childRouterItems
     }
 
     func setRoot(_ item: RouterItem, animated: Bool) {
-        let oldRoot = parentViewController
+        let oldRoot = subclassParentRouterItem?.viewController
         updateParent(item)
         
         if let oldRoot,
@@ -28,21 +22,23 @@ final class InlineRouter: BaseRouter<UIViewController>, StackNavigation {
     }
 
     func push(_ item: RouterItem, animated: Bool, completion: (() -> Void)?) {
-        guard let nav = navigationController else {
+        guard let nav = parent.navigationController else {
             assertionFailure("Inline Router: content is not embedded in UINavigationController.")
             completion?()
             return
         }
+        nav.addDelegateIfNeeded(self, category: .instance)
         nav.pushViewController(item.viewController, animated: animated, completion: completion)
         syncChildRouterItems()
     }
 
     func pop(animated: Bool, completion: (() -> Void)?) {
-        guard let rootVC = parentViewController,
-              let nav = navigationController else {
+        let rootVC = parent
+        guard let nav = parent.navigationController else {
             completion?()
             return
         }
+        nav.addDelegateIfNeeded(self, category: .instance)
         guard nav.topViewController !== rootVC else {
             assertionFailure("Inline Router cannot pop its root content.")
             completion?()
@@ -53,21 +49,18 @@ final class InlineRouter: BaseRouter<UIViewController>, StackNavigation {
     }
 
     func popToRoot(animated: Bool, completion: (() -> Void)?) {
-        guard let rootVC = parentViewController else {
-            completion?()
-            return
-        }
-        popTo(RouterItem(rootVC), animated: animated, completion: completion)
+        popTo(RouterItem(parent), animated: animated, completion: completion)
     }
 
     func popTo(_ item: RouterItem, animated: Bool, completion: (() -> Void)?) {
-        guard let rootVC = parentViewController,
-              let nav = navigationController,
+        let rootVC = parent
+        guard let nav = parent.navigationController,
               let rootIndex = nav.viewControllers.firstIndex(of: rootVC),
               let targetIndex = nav.viewControllers.firstIndex(of: item.viewController) else {
             completion?()
             return
         }
+        nav.addDelegateIfNeeded(self, category: .instance)
         guard targetIndex >= rootIndex else {
             assertionFailure("Inline Router cannot navigate outside of its flow stack.")
             completion?()
@@ -79,7 +72,7 @@ final class InlineRouter: BaseRouter<UIViewController>, StackNavigation {
 
     func setStack(_ items: [RouterItem], animated: Bool) {
         guard let firstItem = items.first else { return }
-        let oldRoot = parentViewController
+        let oldRoot = subclassParentRouterItem?.viewController
         updateParent(firstItem)
         
         if let oldRoot,
@@ -94,11 +87,12 @@ final class InlineRouter: BaseRouter<UIViewController>, StackNavigation {
     }
 
     private func syncChildRouterItems() {
-        guard let rootVC = parentViewController else { return }
+        let rootVC = parent
         let currentStack: [UIViewController]
         
-        if let nav = navigationController,
+        if let nav = parent.navigationController,
            let rootIndex = nav.viewControllers.firstIndex(of: rootVC) {
+            nav.addDelegateIfNeeded(self, category: .instance)
             // В дочерние элементы складываем всё, что идет ПОСЛЕ rootVC
             currentStack = Array(nav.viewControllers.suffix(from: rootIndex + 1))
         } else {

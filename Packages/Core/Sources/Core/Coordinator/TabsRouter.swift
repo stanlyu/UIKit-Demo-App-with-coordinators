@@ -9,39 +9,32 @@ final class TabsRouter: BaseRouter<UITabBarController> {
     }
     
     // MARK: - Private members
-    
-    private var tabBarController: UITabBarController {
-        guard let tab = parentViewController else {
-            fatalError("UITabBarController is not configured in TabsRouter")
-        }
-        return tab
-    }
 }
 
 extension TabsRouter: TabsNavigation {
     var selectedIndex: Int {
-        tabBarController.selectedIndex
+        parent.selectedIndex
     }
 
     var selectedItem: RouterItem? {
-        let index = tabBarController.selectedIndex
+        let index = parent.selectedIndex
         guard index >= 0, index < childRouterItems.count else { return nil }
         return childRouterItems[index]
     }
     
     func setItems(_ items: [RouterItem], animated: Bool) {
-        tabBarController.setViewControllers(items.map(\.viewController), animated: animated)
+        parent.setViewControllers(items.map(\.viewController), animated: animated)
         updateChildren(items)
     }
 
     func selectTab(at index: Int) {
-        tabBarController.selectedIndex = index
+        parent.selectedIndex = index
     }
 
     func selectItem(_ item: RouterItem) {
-        guard let index = tabBarController.viewControllers?.firstIndex(where: { item.isWrapping($0) }) else {
+        guard let index = parent.viewControllers?.firstIndex(where: { item.isWrapping($0) }) else {
             return
         }
-        tabBarController.selectedIndex = index
+        parent.selectedIndex = index
     }
 }

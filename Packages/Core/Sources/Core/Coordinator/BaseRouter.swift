@@ -12,14 +12,17 @@ class BaseRouter<Parent: UIViewController>: NSObject, BaseNavigation, UIAdaptive
     private var _temporaryStrongParentViewController: Parent?
     private(set) var childRouterItems: [RouterItem] = []
 
-    var parentRouterItem: RouterItem? {
-        _parentViewController.map { RouterItem($0) }
-    }
-
     private(set) var nodesManager: (any FlowNodesManaging)?
 
-    var parentViewController: Parent? {
-        _parentViewController
+    var parent: Parent {
+        guard let parent = _parentViewController as? Parent else {
+            fatalError("Parent view controller of type \(Parent.self) is not configured or has been deallocated")
+        }
+        return parent
+    }
+
+    var subclassParentRouterItem: RouterItem? {
+        _parentViewController.map { RouterItem($0) }
     }
 
     var childViewControllers: [UIViewController] {
@@ -56,7 +59,7 @@ class BaseRouter<Parent: UIViewController>: NSObject, BaseNavigation, UIAdaptive
 
     // BaseNavigation (present/dismiss) с поддержкой поиска презентующего контроллера
     func present(_ item: RouterItem, animated: Bool, completion: (() -> Void)?) {
-        guard let root = parentViewController else { return }
+        let root = parent
         
         item.viewController.presentationController?.delegate = self
         
@@ -64,8 +67,7 @@ class BaseRouter<Parent: UIViewController>: NSObject, BaseNavigation, UIAdaptive
     }
 
     func dismiss(animated: Bool, completion: (() -> Void)?) {
-        guard let root = parentViewController else { return }
-        root.dismiss(animated: animated, completion: completion)
+        parent.dismiss(animated: animated, completion: completion)
     }
 
     // MARK: - UIAdaptivePresentationControllerDelegate

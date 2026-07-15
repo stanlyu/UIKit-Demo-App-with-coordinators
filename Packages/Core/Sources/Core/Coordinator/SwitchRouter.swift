@@ -10,11 +10,11 @@ typealias SwitchTransitionHandler = @MainActor @Sendable (
 @MainActor
 final class SwitchRouter: BaseRouter<UIViewController>, SwitchNavigation {
     var rootViewController: UIViewController? {
-        parentViewController
+        subclassParentRouterItem?.viewController
     }
 
     var currentItem: RouterItem? {
-        parentRouterItem
+        subclassParentRouterItem
     }
 
     private var oldContentRetainers: Set<UIViewController> = []

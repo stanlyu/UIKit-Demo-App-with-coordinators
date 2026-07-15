@@ -130,9 +130,9 @@ struct CartCoordinatorTests {
 
         sut.composer.paymentOnComplete?(.success(amount: 1200))
 
-        #expect(sut.router.pushCalls.count == 2)
-        #expect(sut.router.pushCalls[1].item.isWrapping(sut.composer.orderConfirmationViewController))
-        #expect(sut.router.pushCalls[1].animated == true)
+        #expect(sut.router.pushCalls.count == 3)
+        #expect(sut.router.pushCalls[2].item.isWrapping(sut.composer.orderConfirmationViewController))
+        #expect(sut.router.pushCalls[2].animated == true)
     }
 
     @Test

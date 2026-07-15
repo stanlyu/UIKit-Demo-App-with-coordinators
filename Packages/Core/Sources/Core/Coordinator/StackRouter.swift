@@ -12,13 +12,6 @@ final class StackRouter: BaseRouter<UINavigationController> {
     
     // MARK: - Private members
 
-    private var navigationController: UINavigationController {
-        guard let nav = parentViewController else {
-            fatalError("UINavigationController is not configured in StackRouter")
-        }
-        return nav
-    }
-
     private func syncChildRouterItems(with newStack: [UIViewController]) {
         let updatedItems = newStack.map { vc in
             if let existing = childRouterItems.first(where: { $0.isWrapping(vc) }) {
@@ -37,38 +30,38 @@ extension StackRouter: StackNavigation {
     }
     
     func setRoot(_ item: RouterItem, animated: Bool) {
-        navigationController.setViewControllers([item.viewController], animated: animated, completion: nil)
-        syncChildRouterItems(with: navigationController.viewControllers)
+        parent.setViewControllers([item.viewController], animated: animated, completion: nil)
+        syncChildRouterItems(with: parent.viewControllers)
     }
 
     func push(_ item: RouterItem, animated: Bool, completion: (() -> Void)?) {
-        let shouldAnimate = navigationController.viewControllers.isEmpty ? false : animated
-        navigationController.pushViewController(item.viewController, animated: shouldAnimate, completion: completion)
-        syncChildRouterItems(with: navigationController.viewControllers)
+        let shouldAnimate = parent.viewControllers.isEmpty ? false : animated
+        parent.pushViewController(item.viewController, animated: shouldAnimate, completion: completion)
+        syncChildRouterItems(with: parent.viewControllers)
     }
 
     func pop(animated: Bool, completion: (() -> Void)?) {
-        navigationController.popViewController(animated: animated, completion: completion)
-        syncChildRouterItems(with: navigationController.viewControllers)
+        parent.popViewController(animated: animated, completion: completion)
+        syncChildRouterItems(with: parent.viewControllers)
     }
 
     func popToRoot(animated: Bool, completion: (() -> Void)?) {
-        navigationController.popToRootViewController(animated: animated, completion: completion)
-        syncChildRouterItems(with: navigationController.viewControllers)
+        parent.popToRootViewController(animated: animated, completion: completion)
+        syncChildRouterItems(with: parent.viewControllers)
     }
 
     func popTo(_ item: RouterItem, animated: Bool, completion: (() -> Void)?) {
-        guard navigationController.viewControllers.contains(item.viewController) else {
+        guard parent.viewControllers.contains(item.viewController) else {
             completion?()
             return
         }
-        navigationController.popToViewController(item.viewController, animated: animated, completion: completion)
-        syncChildRouterItems(with: navigationController.viewControllers)
+        parent.popToViewController(item.viewController, animated: animated, completion: completion)
+        syncChildRouterItems(with: parent.viewControllers)
     }
 
     func setStack(_ items: [RouterItem], animated: Bool) {
-        navigationController.setViewControllers(items.map(\.viewController), animated: animated, completion: nil)
-        syncChildRouterItems(with: navigationController.viewControllers)
+        parent.setViewControllers(items.map(\.viewController), animated: animated, completion: nil)
+        syncChildRouterItems(with: parent.viewControllers)
     }
 }
 
@@ -78,6 +71,6 @@ extension StackRouter: UINavigationControllerDelegate {
         didShow viewController: UIViewController,
         animated: Bool
     ) {
-        syncChildRouterItems(with: navigationController.viewControllers)
+        syncChildRouterItems(with: parent.viewControllers)
     }
 }
