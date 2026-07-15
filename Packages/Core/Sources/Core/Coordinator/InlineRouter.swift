@@ -26,11 +26,13 @@ final class InlineRouter: BaseRouter<UIViewController>, StackNavigation {
         updateParent(item)
         
         if let oldRoot,
-           let nav = oldRoot.navigationController,
-           let rootIndex = nav.viewControllers.firstIndex(of: oldRoot) {
-            let nextNavigationStack = Array(nav.viewControllers.prefix(upTo: rootIndex)) + [item.viewController]
-            nav.setViewControllers(nextNavigationStack, animated: animated) { [weak self] in
-                self?.syncChildRouterItems()
+           let nav = oldRoot.navigationController {
+            setupDelegateIfNeeded(on: nav)
+            if let rootIndex = nav.viewControllers.firstIndex(of: oldRoot) {
+                let nextNavigationStack = Array(nav.viewControllers.prefix(upTo: rootIndex)) + [item.viewController]
+                nav.setViewControllers(nextNavigationStack, animated: animated) { [weak self] in
+                    self?.syncChildRouterItems()
+                }
             }
         }
         syncChildRouterItems()
@@ -106,11 +108,13 @@ final class InlineRouter: BaseRouter<UIViewController>, StackNavigation {
         updateParent(firstItem)
         
         if let oldRoot,
-           let nav = oldRoot.navigationController,
-           let rootIndex = nav.viewControllers.firstIndex(of: oldRoot) {
-            let nextNavigationStack = Array(nav.viewControllers.prefix(upTo: rootIndex)) + items.map(\.viewController)
-            nav.setViewControllers(nextNavigationStack, animated: animated) { [weak self] in
-                self?.syncChildRouterItems()
+           let nav = oldRoot.navigationController {
+            setupDelegateIfNeeded(on: nav)
+            if let rootIndex = nav.viewControllers.firstIndex(of: oldRoot) {
+                let nextNavigationStack = Array(nav.viewControllers.prefix(upTo: rootIndex)) + items.map(\.viewController)
+                nav.setViewControllers(nextNavigationStack, animated: animated) { [weak self] in
+                    self?.syncChildRouterItems()
+                }
             }
         }
         syncChildRouterItems()
