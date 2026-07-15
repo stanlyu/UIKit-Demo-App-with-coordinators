@@ -30,9 +30,7 @@ final class InlineRouter: BaseRouter<UIViewController>, StackNavigation {
             setupDelegateIfNeeded(on: nav)
             if let rootIndex = nav.viewControllers.firstIndex(of: oldRoot) {
                 let nextNavigationStack = Array(nav.viewControllers.prefix(upTo: rootIndex)) + [item.viewController]
-                nav.setViewControllers(nextNavigationStack, animated: animated) { [weak self] in
-                    self?.syncChildRouterItems()
-                }
+                nav.setViewControllers(nextNavigationStack, animated: animated, completion: nil)
             }
         }
         syncChildRouterItems()
@@ -44,11 +42,7 @@ final class InlineRouter: BaseRouter<UIViewController>, StackNavigation {
             completion?()
             return
         }
-        
-        nav.pushViewController(item.viewController, animated: animated) { [weak self] in
-            self?.syncChildRouterItems()
-            completion?()
-        }
+        nav.pushViewController(item.viewController, animated: animated, completion: completion)
         syncChildRouterItems()
     }
 
@@ -58,17 +52,12 @@ final class InlineRouter: BaseRouter<UIViewController>, StackNavigation {
             completion?()
             return
         }
-        
         guard nav.topViewController !== rootVC else {
             assertionFailure("Inline Router cannot pop its root content.")
             completion?()
             return
         }
-        
-        nav.popViewController(animated: animated) { [weak self] in
-            self?.syncChildRouterItems()
-            completion?()
-        }
+        nav.popViewController(animated: animated, completion: completion)
         syncChildRouterItems()
     }
 
@@ -88,17 +77,12 @@ final class InlineRouter: BaseRouter<UIViewController>, StackNavigation {
             completion?()
             return
         }
-        
         guard targetIndex >= rootIndex else {
             assertionFailure("Inline Router cannot navigate outside of its flow stack.")
             completion?()
             return
         }
-        
-        nav.popToViewController(item.viewController, animated: animated) { [weak self] in
-            self?.syncChildRouterItems()
-            completion?()
-        }
+        nav.popToViewController(item.viewController, animated: animated, completion: completion)
         syncChildRouterItems()
     }
 
@@ -112,9 +96,7 @@ final class InlineRouter: BaseRouter<UIViewController>, StackNavigation {
             setupDelegateIfNeeded(on: nav)
             if let rootIndex = nav.viewControllers.firstIndex(of: oldRoot) {
                 let nextNavigationStack = Array(nav.viewControllers.prefix(upTo: rootIndex)) + items.map(\.viewController)
-                nav.setViewControllers(nextNavigationStack, animated: animated) { [weak self] in
-                    self?.syncChildRouterItems()
-                }
+                nav.setViewControllers(nextNavigationStack, animated: animated, completion: nil)
             }
         }
         syncChildRouterItems()
