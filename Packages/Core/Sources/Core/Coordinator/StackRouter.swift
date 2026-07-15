@@ -1,7 +1,15 @@
 import UIKit
 
+extension RouterProvider {
+    static func stack(
+        makeNavigationController: () -> UINavigationController = { UINavigationController() }
+    ) -> StackNavigation & FlowLifecycleRouter {
+        StackRouter(makeNavigationController: makeNavigationController)
+    }
+}
+
 @MainActor
-final class StackRouter: BaseRouter<UINavigationController> {
+private final class StackRouter: BaseRouter<UINavigationController> {
 
     init(makeNavigationController: () -> UINavigationController = { UINavigationController() }) {
         let nav = makeNavigationController()
@@ -12,7 +20,7 @@ final class StackRouter: BaseRouter<UINavigationController> {
     
     // MARK: - Private members
 
-    private func syncChildRouterItems(with newStack: [UIViewController]) {
+    func syncChildRouterItems(with newStack: [UIViewController]) {
         let updatedItems = newStack.map { vc in
             if let existing = childRouterItems.first(where: { $0.isWrapping(vc) }) {
                 return existing
@@ -30,38 +38,38 @@ extension StackRouter: StackNavigation {
     }
     
     func setRoot(_ item: RouterItem, animated: Bool) {
-        parent.setViewControllers([item.viewController], animated: animated, completion: nil)
-        syncChildRouterItems(with: parent.viewControllers)
+        parentViewController.setViewControllers([item.viewController], animated: animated, completion: nil)
+        syncChildRouterItems(with: parentViewController.viewControllers)
     }
 
     func push(_ item: RouterItem, animated: Bool, completion: (() -> Void)?) {
-        let shouldAnimate = parent.viewControllers.isEmpty ? false : animated
-        parent.pushViewController(item.viewController, animated: shouldAnimate, completion: completion)
-        syncChildRouterItems(with: parent.viewControllers)
+        let shouldAnimate = parentViewController.viewControllers.isEmpty ? false : animated
+        parentViewController.pushViewController(item.viewController, animated: shouldAnimate, completion: completion)
+        syncChildRouterItems(with: parentViewController.viewControllers)
     }
 
     func pop(animated: Bool, completion: (() -> Void)?) {
-        parent.popViewController(animated: animated, completion: completion)
-        syncChildRouterItems(with: parent.viewControllers)
+        parentViewController.popViewController(animated: animated, completion: completion)
+        syncChildRouterItems(with: parentViewController.viewControllers)
     }
 
     func popToRoot(animated: Bool, completion: (() -> Void)?) {
-        parent.popToRootViewController(animated: animated, completion: completion)
-        syncChildRouterItems(with: parent.viewControllers)
+        parentViewController.popToRootViewController(animated: animated, completion: completion)
+        syncChildRouterItems(with: parentViewController.viewControllers)
     }
 
     func popTo(_ item: RouterItem, animated: Bool, completion: (() -> Void)?) {
-        guard parent.viewControllers.contains(item.viewController) else {
+        guard parentViewController.viewControllers.contains(item.viewController) else {
             completion?()
             return
         }
-        parent.popToViewController(item.viewController, animated: animated, completion: completion)
-        syncChildRouterItems(with: parent.viewControllers)
+        parentViewController.popToViewController(item.viewController, animated: animated, completion: completion)
+        syncChildRouterItems(with: parentViewController.viewControllers)
     }
 
     func setStack(_ items: [RouterItem], animated: Bool) {
-        parent.setViewControllers(items.map(\.viewController), animated: animated, completion: nil)
-        syncChildRouterItems(with: parent.viewControllers)
+        parentViewController.setViewControllers(items.map(\.viewController), animated: animated, completion: nil)
+        syncChildRouterItems(with: parentViewController.viewControllers)
     }
 }
 
@@ -71,6 +79,6 @@ extension StackRouter: UINavigationControllerDelegate {
         didShow viewController: UIViewController,
         animated: Bool
     ) {
-        syncChildRouterItems(with: parent.viewControllers)
+        syncChildRouterItems(with: parentViewController.viewControllers)
     }
 }

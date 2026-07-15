@@ -7,18 +7,24 @@ typealias SwitchTransitionHandler = @MainActor @Sendable (
     _ completion: @escaping @MainActor @Sendable () -> Void
 ) -> Bool
 
+extension RouterProvider {
+    static func `switch`() -> SwitchNavigation & FlowLifecycleRouter {
+        SwitchRouter()
+    }
+}
+
 @MainActor
-final class SwitchRouter: BaseRouter<UIViewController>, SwitchNavigation {
+private final class SwitchRouter: BaseRouter<UIViewController>, SwitchNavigation {
     var rootViewController: UIViewController? {
-        subclassParentRouterItem?.viewController
+        parentRouterItem?.viewController
     }
 
     var currentItem: RouterItem? {
-        subclassParentRouterItem
+        parentRouterItem
     }
 
-    private var oldContentRetainers: Set<UIViewController> = []
-    private var transitionHandler: SwitchTransitionHandler?
+    var oldContentRetainers: Set<UIViewController> = []
+    var transitionHandler: SwitchTransitionHandler?
 
     func setTransitionHandler(_ handler: SwitchTransitionHandler?) {
         self.transitionHandler = handler
@@ -46,7 +52,7 @@ final class SwitchRouter: BaseRouter<UIViewController>, SwitchNavigation {
         }
     }
 
-    private func performTransition(
+    func performTransition(
         from oldVC: UIViewController,
         to newVC: UIViewController,
         animated: Bool,
@@ -88,7 +94,7 @@ final class SwitchRouter: BaseRouter<UIViewController>, SwitchNavigation {
         completion()
     }
 
-    private func transitionInWindow(
+    func transitionInWindow(
         _ window: UIWindow,
         to newVC: UIViewController,
         animated: Bool,

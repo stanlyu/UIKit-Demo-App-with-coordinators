@@ -35,7 +35,7 @@ public enum FlowBuilder {
         ) -> Coordinator
     ) -> CreatedFlow<Coordinator>
     where Coordinator: BaseCoordinator<any StackNavigation, Composer.Route>, Composer: Composing {
-        let router: any StackNavigation & FlowLifecycleRouter = StackRouter(makeNavigationController: makeNavigationController)
+        let router = RouterProvider.stack(makeNavigationController: makeNavigationController)
         let coordinator = makeCoordinator(router, composer)
 
         let flowNodesManager = FlowNodesManager(coordinator: coordinator, attachmentStore: attachmentStore)
@@ -82,7 +82,7 @@ public enum FlowBuilder {
         ) -> Coordinator
     ) -> CreatedFlow<Coordinator>
     where Coordinator: BaseCoordinator<any TabsNavigation, Composer.Route>, Composer: Composing {
-        let router: any TabsNavigation & FlowLifecycleRouter = TabsRouter(makeTabBarController: makeTabBarController)
+        let router = RouterProvider.tabs(makeTabBarController: makeTabBarController)
         let coordinator = makeCoordinator(router, composer)
 
         let actualManager = FlowNodesManager(coordinator: coordinator, attachmentStore: attachmentStore)
@@ -122,7 +122,7 @@ public enum FlowBuilder {
         ) -> Coordinator
     ) -> CreatedFlow<Coordinator>
     where Coordinator: BaseCoordinator<any StackNavigation, Composer.Route>, Composer: Composing {
-        let router: any StackNavigation & FlowLifecycleRouter = InlineRouter()
+        let router = RouterProvider.inline()
         let coordinator = makeCoordinator(router, composer)
 
         let flowNodesManager = FlowNodesManager(coordinator: coordinator, attachmentStore: attachmentStore)
@@ -163,7 +163,7 @@ public enum FlowBuilder {
         ) -> Coordinator
     ) -> CreatedFlow<Coordinator>
     where Coordinator: BaseCoordinator<any SwitchNavigation, Composer.Route>, Composer: Composing {
-        let router: any SwitchNavigation & FlowLifecycleRouter = SwitchRouter()
+        let router = RouterProvider.switch()
         let coordinator = makeCoordinator(router, composer)
 
         let flowNodesManager = FlowNodesManager(coordinator: coordinator, attachmentStore: attachmentStore)

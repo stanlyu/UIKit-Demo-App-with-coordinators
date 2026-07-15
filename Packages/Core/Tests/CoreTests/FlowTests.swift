@@ -95,7 +95,7 @@ struct StackRouterTests {
         let manager = FlowNodesManager(coordinator: coordinator, attachmentStore: store)
         
         let nav = UINavigationController()
-        let router = StackRouter(makeNavigationController: { nav })
+        let router = RouterProvider.stack(makeNavigationController: { nav })
         router.setNodesManager(manager)
         manager.attach(to: nav)
         
@@ -125,7 +125,7 @@ struct InlineRouterTests {
         let manager = FlowNodesManager(coordinator: coordinator, attachmentStore: store)
         
         let nav = UINavigationController()
-        let router = InlineRouter()
+        let router = RouterProvider.inline()
         router.setNodesManager(manager)
         
         let item1 = RouterItem(UIViewController())
@@ -133,7 +133,7 @@ struct InlineRouterTests {
         
         // Встраиваем в навигейшн
         nav.setViewControllers([item1.viewController], animated: false)
-        router.updateParent(item1)
+        router.setRoot(item1, animated: false)
         
         #expect(router.items.count == 1)
         #expect(router.items.first?.viewController === item1.viewController)
@@ -155,7 +155,7 @@ struct TabsRouterTests {
         let manager = FlowNodesManager(coordinator: coordinator, attachmentStore: store)
         
         let tabController = UITabBarController()
-        let router = TabsRouter(makeTabBarController: { tabController })
+        let router = RouterProvider.tabs(makeTabBarController: { tabController })
         router.setNodesManager(manager)
         
         let item1 = RouterItem(UIViewController())
@@ -178,7 +178,7 @@ struct SwitchRouterTests {
         let coordinator = NSObject()
         let manager = FlowNodesManager(coordinator: coordinator, attachmentStore: store)
         
-        let router = SwitchRouter()
+        let router = RouterProvider.switch()
         router.setNodesManager(manager)
         
         let item1 = RouterItem(UIViewController())
