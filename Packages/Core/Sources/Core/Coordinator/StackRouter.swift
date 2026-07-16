@@ -11,9 +11,9 @@ extension RouterProvider {
     }
 }
 
-/// Роутер стековой навигации на базе `UINavigationController`. Подписывается на
-/// событие `didShow`, чтобы держать дочерние элементы в синхронизации с реальным
-/// стеком контроллеров (включая системное «назад» и свайп-back).
+// Роутер стековой навигации на базе `UINavigationController`. Подписывается на
+// событие `didShow`, чтобы держать дочерние элементы в синхронизации с реальным
+// стеком контроллеров (включая системное «назад» и свайп-back).
 @MainActor
 private final class StackRouter: BaseRouter<UINavigationController> {
 

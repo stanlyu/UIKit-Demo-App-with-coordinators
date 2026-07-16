@@ -16,7 +16,7 @@ import ObjectiveC
 ///
 /// # Как dispatcher удерживается в свойстве `delegate`
 ///
-/// Слот `delegate` хранится слабо, поэтому dispatcher нельзя держать только
+/// Свойство `delegate` хранится слабо, поэтому dispatcher нельзя держать только
 /// через него — иначе он освободится сразу после создания. Решение состоит из
 /// двух независимых механизмов:
 ///
@@ -24,7 +24,7 @@ import ObjectiveC
 ///   перехват любой установки и сброса делегата ровно в момент вызова.
 ///   Перехватив setter, dispatcher перерегистрирует внешний делегат и вернёт
 ///   себя значением свойства `delegate`, сохранив внутреннего наблюдателя. Это закрывает ситуации
-///   `nav.delegate = чужойОбъект` и `nav.delegate = nil`.
+///   `nav.delegate = externalDelegate` и `nav.delegate = nil`.
 /// - **Удержание через associated object** — dispatcher дополнительно
 ///   удерживается через `objc_setAssociatedObject(...RETAIN_NONATOMIC)` на
 ///   самом `navigationController`, поэтому он живёт ровно столько, сколько
@@ -34,7 +34,7 @@ import ObjectiveC
 ///
 /// Есть альтернатива — наблюдение через KVO, — но она не подходит: `UIKit`
 /// официально не поддерживает KVO для свойства `delegate`, такое наблюдение
-/// нестабильно. Подклассирование `UINavigationController` тоже не годится:
+/// нестабильно. Наследование `UINavigationController` тоже не годится:
 /// навигационный контроллер в ряде сценариев создаётся внешним кодом и
 /// приходит уже готовым, поэтому требовать конкретный подкласс невозможно.
 /// Method swizzling `setDelegate:` — единственный механизм, дающий
@@ -55,9 +55,10 @@ import ObjectiveC
 ///   дерево flow-инстансов продолжает обновляться (события `didShow` после
 ///   системного «назад» и свайпа-back). Чтобы полностью убрать конкретного
 ///   наблюдателя, используйте `removeDelegateIfNeeded(_:)`, а не присваивание
-///   `nil`. Аналогично, после `nav.delegate = чужойОбъект` свойство читается
-///   как dispatcher (не как чужой объект): чужой объект получает события как
-///   внешний делегат, а свойство `delegate` по-прежнему содержит dispatcher.
+///   `nil`. То же самое после `nav.delegate = externalDelegate`: свойство
+///   `delegate` будет содержать dispatcher, а не externalDelegate. При этом
+///   externalDelegate всё равно получает события — как внешний делегат,
+///   зарегистрированный dispatcher'ом.
 ///
 /// # Тестируемость
 ///
@@ -82,7 +83,7 @@ final class NavigationControllerDelegateDispatcher: NSObject {
 
     // MARK: - Associated object storage
 
-    /// Ключ для удержания dispatcher через associated object на navigation controller.
+    // Ключ для удержания dispatcher через associated object на navigation controller.
     fileprivate nonisolated(unsafe) static var dispatcherAssociationKey: UInt8 = 0
 
     /// Устанавливает dispatcher на `navigationController` и удерживает его через
@@ -119,7 +120,7 @@ final class NavigationControllerDelegateDispatcher: NSObject {
         return dispatcher
     }
 
-    /// Достаёт dispatcher из associated object, не устанавливая новый.
+    // Достаёт dispatcher из associated object, не устанавливая новый.
     private static func currentDispatcher(
         for navigationController: UINavigationController
     ) -> NavigationControllerDelegateDispatcher? {
@@ -212,9 +213,9 @@ final class NavigationControllerDelegateDispatcher: NSObject {
 
     // MARK: - Dispatch ordering
 
-    /// Текущий внешний делегат, если он ещё жив. Окно в массив `delegates`:
-    /// отдельное хранилище не нужно, т.к. внешний делегат там в единственном
-    /// экземпляре.
+    // Текущий внешний делегат, если он ещё жив. Окно в массив `delegates`:
+    // отдельное хранилище не нужно, т.к. внешний делегат там в единственном
+    // экземпляре.
     private func currentExternalDelegate() -> (any UINavigationControllerDelegate)? {
         delegates
             .first { $0.context == .external && $0.object != nil }?
@@ -354,22 +355,22 @@ private enum DelegateDispatchOrder {
 
 // MARK: - setDelegate swizzling
 
-extension NavigationControllerDelegateDispatcher {
-    /// Токен одноразовости swizzling (эквивалент dispatch_once).
-    ///
-    /// `static let` инициализируется потокобезопасно и ровно один раз на процесс.
-    /// После первой инициализации `ensureSetDelegateSwizzled()` обмена IMP больше нет.
-    private static let swizzleToken: Void = {
+private extension NavigationControllerDelegateDispatcher {
+    // Токен одноразовости swizzling (эквивалент dispatch_once).
+    //
+    // `static let` инициализируется потокобезопасно и ровно один раз на процесс.
+    // После первой инициализации `ensureSetDelegateSwizzled()` обмена IMP больше нет.
+    static let swizzleToken: Void = {
         swizzleSetDelegate()
     }()
 
-    /// Гарантирует, что `setDelegate:` перехвачен ровно один раз.
-    private static func ensureSetDelegateSwizzled() {
+    // Гарантирует, что `setDelegate:` перехвачен ровно один раз.
+    static func ensureSetDelegateSwizzled() {
         _ = swizzleToken
     }
 
-    /// Обменивает IMP `setDelegate:` и обёртки `fl_setDelegate(_:)`.
-    private static func swizzleSetDelegate() {
+    // Обменивает IMP `setDelegate:` и обёртки `fl_setDelegate(_:)`.
+    static func swizzleSetDelegate() {
         let originalSelector = #selector(setter: UINavigationController.delegate)
         let swizzledSelector = #selector(UINavigationController.fl_setDelegate(_:))
 
@@ -383,14 +384,14 @@ extension NavigationControllerDelegateDispatcher {
     }
 }
 
-/// Swizzle-обёртка над `setDelegate:`.
-///
-/// После обмена IMP становится реализацией `setDelegate:`. Достаёт dispatcher из
-/// associated object и делегирует решение методу `reconcile(externalDelegate:)`.
-/// Если для этого navigation controller dispatcher ещё не установлен, обёртка
-/// просто пробрасывает значение в оригинал, не вмешиваясь.
+// Swizzle-обёртка над `setDelegate:`.
+//
+// После обмена IMP становится реализацией `setDelegate:`. Достаёт dispatcher из
+// associated object и делегирует решение методу `reconcile(externalDelegate:)`.
+// Если для этого navigation controller dispatcher ещё не установлен, обёртка
+// просто пробрасывает значение в оригинал, не вмешиваясь.
 private extension UINavigationController {
-    /// Перехватывает любую установку `delegate` (включая `= nil`) после swizzling.
+    // Перехватывает любую установку `delegate` (включая `= nil`) после swizzling.
     @objc func fl_setDelegate(_ delegate: (any UINavigationControllerDelegate)?) {
         if let dispatcher = objc_getAssociatedObject(
             self,

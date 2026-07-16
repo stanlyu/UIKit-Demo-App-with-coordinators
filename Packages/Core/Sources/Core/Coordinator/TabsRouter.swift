@@ -9,7 +9,7 @@ extension RouterProvider {
     }
 }
 
-/// Роутер навигации по вкладкам: управляет набором вкладок и выбором активной.
+// Роутер навигации по вкладкам: управляет набором вкладок и выбором активной.
 @MainActor
 private final class TabsRouter: BaseRouter<UITabBarController> {
     init(makeTabBarController: () -> UITabBarController) {

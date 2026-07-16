@@ -9,6 +9,8 @@ import UIKit
 public struct RouterItem {
     let viewController: UIViewController
 
+    /// Создаёт элемент навигации, оборачивающий заданный контроллер экрана.
+    ///
     /// - Parameter viewController: Контроллер экрана, оборачиваемый в элемент.
     public init(_ viewController: UIViewController) {
         self.viewController = viewController
