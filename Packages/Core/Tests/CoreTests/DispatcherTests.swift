@@ -508,8 +508,8 @@ struct DispatcherSwizzlingCoexistenceTests {
 ///
 /// После обмена IMP селектор `setDelegate:` указывает на эту обёртку, а селектор
 /// `dispatcherTests_foreignSetDelegate:` — на предыдущую реализацию. Вызов
-/// `self.dispatcherTests_foreignSetDelegate(value)` — это НЕ рекурсия, а переход
-/// к предыдущему звену цепочки swizzling-ов.
+/// `self.dispatcherTests_foreignSetDelegate(value)` — переход к предыдущей
+/// реализации в цепочке swizzling.
 private extension UINavigationController {
     @objc func dispatcherTests_foreignSetDelegate(_ delegate: (any UINavigationControllerDelegate)?) {
         // Корректно делегируем предыдущей реализации цепочки swizzling-ов.

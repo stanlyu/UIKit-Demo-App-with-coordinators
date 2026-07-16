@@ -10,11 +10,11 @@ import ObjectiveC
 /// `didShow`, которое приходит после системной кнопки «назад» и после
 /// свайпа-back, чтобы дерево flow-инстансов оставалось синхронным. При этом
 /// делегат нельзя отбирать у внешнего кода. Dispatcher решает обе задачи: он
-/// встаёт в слот `delegate`, а сам направляет события одновременно внешнему
+/// встаёт значением свойства `delegate`, а сам направляет события одновременно внешнему
 /// делегату (зарегистрированному кодом приложения) и внутреннему наблюдателю
 /// фреймворка.
 ///
-/// # Как dispatcher удерживается в слоте
+/// # Как dispatcher удерживается в свойстве `delegate`
 ///
 /// Слот `delegate` хранится слабо, поэтому dispatcher нельзя держать только
 /// через него — иначе он освободится сразу после создания. Решение состоит из
@@ -23,12 +23,12 @@ import ObjectiveC
 /// - **Перехват `setDelegate:` (method swizzling)** — даёт детерминированный
 ///   перехват любой установки и сброса делегата ровно в момент вызова.
 ///   Перехватив setter, dispatcher перерегистрирует внешний делегат и вернёт
-///   себя в слот, сохранив внутреннего наблюдателя. Это закрывает ситуации
+///   себя значением свойства `delegate`, сохранив внутреннего наблюдателя. Это закрывает ситуации
 ///   `nav.delegate = чужойОбъект` и `nav.delegate = nil`.
 /// - **Удержание через associated object** — dispatcher дополнительно
 ///   удерживается через `objc_setAssociatedObject(...RETAIN_NONATOMIC)` на
 ///   самом `navigationController`, поэтому он живёт ровно столько, сколько
-///   навигационный контроллер, и не освобождается из-за слабого слота.
+///   навигационный контроллер, и не освобождается из-за того, что свойство `delegate` слабое.
 ///
 /// # Почему swizzling, а не альтернативы
 ///
@@ -48,7 +48,7 @@ import ObjectiveC
 /// внутреннего наблюдателя.
 ///
 /// - Important: после `nav.delegate = nil` свойство `delegate` **не**
-///   читается как `nil` — обёртка возвращает dispatcher обратно в слот.
+///   читается как `nil` — обёртка снова делает dispatcher значением свойства `delegate`.
 ///   Поэтому `nav.delegate` читается как `NavigationControllerDelegateDispatcher`,
 ///   а проверка «делегат снят» через `nav.delegate == nil` всегда ложна. Это
 ///   сознательное решение: так фреймворк сохраняет внутреннего наблюдателя, и
@@ -57,7 +57,7 @@ import ObjectiveC
 ///   наблюдателя, используйте `removeDelegateIfNeeded(_:)`, а не присваивание
 ///   `nil`. Аналогично, после `nav.delegate = чужойОбъект` свойство читается
 ///   как dispatcher (не как чужой объект): чужой объект получает события как
-///   внешний делегат, а слот занят dispatcher'ом.
+///   внешний делегат, а свойство `delegate` по-прежнему содержит dispatcher.
 ///
 /// # Тестируемость
 ///
@@ -86,14 +86,14 @@ final class NavigationControllerDelegateDispatcher: NSObject {
     fileprivate nonisolated(unsafe) static var dispatcherAssociationKey: UInt8 = 0
 
     /// Устанавливает dispatcher на `navigationController` и удерживает его через
-    /// associated object, чтобы он пережил слабый слот `delegate`.
+    /// associated object, чтобы он пережил слабое свойство `delegate`.
     ///
     /// Если dispatcher уже установлен — возвращает существующий. Существующий
     /// внешний делегат (если был) регистрируется как `.external`.
     ///
     /// - Parameter navigationController: Навигационный контроллер, для которого
     ///   включается перехват делегата.
-    /// - Returns: Dispatcher, установленный в слот `delegate`.
+    /// - Returns: Dispatcher, ставший значением свойства `delegate`.
     static func install(on navigationController: UINavigationController) -> NavigationControllerDelegateDispatcher {
         ensureSetDelegateSwizzled()
 
@@ -103,7 +103,7 @@ final class NavigationControllerDelegateDispatcher: NSObject {
 
         let dispatcher = NavigationControllerDelegateDispatcher()
         // Dispatcher удерживается через associated object, чтобы пережить
-        // слабый слот delegate и жить столько же, сколько navigation controller.
+        // слабое свойство delegate и жить столько же, сколько navigation controller.
         objc_setAssociatedObject(
             navigationController,
             &Self.dispatcherAssociationKey,
@@ -113,7 +113,7 @@ final class NavigationControllerDelegateDispatcher: NSObject {
         if let existingDelegate = navigationController.delegate {
             dispatcher.addDelegate(existingDelegate, category: .external)
         }
-        // Устанавливаем dispatcher в слот через оригинальный setter (после обмена
+        // Делаем dispatcher значением свойства delegate через оригинальный setter (после обмена
         // IMP это прямой вызов UIKit, без повторного входа в обёртку).
         navigationController.fl_setDelegate(dispatcher)
         return dispatcher
@@ -177,11 +177,11 @@ final class NavigationControllerDelegateDispatcher: NSObject {
     /// Вынесен отдельно от swizzling, чтобы логику регистрации и замены
     /// внешнего делегата можно было тестировать без перехвата. Метод не
     /// записывает значение в свойство `delegate` напрямую — он только обновляет
-    /// внутренний список делегатов. Установка итогового значения в слот остаётся
+    /// внутренний список делегатов. Запись итогового значения в свойство `delegate` остаётся
     /// ответственностью swizzle-обёртки.
     ///
     /// - Parameter externalDelegate: Делегат, переданный внешним кодом в `delegate`.
-    /// - Returns: Значение, которое следует поместить в слот `delegate` (всегда
+    /// - Returns: Значение, которое следует записать в свойство `delegate` (всегда
     ///   сам dispatcher, чтобы наблюдение за навигацией продолжалось).
     ///
     /// - Note: Метод помечен `internal` и существует отдельно от обёртки только
@@ -204,7 +204,7 @@ final class NavigationControllerDelegateDispatcher: NSObject {
             removeDelegate(previous)
         }
 
-        // Dispatcher возвращается в слот: механизм координаторов продолжает
+        // Dispatcher снова становится значением свойства delegate: механизм координаторов продолжает
         // направлять события и внешнему, и внутреннему делегатам даже после
         // nav.delegate = nil.
         return self
@@ -397,7 +397,7 @@ private extension UINavigationController {
             &NavigationControllerDelegateDispatcher.dispatcherAssociationKey
         ) as? NavigationControllerDelegateDispatcher {
             // Dispatcher установлен: принимаем решение через чистую логику и
-            // возвращаем dispatcher в слот.
+            // снова делаем dispatcher значением свойства delegate.
             let resolved = dispatcher.reconcile(externalDelegate: delegate)
             // Вызов оригинального setter'а (после обмена — это реализация UIKit).
             self.fl_setDelegate(resolved)
