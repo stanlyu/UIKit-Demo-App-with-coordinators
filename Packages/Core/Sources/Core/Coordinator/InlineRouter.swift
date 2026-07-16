@@ -14,7 +14,7 @@ private final class InlineRouter: BaseRouter<UIViewController> {
         
         if let nav = parentViewController.navigationController,
            let rootIndex = nav.viewControllers.firstIndex(of: rootVC) {
-            nav.addDelegateIfNeeded(self, category: .instance)
+            nav.addDelegateIfNeeded(self, category: .internal)
             // В дочерние элементы складываем всё, что идет ПОСЛЕ rootVC
             currentStack = Array(nav.viewControllers.suffix(from: rootIndex + 1))
         } else {
@@ -43,7 +43,7 @@ extension InlineRouter: StackNavigation {
         
         if let oldRoot,
            let nav = oldRoot.navigationController {
-            nav.addDelegateIfNeeded(self, category: .instance)
+            nav.addDelegateIfNeeded(self, category: .internal)
             if let rootIndex = nav.viewControllers.firstIndex(of: oldRoot) {
                 let nextNavigationStack = Array(nav.viewControllers.prefix(upTo: rootIndex)) + [item.viewController]
                 nav.setViewControllers(nextNavigationStack, animated: animated, completion: nil)
@@ -58,7 +58,7 @@ extension InlineRouter: StackNavigation {
             completion?()
             return
         }
-        nav.addDelegateIfNeeded(self, category: .instance)
+        nav.addDelegateIfNeeded(self, category: .internal)
         nav.pushViewController(item.viewController, animated: animated, completion: completion)
         syncChildRouterItems()
     }
@@ -69,7 +69,7 @@ extension InlineRouter: StackNavigation {
             completion?()
             return
         }
-        nav.addDelegateIfNeeded(self, category: .instance)
+        nav.addDelegateIfNeeded(self, category: .internal)
         guard nav.topViewController !== rootVC else {
             assertionFailure("InlineRouter не может извлечь свой корневой контент.")
             completion?()
@@ -91,7 +91,7 @@ extension InlineRouter: StackNavigation {
             completion?()
             return
         }
-        nav.addDelegateIfNeeded(self, category: .instance)
+        nav.addDelegateIfNeeded(self, category: .internal)
         guard targetIndex >= rootIndex else {
             assertionFailure("InlineRouter не может выполнять навигацию за пределами своего flow-стека.")
             completion?()
@@ -108,7 +108,7 @@ extension InlineRouter: StackNavigation {
         
         if let oldRoot,
            let nav = oldRoot.navigationController {
-            nav.addDelegateIfNeeded(self, category: .instance)
+            nav.addDelegateIfNeeded(self, category: .internal)
             if let rootIndex = nav.viewControllers.firstIndex(of: oldRoot) {
                 let nextNavigationStack = Array(nav.viewControllers.prefix(upTo: rootIndex)) + items.map(\.viewController)
                 nav.setViewControllers(nextNavigationStack, animated: animated, completion: nil)

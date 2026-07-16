@@ -15,7 +15,7 @@ private final class StackRouter: BaseRouter<UINavigationController> {
         let nav = makeNavigationController()
         super.init()
         updateParent(RouterItem(nav))
-        nav.addDelegateIfNeeded(self, category: .instance)
+        nav.addDelegateIfNeeded(self, category: .internal)
     }
     
     // MARK: - Private members

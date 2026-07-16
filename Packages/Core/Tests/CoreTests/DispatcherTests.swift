@@ -107,8 +107,8 @@ struct NavigationControllerDelegateDispatcherTests {
         let dispatcher = NavigationControllerDelegateDispatcher()
         let application = RecordingDelegate()
         let instance = RecordingDelegate()
-        dispatcher.addDelegate(application, category: .application)
-        dispatcher.addDelegate(instance, category: .instance)
+        dispatcher.addDelegate(application, category: .external)
+        dispatcher.addDelegate(instance, category: .internal)
 
         let nav = UINavigationController()
         let shown = UIViewController()
@@ -147,8 +147,8 @@ struct NavigationControllerDelegateDispatcherTests {
         instance.didShowOrderLabel = "instance"
         // Намеренно регистрируем application раньше — порядок регистрации не должен
         // влиять на instanceFirst.
-        dispatcher.addDelegate(application, category: .application)
-        dispatcher.addDelegate(instance, category: .instance)
+        dispatcher.addDelegate(application, category: .external)
+        dispatcher.addDelegate(instance, category: .internal)
 
         let nav = UINavigationController()
         dispatcher.navigationController(nav, didShow: UIViewController(), animated: false)
@@ -174,8 +174,8 @@ struct NavigationControllerDelegateDispatcherTests {
         let dispatcher = NavigationControllerDelegateDispatcher()
         let first = RecordingDelegate()
         let second = RecordingDelegate()
-        dispatcher.addDelegate(first, category: .instance)
-        dispatcher.addDelegate(second, category: .application)
+        dispatcher.addDelegate(first, category: .internal)
+        dispatcher.addDelegate(second, category: .external)
 
         let nav = UINavigationController()
         dispatcher.navigationController(nav, willShow: UIViewController(), animated: false)
@@ -192,8 +192,8 @@ struct NavigationControllerDelegateDispatcherTests {
         let application = RecordingDelegate()
         application.stubbedAnimator = StubAnimator()
         let instance = RecordingDelegate()
-        dispatcher.addDelegate(instance, category: .instance)
-        dispatcher.addDelegate(application, category: .application)
+        dispatcher.addDelegate(instance, category: .internal)
+        dispatcher.addDelegate(application, category: .external)
 
         let nav = UINavigationController()
         let animator = dispatcher.navigationController(
@@ -218,7 +218,7 @@ struct NavigationControllerDelegateDispatcherTests {
         do {
             let leaking = RecordingDelegate()
             weakLeakingDelegate = leaking
-            dispatcher.addDelegate(leaking, category: .application)
+            dispatcher.addDelegate(leaking, category: .external)
             // Пока жив — получает события.
             let nav = UINavigationController()
             dispatcher.navigationController(nav, didShow: UIViewController(), animated: false)
@@ -232,7 +232,7 @@ struct NavigationControllerDelegateDispatcherTests {
         // После cleanup новый делегат должен получить событие без мёртвых помех,
         // а мёртвый — не должен учитываться.
         let survivor = RecordingDelegate()
-        dispatcher.addDelegate(survivor, category: .application)
+        dispatcher.addDelegate(survivor, category: .external)
         let nav = UINavigationController()
         dispatcher.navigationController(nav, didShow: UIViewController(), animated: false)
         #expect(survivor.calls.count == 1)
@@ -245,9 +245,9 @@ struct NavigationControllerDelegateDispatcherTests {
         let survivor = RecordingDelegate()
         do {
             let temporary = RecordingDelegate()
-            dispatcher.addDelegate(temporary, category: .application)
+            dispatcher.addDelegate(temporary, category: .external)
         }
-        dispatcher.addDelegate(survivor, category: .instance)
+        dispatcher.addDelegate(survivor, category: .internal)
         let nav = UINavigationController()
         // Не падает; survivor получает событие.
         dispatcher.navigationController(nav, didShow: UIViewController(), animated: false)
@@ -256,8 +256,7 @@ struct NavigationControllerDelegateDispatcherTests {
 
     // MARK: - reconcile (чистая логика, без swizzling)
 
-    /// `reconcile(externalDelegate: foreign)` регистрирует внешний делегат как
-    /// `.application` и сохраняет ссылку как lastApplicationDelegate.
+    /// `reconcile(externalDelegate: foreign)` регистрирует внешний делегат.
     @Test func reconcileRegistersForeignDelegateAsApplication() {
         let dispatcher = NavigationControllerDelegateDispatcher()
         let foreign = RecordingDelegate()
@@ -266,39 +265,35 @@ struct NavigationControllerDelegateDispatcherTests {
 
         // Dispatcher возвращается в слот.
         #expect(resolved === dispatcher)
-        // foreign теперь получает события application-категории.
+        // foreign теперь получает события внешнего делегата.
         let nav = UINavigationController()
         dispatcher.navigationController(nav, didShow: UIViewController(), animated: false)
         #expect(foreign.calls.count == 1)
-        // lastApplicationDelegate обновлён.
-        #expect(dispatcher.lastApplicationDelegate === foreign)
     }
 
-    /// `reconcile(externalDelegate: nil)` снимает прежнего `.application`,
-    /// но не трогает `.instance`-наблюдатель — дерево должно обновляться.
+    /// `reconcile(externalDelegate: nil)` снимает прежнего внешнего делегата,
+    /// но не трогает внутреннего наблюдателя — дерево должно обновляться.
     @Test func reconcileNilRemovesApplicationKeepsInstance() {
         let dispatcher = NavigationControllerDelegateDispatcher()
         let instance = RecordingDelegate()
-        dispatcher.addDelegate(instance, category: .instance)
+        dispatcher.addDelegate(instance, category: .internal)
 
         let foreign = RecordingDelegate()
         _ = dispatcher.reconcile(externalDelegate: foreign)
-        #expect(dispatcher.lastApplicationDelegate === foreign)
 
         // Сброс делегата.
         _ = dispatcher.reconcile(externalDelegate: nil)
 
-        #expect(dispatcher.lastApplicationDelegate == nil)
-        // foreign больше не получает события.
         let nav = UINavigationController()
+        // foreign больше не получает события.
         dispatcher.navigationController(nav, didShow: UIViewController(), animated: false)
         #expect(foreign.calls.isEmpty)
-        // .instance продолжает работать.
+        // .internal продолжает работать.
         #expect(instance.calls.count == 1)
     }
 
-    /// Замена внешнего делегата: прежний `.application` снимается, новый —
-    /// регистрируется. Одновременно активен только один application delegate.
+    /// Замена внешнего делегата: прежний снимается, новый — регистрируется.
+    /// Одновременно активен только один внешний делегат.
     @Test func reconcileReplacesApplicationDelegate() {
         let dispatcher = NavigationControllerDelegateDispatcher()
         let first = RecordingDelegate()
@@ -310,10 +305,9 @@ struct NavigationControllerDelegateDispatcherTests {
         let nav = UINavigationController()
         dispatcher.navigationController(nav, didShow: UIViewController(), animated: false)
 
-        // Только второй application delegate получает событие.
+        // Только второй внешний делегат получает событие.
         #expect(first.calls.isEmpty)
         #expect(second.calls.count == 1)
-        #expect(dispatcher.lastApplicationDelegate === second)
     }
 
     /// `reconcile(externalDelegate: dispatcher)` — проброс без действий:
@@ -321,16 +315,16 @@ struct NavigationControllerDelegateDispatcherTests {
     @Test func reconcileDispatcherItselfIsNoOp() {
         let dispatcher = NavigationControllerDelegateDispatcher()
         let instance = RecordingDelegate()
-        dispatcher.addDelegate(instance, category: .instance)
+        dispatcher.addDelegate(instance, category: .internal)
 
         let resolved = dispatcher.reconcile(externalDelegate: dispatcher)
 
         #expect(resolved === dispatcher)
-        // lastApplicationDelegate не становится dispatcher'ом.
-        #expect(dispatcher.lastApplicationDelegate == nil)
-        // instance продолжает работать.
+        // dispatcher не регистрируется как внешний делегат.
         let nav = UINavigationController()
         dispatcher.navigationController(nav, didShow: UIViewController(), animated: false)
+        // instance продолжает работать, а сам dispatcher получает событие ровно
+        // один раз (он не дублируется как внешний делегат).
         #expect(instance.calls.count == 1)
     }
 
@@ -356,7 +350,7 @@ struct NavigationControllerDelegateDispatcherTests {
     @Test func instanceObserverSurvivesApplicationDelegateChanges() {
         let dispatcher = NavigationControllerDelegateDispatcher()
         let instance = RecordingDelegate()
-        dispatcher.addDelegate(instance, category: .instance)
+        dispatcher.addDelegate(instance, category: .internal)
 
         let foreign = RecordingDelegate()
         _ = dispatcher.reconcile(externalDelegate: foreign)
@@ -388,7 +382,7 @@ struct NavigationControllerDelegateDispatcherTests {
 
         // Регистрируем instance-наблюдатель Core (как это делает StackRouter/InlineRouter).
         let instance = RecordingDelegate()
-        dispatcher.addDelegate(instance, category: .instance)
+        dispatcher.addDelegate(instance, category: .internal)
 
         // Внешний код назначает своего делегата через РЕАЛЬНЫЙ setter.
         let foreign = RecordingDelegate()

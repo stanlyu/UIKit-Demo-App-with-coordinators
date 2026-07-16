@@ -63,7 +63,7 @@ public final class FlowNode: AnyObject {
     }
 
     func adopt(_ child: FlowNode) {
-        if child === self { return }
+        guard child !== self else { return }
         child.parent?.removeChild(child)
         children.append(child)
         child.setParent(self)

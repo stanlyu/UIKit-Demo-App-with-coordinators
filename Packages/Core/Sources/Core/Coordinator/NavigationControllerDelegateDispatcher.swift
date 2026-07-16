@@ -5,124 +5,95 @@ import ObjectiveC
 
 /// Мультиплексор делегатов `UINavigationController`.
 ///
-/// `UINavigationController` хранит только одного `delegate`. `Core` нуждается в
-/// наблюдении за навигацией (в первую очередь — `didShow` после native back,
-/// чтобы синхронизировать дерево `FlowInstance`), но не должен отбирать
-/// делегат у прикладного кода. Dispatcher решает обе задачи: он встаёт в слот
-/// `delegate`, а сам маршрутизирует события одновременно внешним
-/// (`.application`) делегатам и внутреннему (`.instance`) наблюдателю `Core`.
+/// `UINavigationController` хранит только одного делегата, причём слабо.
+/// Механизму координаторов нужно наблюдать навигацию — прежде всего событие
+/// `didShow`, которое приходит после системной кнопки «назад» и после
+/// свайпа-back, чтобы дерево flow-инстансов оставалось синхронным. При этом
+/// делегат нельзя отбирать у внешнего кода. Dispatcher решает обе задачи: он
+/// встаёт в слот `delegate`, а сам направляет события одновременно внешнему
+/// делегату (зарегистрированному кодом приложения) и внутреннему наблюдателю
+/// фреймворка.
 ///
-/// # Проблема (P1) и двухслойная оборона
+/// # Как dispatcher удерживается в слоте
 ///
-/// Исторически dispatcher удерживался только как weak-значение свойства
-/// `delegate` (слот `UINavigationController` хранит `delegate` слабо). Это
-/// приводило к трём сценариям отказа:
+/// Слот `delegate` хранится слабо, поэтому dispatcher нельзя держать только
+/// через него — иначе он освободится сразу после создания. Решение состоит из
+/// двух независимых механизмов:
 ///
-/// 1. **Dispatcher освобождается ARC** — слот `delegate` обнуляется, `Core`
-///    перестаёт получать события (включая didShow → дерево не обновляется).
-/// 2. **`nav.delegate = foreignObject`** — внешний делегат вытесняет
-///    dispatcher из слота, внутренний `.instance`-наблюдатель теряет события.
-/// 3. **`nav.delegate = nil`** — снимается dispatcher целиком (вместе с
-///    `.instance`-наблюдателем), дерево координаторов не обновляется.
-///    Сюда же относится свайп-back между программными операциями: UIKit на
-///    время снимает/меняет делегата, и без перехвата `Core` теряет синхронизацию.
-///
-/// Решение состоит из двух независимых слоёв:
-///
-/// - **Method swizzling `UINavigationController.setDelegate:`** (основной
-///   механизм) — даёт детерминированный перехват установки/сброса `delegate`
-///   ровно в момент вызова. Перехватив setter, `Core` перерегистрирует
-///   внешний делегат как `.application` и вернёт dispatcher в слот, сохранив
-///   `.instance`-наблюдатель.
-/// - **Associated object retain** (второй слой) — dispatcher дополнительно
+/// - **Перехват `setDelegate:` (method swizzling)** — даёт детерминированный
+///   перехват любой установки и сброса делегата ровно в момент вызова.
+///   Перехватив setter, dispatcher перерегистрирует внешний делегат и вернёт
+///   себя в слот, сохранив внутреннего наблюдателя. Это закрывает ситуации
+///   `nav.delegate = чужойОбъект` и `nav.delegate = nil`.
+/// - **Удержание через associated object** — dispatcher дополнительно
 ///   удерживается через `objc_setAssociatedObject(...RETAIN_NONATOMIC)` на
-///   самом `navigationController`. Это закрывает освобждение ARC из сценария
-///   1 и снижает частоту вытеснения даже без swizzling.
+///   самом `navigationController`, поэтому он живёт ровно столько, сколько
+///   навигационный контроллер, и не освобождается из-за слабого слота.
 ///
 /// # Почему swizzling, а не альтернативы
 ///
-/// Исследование альтернатив выполнено и все они отклонены:
-///
-/// - **KVO** — `UIKit` не KVO-совместим: наблюдение `delegate` через KVO
-///   официально не поддерживается и нестабильно (framework полагается на
-///   частные механизмы уведомлений).
-/// - **Subclassing `UINavigationController`** — ломает `InlineRouter`, где
-///   навигационный контроллер приходит из внешнего кода (хост-приложение
-///   создаёт свой `UINavigationController`), и нарушает контракт
-///   `FlowBuilder.stack(makeNavigationController:)`, требующий произвольного
-///   `UINavigationController`.
-/// - **Сторонние фреймворки** — `XCoordinator` явно запрещает/конкурирует за
-///   контракт делегата; `RxFlow` вообще не опирается на `delegate`. Ни один
-///   не закрывает три сценария P1 одновременно.
-///
+/// Есть альтернатива — наблюдение через KVO, — но она не подходит: `UIKit`
+/// официально не поддерживает KVO для свойства `delegate`, такое наблюдение
+/// нестабильно. Подклассирование `UINavigationController` тоже не годится:
+/// навигационный контроллер в ряде сценариев создаётся внешним кодом и
+/// приходит уже готовым, поэтому требовать конкретный подкласс невозможно.
 /// Method swizzling `setDelegate:` — единственный механизм, дающий
-/// детерминированный перехват и в момент установки, и в момент сброса
-/// делегата, без ограничений на источник `UINavigationController`.
-///
-/// # Архитектура для тестируемости
-///
-/// Вся логика «что делать с новым делегатом» вынесена в чистый метод
-/// `reconcile(externalDelegate:)`, который не зависит от swizzling и может
-/// быть вызван напрямую из юнит-теста (см. `DispatcherReconcileTests`).
-/// Swizzle-обёртка `nav_core_setDelegate(_:)` остаётся тонкой: она лишь
-/// достаёт dispatcher из associated object, делегирует решение методу
-/// `reconcile` и пробрасывает итоговое значение в оригинальный setter.
+/// детерминированный перехват и установки, и сброса делегата, без ограничений
+/// на источник `UINavigationController`.
 ///
 /// # Контракт для внешнего кода
 ///
-/// Внешний код МОЖЕТ свободно выполнять `nav.delegate = myObject` и
-/// `nav.delegate = nil` — `Core` перехватит вызов, перерегистрирует
-/// делегат и сохранит внутренний `.instance`-наблюдатель. Тем не менее
-/// предпочтительный путь — регистрировать внешних делегатов через
-/// `addDelegateIfNeeded(_:category:)`: это явно выражает намерение и не
-/// зависит от swizzling.
+/// Внешний код может свободно выполнять `nav.delegate = myObject` и
+/// `nav.delegate = nil`: перехват зарегистрирует делегат и сохранит
+/// внутреннего наблюдателя.
 ///
-/// - Important (сюрприз для внешнего кода): после `nav.delegate = nil`
-///   свойство `delegate` **НЕ** читается как `nil` — обёртка возвращает
-///   dispatcher обратно в слот, поэтому `nav.delegate` читается как
-///   `NavigationControllerDelegateDispatcher`. Это сознательное решение:
-///   так `Core` сохраняет `.instance`-наблюдатель и дерево `FlowInstance`
-///   продолжает обновляться (didShow после native back). Проверять
-///   «делегат снят» через `nav.delegate == nil` бесполезно — условие
-///   ложно. Для **полной** отписки и удаления конкретного наблюдателя
-///   используйте `removeDelegateIfNeeded(_:)` (или
-///   `removeDelegate(_:)` напрямую у dispatcher), а не присваивание
-///   `nil` свойству `delegate`. Аналогично, после `nav.delegate = foreign`
-///   свойство читается как dispatcher (не как foreign): foreign получает
-///   события как `.application`, а слот занят dispatcher'ом.
+/// - Important: после `nav.delegate = nil` свойство `delegate` **не**
+///   читается как `nil` — обёртка возвращает dispatcher обратно в слот.
+///   Поэтому `nav.delegate` читается как `NavigationControllerDelegateDispatcher`,
+///   а проверка «делегат снят» через `nav.delegate == nil` всегда ложна. Это
+///   сознательное решение: так фреймворк сохраняет внутреннего наблюдателя, и
+///   дерево flow-инстансов продолжает обновляться (события `didShow` после
+///   системного «назад» и свайпа-back). Чтобы полностью убрать конкретного
+///   наблюдателя, используйте `removeDelegateIfNeeded(_:)`, а не присваивание
+///   `nil`. Аналогично, после `nav.delegate = чужойОбъект` свойство читается
+///   как dispatcher (не как чужой объект): чужой объект получает события как
+///   внешний делегат, а слот занят dispatcher'ом.
 ///
-/// # Ограничения и риски
+/// # Тестируемость
 ///
-/// - **Конфликт с другими либами**, которые также swizzle-ят
-///   `setDelegate:` (например, Firebase/Sentry/аналитика). Если несколько
-///   библиотур обменивают IMP одного селектора, порядок имеет значение.
-///   Обёртка `Core` идемпотентна относительно своих действий и корректно
-///   работает, даже если вызвана повторно с тем же делегатом.
-/// - **Одноразовость swizzling** гарантируется `static let`-токеном
-///   (`swizzleToken`) — обмен IMP выполняется ровно один раз на процесс.
-/// - **Префикс методов**: обёртка и внутренний API используют
-///   уникальный префикс `nav_core_`, чтобы минимизировать коллизию имён.
+/// Логика «что сделать с новым делегатом» вынесена в отдельный метод
+/// `reconcile(externalDelegate:)`, который не зависит от swizzling и может
+/// быть вызван напрямую, например из юнит-теста. Swizzle-обёртка остаётся
+/// тонкой: она достаёт dispatcher из associated object, делегирует решение
+/// методу `reconcile` и пробрасывает итоговое значение в оригинальный setter.
 @MainActor
 final class NavigationControllerDelegateDispatcher: NSObject {
     // MARK: - Types
 
+    /// Категория делегата, зарегистрированного в dispatcher.
     enum DelegateCategory {
-        /// Delegate, который приложение уже назначило на `UINavigationController`.
-        case application
-        /// Внутренний observer Core для cleanup дерева FlowInstance после native back.
-        case instance
+        /// Внешний делегат, назначенный на `UINavigationController` кодом
+        /// приложения. Одновременно активен максимум один такой делегат.
+        case external
+        /// Внутренний наблюдатель механизма координаторов: синхронизирует
+        /// дерево flow-инстансов после системного «назад» и свайпа-back.
+        case `internal`
     }
 
     // MARK: - Associated object storage
 
-    /// Ключ для удержания dispatcher через associated object на nav controller (второй слой обороны).
+    /// Ключ для удержания dispatcher через associated object на navigation controller.
     fileprivate nonisolated(unsafe) static var dispatcherAssociationKey: UInt8 = 0
 
     /// Устанавливает dispatcher на `navigationController` и удерживает его через
-    /// associated object (закрывает освобождение ARC из сценария P1.1).
+    /// associated object, чтобы он пережил слабый слот `delegate`.
     ///
-    /// Возвращает существующий dispatcher, если он уже установлен. Существующий
-    /// внешний делегат (если был) регистрируется как `.application`.
+    /// Если dispatcher уже установлен — возвращает существующий. Существующий
+    /// внешний делегат (если был) регистрируется как `.external`.
+    ///
+    /// - Parameter navigationController: Навигационный контроллер, для которого
+    ///   включается перехват делегата.
+    /// - Returns: Dispatcher, установленный в слот `delegate`.
     static func install(on navigationController: UINavigationController) -> NavigationControllerDelegateDispatcher {
         ensureSetDelegateSwizzled()
 
@@ -131,7 +102,8 @@ final class NavigationControllerDelegateDispatcher: NSObject {
         }
 
         let dispatcher = NavigationControllerDelegateDispatcher()
-        // Второй слой обороны: dispatcher живёт, пока жив nav controller.
+        // Dispatcher удерживается через associated object, чтобы пережить
+        // слабый слот delegate и жить столько же, сколько navigation controller.
         objc_setAssociatedObject(
             navigationController,
             &Self.dispatcherAssociationKey,
@@ -139,12 +111,11 @@ final class NavigationControllerDelegateDispatcher: NSObject {
             .OBJC_ASSOCIATION_RETAIN_NONATOMIC
         )
         if let existingDelegate = navigationController.delegate {
-            dispatcher.addDelegate(existingDelegate, category: .application)
-            dispatcher.lastApplicationDelegate = existingDelegate
+            dispatcher.addDelegate(existingDelegate, category: .external)
         }
-        // Устанавливаем dispatcher в слот через оригинальный setter (после обмена IMP
-        // это прямой вызов UIKit, без повторного входа в обёртку).
-        navigationController.nav_core_setDelegate(dispatcher)
+        // Устанавливаем dispatcher в слот через оригинальный setter (после обмена
+        // IMP это прямой вызов UIKit, без повторного входа в обёртку).
+        navigationController.fl_setDelegate(dispatcher)
         return dispatcher
     }
 
@@ -158,59 +129,63 @@ final class NavigationControllerDelegateDispatcher: NSObject {
         ) as? NavigationControllerDelegateDispatcher
     }
 
-    // MARK: - Public registration API
+    // MARK: - Registration API
 
+    /// Регистрирует делегат в dispatcher.
+    ///
+    /// Для категории `.external` одновременно активен максимум один делегат:
+    /// регистрация нового заменяет прежнего (он снимается автоматически).
+    ///
+    /// - Parameters:
+    ///   - delegate: Делегат навигационного контроллера.
+    ///   - category: Категория делегата; по умолчанию `.external`.
     func addDelegate(
         _ delegate: any UINavigationControllerDelegate,
-        category: DelegateCategory = .application
+        category: DelegateCategory = .external
     ) {
         removeReleasedDelegates()
+        // Инвариант: внешний делегат существует в единственном экземпляре.
+        // Регистрация нового заменяет прежнего.
+        if category == .external,
+           let existingExternal = currentExternalDelegate(),
+           existingExternal !== delegate {
+            removeDelegate(existingExternal)
+        }
         if !contains(delegate) {
             delegates.append(WeakNavigationControllerDelegate(delegate, context: category))
         }
     }
 
+    /// Удаляет конкретного делегата из dispatcher.
+    ///
+    /// - Parameter delegate: Делегат, который больше не должен получать события.
     func removeDelegate(_ delegate: any UINavigationControllerDelegate) {
         let delegateID = ObjectIdentifier(delegate as AnyObject)
         delegates.removeAll { $0.object == nil || $0.id == delegateID }
     }
 
-    /// Удаляет из списка мёртвые weak-делегаты. Точка для тестирования cleanup.
+    /// Удаляет из списка освобождённые слабые ссылки.
     func removeReleasedDelegates() {
         delegates.removeAll { $0.object == nil }
     }
 
     // MARK: - Reconciliation (чистая, тестируемая логика)
 
-    /// Последний зарегистрированный внешний (`.application`) делегат.
+    /// Решает, что сделать с делегатом, который внешний код только что записал в
+    /// `nav.delegate`.
     ///
-    /// Хранится слабо: как только внешний объект освобождается, `Core` не должен
-    /// его удерживать. Используется `reconcile`, чтобы понять, чем был прежний
-    /// `.application`, и при необходимости снять его.
-    weak var lastApplicationDelegate: (any UINavigationControllerDelegate)?
-
-    /// Чистая (без swizzling) логика решения «что делать с новым делегатом».
+    /// Вынесен отдельно от swizzling, чтобы логику регистрации и замены
+    /// внешнего делегата можно было тестировать без перехвата. Метод не
+    /// записывает значение в свойство `delegate` напрямую — он только обновляет
+    /// внутренний список делегатов. Установка итогового значения в слот остаётся
+    /// ответственностью swizzle-обёртки.
     ///
-    /// Вызывается swizzle-обёрткой `nav_core_setDelegate(_:)` после того, как
-    /// внешний код сделал `nav.delegate = newValue`. Метод не трогает сам слот
-    /// `delegate` — он только обновляет внутренний список делегатов
-    /// dispatcher'а. Установка итогового значения в слот — ответственность
-    /// обёртки.
+    /// - Parameter externalDelegate: Делегат, переданный внешним кодом в `delegate`.
+    /// - Returns: Значение, которое следует поместить в слот `delegate` (всегда
+    ///   сам dispatcher, чтобы наблюдение за навигацией продолжалось).
     ///
-    /// Контракт:
-    /// - `externalDelegate === self` (dispatcher сам) → никаких действий.
-    /// - `externalDelegate` — внешний объект → прежний `.application`
-    ///   (если был и отличается) снимается, новый регистрируется как
-    ///   `.application`, `lastApplicationDelegate` обновляется.
-    /// - `externalDelegate == nil` → прежний `.application` снимается,
-    ///   `lastApplicationDelegate` зануляется. `.instance`-наблюдатель не
-    ///   трогается: дерево координаторов должно продолжать обновляться.
-    ///
-    /// Возвращает значение, которое следует поместить в слот `delegate`:
-    /// - сам dispatcher (чтобы Core продолжал получать события);
-    /// - либо `externalDelegate` без изменений, если Core не инициализирован
-    ///   (этот путь обрабатывается обёрткой до вызова reconcile — здесь
-    ///   возвращается dispatcher).
+    /// - Note: Метод помечен `internal` и существует отдельно от обёртки только
+    ///   ради тестируемости — его вызывает swizzle-обёртка `fl_setDelegate(_:)`.
     @discardableResult
     func reconcile(externalDelegate: (any UINavigationControllerDelegate)?) -> any UINavigationControllerDelegate {
         // Dispatcher не конкурирует сам с собой.
@@ -218,25 +193,33 @@ final class NavigationControllerDelegateDispatcher: NSObject {
             return self
         }
 
-        // Снимаем прежнего .application, если он был.
-        if let previous = lastApplicationDelegate,
-           previous !== externalDelegate {
+        if let externalDelegate {
+            // Регистрируем внешний делегат; прежний заменяется автоматически
+            // (инвариант в addDelegate: одновременно максимум один .external).
+            addDelegate(externalDelegate, category: .external)
+        } else if let previous = currentExternalDelegate() {
+            // nav.delegate = nil снимает внешнего делегата. Внутренний
+            // наблюдатель не трогается — дерево flow-инстансов должно
+            // продолжать обновляться.
             removeDelegate(previous)
         }
 
-        if let externalDelegate {
-            // Регистрируем внешний делегат как .application.
-            addDelegate(externalDelegate, category: .application)
-            lastApplicationDelegate = externalDelegate
-        } else {
-            lastApplicationDelegate = nil
-        }
-        // Dispatcher возвращается в слот: Core продолжает мультиплексировать
-        // события между .application и .instance даже после nav.delegate = nil.
+        // Dispatcher возвращается в слот: механизм координаторов продолжает
+        // направлять события и внешнему, и внутреннему делегатам даже после
+        // nav.delegate = nil.
         return self
     }
 
     // MARK: - Dispatch ordering
+
+    /// Текущий внешний делегат, если он ещё жив. Окно в массив `delegates`:
+    /// отдельное хранилище не нужно, т.к. внешний делегат там в единственном
+    /// экземпляре.
+    private func currentExternalDelegate() -> (any UINavigationControllerDelegate)? {
+        delegates
+            .first { $0.context == .external && $0.object != nil }?
+            .object
+    }
 
     private func contains(_ delegate: any UINavigationControllerDelegate) -> Bool {
         let delegateID = ObjectIdentifier(delegate as AnyObject)
@@ -247,16 +230,18 @@ final class NavigationControllerDelegateDispatcher: NSObject {
         removeReleasedDelegates()
         switch order {
         case .registration:
-            // willShow остается в порядке регистрации: Core не меняет состояние дерева на willShow.
+            // willShow идёт в порядке регистрации: на этом событии дерево
+            // flow-инстансов не меняется, поэтому порядок доставки не важен.
             return delegates.compactMap(\.object)
-        case .instanceFirst:
-            // didShow сначала нужен Core: после native back application delegate
-            // должен читать уже обновленное дерево FlowInstance.
-            return activeDelegates(in: [.instance, .application])
-        case .applicationFirst:
-            // Анимации и ориентации принадлежат приложению, поэтому application delegate
-            // получает приоритет над instance observer-ом Core.
-            return activeDelegates(in: [.application, .instance])
+        case .internalFirst:
+            // didShow идёт «внутренний-наблюдатель-первым»: после системной
+            // кнопки «назад» и свайпа-back внешний делегат должен видеть уже
+            // обновлённое дерево flow-инстансов.
+            return activeDelegates(in: [.internal, .external])
+        case .externalFirst:
+            // Анимации и ориентации принадлежат приложению, поэтому внешний
+            // делегат опрашивается раньше внутреннего наблюдателя.
+            return activeDelegates(in: [.external, .internal])
         }
     }
 
@@ -293,7 +278,7 @@ extension NavigationControllerDelegateDispatcher: UINavigationControllerDelegate
         didShow viewController: UIViewController,
         animated: Bool
     ) {
-        for delegate in activeDelegates(orderedBy: .instanceFirst) {
+        for delegate in activeDelegates(orderedBy: .internalFirst) {
             delegate.navigationController?(navigationController, didShow: viewController, animated: animated)
         }
     }
@@ -304,7 +289,7 @@ extension NavigationControllerDelegateDispatcher: UINavigationControllerDelegate
         from fromVC: UIViewController,
         to toVC: UIViewController
     ) -> (any UIViewControllerAnimatedTransitioning)? {
-        for delegate in activeDelegates(orderedBy: .applicationFirst) {
+        for delegate in activeDelegates(orderedBy: .externalFirst) {
             if let animator = delegate.navigationController?(
                 navigationController,
                 animationControllerFor: operation,
@@ -321,7 +306,7 @@ extension NavigationControllerDelegateDispatcher: UINavigationControllerDelegate
         _ navigationController: UINavigationController,
         interactionControllerFor animationController: any UIViewControllerAnimatedTransitioning
     ) -> (any UIViewControllerInteractiveTransitioning)? {
-        for delegate in activeDelegates(orderedBy: .applicationFirst) {
+        for delegate in activeDelegates(orderedBy: .externalFirst) {
             if let interactionController = delegate.navigationController?(
                 navigationController,
                 interactionControllerFor: animationController
@@ -335,7 +320,7 @@ extension NavigationControllerDelegateDispatcher: UINavigationControllerDelegate
     func navigationControllerSupportedInterfaceOrientations(
         _ navigationController: UINavigationController
     ) -> UIInterfaceOrientationMask {
-        for delegate in activeDelegates(orderedBy: .applicationFirst) {
+        for delegate in activeDelegates(orderedBy: .externalFirst) {
             if let supportedOrientations = delegate.navigationControllerSupportedInterfaceOrientations?(
                 navigationController
             ) {
@@ -348,7 +333,7 @@ extension NavigationControllerDelegateDispatcher: UINavigationControllerDelegate
     func navigationControllerPreferredInterfaceOrientationForPresentation(
         _ navigationController: UINavigationController
     ) -> UIInterfaceOrientation {
-        for delegate in activeDelegates(orderedBy: .applicationFirst) {
+        for delegate in activeDelegates(orderedBy: .externalFirst) {
             if let preferredOrientation = delegate.navigationControllerPreferredInterfaceOrientationForPresentation?(
                 navigationController
             ) {
@@ -363,8 +348,8 @@ extension NavigationControllerDelegateDispatcher: UINavigationControllerDelegate
 
 private enum DelegateDispatchOrder {
     case registration
-    case instanceFirst
-    case applicationFirst
+    case internalFirst
+    case externalFirst
 }
 
 // MARK: - setDelegate swizzling
@@ -378,22 +363,15 @@ extension NavigationControllerDelegateDispatcher {
         swizzleSetDelegate()
     }()
 
-    /// Гарантирует, что `setDelegate:` свиззлен ровно один раз.
-    /// Вызывается из `install(on:)`, который всегда выполняется на main actor.
+    /// Гарантирует, что `setDelegate:` перехвачен ровно один раз.
     private static func ensureSetDelegateSwizzled() {
         _ = swizzleToken
     }
 
-    /// Обменивает IMP `setDelegate:` и обёртки `nav_core_setDelegate(_:)`.
-    ///
-    /// После обмена селектор `setDelegate:` указывает на нашу обёртку
-    /// (`nav_core_setDelegate`), а селектор `nav_core_setDelegate:` — на
-    /// оригинальную реализацию UIKit. Поэтому вызов
-    /// `self.nav_core_setDelegate(value)` внутри обёртки — это НЕ рекурсия,
-    /// а прямой вызов оригинала.
+    /// Обменивает IMP `setDelegate:` и обёртки `fl_setDelegate(_:)`.
     private static func swizzleSetDelegate() {
         let originalSelector = #selector(setter: UINavigationController.delegate)
-        let swizzledSelector = #selector(UINavigationController.nav_core_setDelegate(_:))
+        let swizzledSelector = #selector(UINavigationController.fl_setDelegate(_:))
 
         guard
             let originalMethod = class_getInstanceMethod(UINavigationController.self, originalSelector),
@@ -405,30 +383,27 @@ extension NavigationControllerDelegateDispatcher {
     }
 }
 
-/// Swizzling-обёртка и точка доступа к оригинальному setter'у.
+/// Swizzle-обёртка над `setDelegate:`.
 ///
-/// `nav_core_setDelegate(_:)` после обмена IMP становится реализацией
-/// `setDelegate:`. Она достаёт dispatcher из associated object и делегирует
-/// решение чистому методу `reconcile(externalDelegate:)`. Если для этого
-/// nav controller Core ещё не инициализирован (dispatcher отсутствует),
-/// обёртка просто пробрасывает значение в оригинал, не вмешиваясь.
+/// После обмена IMP становится реализацией `setDelegate:`. Достаёт dispatcher из
+/// associated object и делегирует решение методу `reconcile(externalDelegate:)`.
+/// Если для этого navigation controller dispatcher ещё не установлен, обёртка
+/// просто пробрасывает значение в оригинал, не вмешиваясь.
 private extension UINavigationController {
-    /// Тонкая обёртка над `setDelegate:`. Вызывается UIKit-ом и внешним кодом
-    /// при любой установке `delegate` (включая `= nil`) после swizzling.
-    @objc func nav_core_setDelegate(_ delegate: (any UINavigationControllerDelegate)?) {
+    /// Перехватывает любую установку `delegate` (включая `= nil`) после swizzling.
+    @objc func fl_setDelegate(_ delegate: (any UINavigationControllerDelegate)?) {
         if let dispatcher = objc_getAssociatedObject(
             self,
             &NavigationControllerDelegateDispatcher.dispatcherAssociationKey
         ) as? NavigationControllerDelegateDispatcher {
-            // Core уже инициализирован для этого nav controller: принимаем
-            // решение через чистую логику и возвращаем dispatcher в слот.
+            // Dispatcher установлен: принимаем решение через чистую логику и
+            // возвращаем dispatcher в слот.
             let resolved = dispatcher.reconcile(externalDelegate: delegate)
-            // Вызов оригинального setter'а (после exchange — это UIKit).
-            // Это НЕ рекурсия: селектор nav_core_setDelegate указывает на оригинал.
-            self.nav_core_setDelegate(resolved)
+            // Вызов оригинального setter'а (после обмена — это реализация UIKit).
+            self.fl_setDelegate(resolved)
         } else {
-            // Core не инициализирован для этого nav controller — не вмешиваемся.
-            self.nav_core_setDelegate(delegate)
+            // Dispatcher не установлен для этого navigation controller — не вмешиваемся.
+            self.fl_setDelegate(delegate)
         }
     }
 }
@@ -436,14 +411,18 @@ private extension UINavigationController {
 // MARK: - UINavigationController convenience
 
 extension UINavigationController {
+    /// Регистрирует делегат в dispatcher этого navigation controller,
+    /// установив dispatcher при необходимости.
     func addDelegateIfNeeded(
         _ delegate: any UINavigationControllerDelegate,
-        category: NavigationControllerDelegateDispatcher.DelegateCategory = .application
+        category: NavigationControllerDelegateDispatcher.DelegateCategory = .external
     ) {
         let dispatcher = NavigationControllerDelegateDispatcher.install(on: self)
         dispatcher.addDelegate(delegate, category: category)
     }
 
+    /// Удаляет делегат из dispatcher этого navigation controller, если
+    /// dispatcher установлен.
     func removeDelegateIfNeeded(_ delegate: any UINavigationControllerDelegate) {
         if let dispatcher = self.delegate as? NavigationControllerDelegateDispatcher {
             dispatcher.removeDelegate(delegate)
