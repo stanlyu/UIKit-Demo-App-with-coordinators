@@ -1,9 +1,10 @@
 import XCTest
 
-// UI-регрессионные тесты для P1-фикса `NavigationControllerDelegateDispatcher`
-// (навигационный мультиплексор делегатов `UINavigationController`).
+// UI-тесты синхронизации дерева координаторов при перехвате делегата навигации.
+// Покрывают `NavigationControllerDelegateDispatcher` — навигационный
+// мультиплексор делегатов `UINavigationController`.
 //
-// Контракт P1: после того, как внешний код затирает `nav.delegate`
+// Контракт: после того, как внешний код затирает `nav.delegate`
 // (например, экран `AddPickupPointsViewController`/`PlaceOrderViewController`
 // назначает себя делегатом `interactivePopGestureRecognizer`, что в ряде
 // сценариев влияет на цепочку делегатов навигации), instance-наблюдатель Core
@@ -22,7 +23,7 @@ final class NavigationDelegateRegressionUITests: XCTestCase, DemoAppUITesting {
 
     // MARK: - Сценарий 1: Edge-swipe back синхронизирует дерево координаторов
 
-    // P1-контракт: после edge-swipe back система iOS вызывает `didShow`,
+    // Контракт: после edge-swipe back система iOS вызывает `didShow`,
     // instance-наблюдатель Core синхронизирует дерево, и последующая
     // программная навигация работает корректно (дерево не рассинхронизировано).
     //
@@ -35,15 +36,21 @@ final class NavigationDelegateRegressionUITests: XCTestCase, DemoAppUITesting {
         launchApp()
         defer { app.terminate() }
         waitForMainTabs()
+        // Навигация идёт в едином UINavigationController таба «Главная»:
+        // [Главная] -> push -> [Выбор ПВЗ] -> push -> [Добавить ПВЗ].
+        // Активен navigation bar только верхнего контроллера, поэтому
+        // каждый push проверяем сразу после него.
         tapButton(named: "ПВЗ", timeout: 8)
-        tapButton(named: "Добавить", timeout: 5)
         XCTAssertTrue(app.navigationBars["Выбор ПВЗ"].waitForExistence(timeout: 5))
+        tapButton(named: "Добавить", timeout: 5)
         XCTAssertTrue(app.navigationBars["Добавить ПВЗ"].waitForExistence(timeout: 5))
 
         // act: edge-swipe back с экрана «Добавить ПВЗ».
         // Если жест не срабатывает надёжно — тест откатывается на back-кнопку
         // (это тоже путь через didShow), но сперва пытаемся именно edge swipe,
-        // т.к. это и есть целевой P1-сценарий.
+        // т.к. именно он сильнее всего нагружает синхронизацию делегатов
+        // (системный interactivePopGestureRecognizer + самоназначение делегата
+        // экраном «Добавить ПВЗ»).
         performEdgeSwipeBack(fallbackToBackButtonOn: "Добавить ПВЗ")
 
         // assert: дерево синхронизировано — ожидается «Выбор ПВЗ».
@@ -77,17 +84,23 @@ final class NavigationDelegateRegressionUITests: XCTestCase, DemoAppUITesting {
         launchApp()
         defer { app.terminate() }
         waitForMainTabs()
+        // Стек в едином UINavigationController: [Главная, Выбор ПВЗ, Добавить ПВЗ].
+        // Каждый push проверяем сразу, пока экран верхний.
         tapButton(named: "ПВЗ", timeout: 8)
-        tapButton(named: "Добавить", timeout: 5)
         XCTAssertTrue(app.navigationBars["Выбор ПВЗ"].waitForExistence(timeout: 5))
+        tapButton(named: "Добавить", timeout: 5)
         XCTAssertTrue(app.navigationBars["Добавить ПВЗ"].waitForExistence(timeout: 5))
 
         // act: два подряд edge-swipe back — «Добавить ПВЗ» → «Выбор ПВЗ» → «Главная».
         performEdgeSwipeBack(fallbackToBackButtonOn: "Добавить ПВЗ")
+        // После первого swipe-back верхним становится «Выбор ПВЗ».
+        XCTAssertTrue(
+            app.navigationBars["Выбор ПВЗ"].waitForExistence(timeout: 5),
+            "После первого swipe-back ожидается «Выбор ПВЗ»"
+        )
         performEdgeSwipeBack(fallbackToBackButtonOn: "Выбор ПВЗ")
 
-        // assert: стек дошёл до корня без рассинхронизации.
-        XCTAssertTrue(app.navigationBars["Выбор ПВЗ"].waitForExistence(timeout: 5))
+        // assert: стек дошёл до корня без рассинхронизации — верхний «Главная».
         XCTAssertTrue(app.navigationBars["Главная"].waitForExistence(timeout: 5))
     }
 
@@ -150,13 +163,18 @@ final class NavigationDelegateRegressionUITests: XCTestCase, DemoAppUITesting {
         // assert: возврат на главную — дочерние роутеры живы после switchTo.
         XCTAssertTrue(app.navigationBars["Главная"].waitForExistence(timeout: 5))
 
-        // act: переключение между табами.
+        // act: переключение между табами. Активен navigation bar только
+        // выбранного таба, поэтому проверяем каждый сразу после выбора.
         tapTab(named: "Корзина")
+        XCTAssertTrue(
+            app.navigationBars["Корзина"].waitForExistence(timeout: 5),
+            "После выбора таба «Корзина» его navigation bar должен быть видим"
+        )
         tapTab(named: "Главная")
-
-        // assert: табы переключаются, дерево не сломано.
-        XCTAssertTrue(app.navigationBars["Корзина"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.navigationBars["Главная"].waitForExistence(timeout: 5))
+        XCTAssertTrue(
+            app.navigationBars["Главная"].waitForExistence(timeout: 5),
+            "После возврата на таб «Главная» его navigation bar должен быть видим"
+        )
     }
 }
 

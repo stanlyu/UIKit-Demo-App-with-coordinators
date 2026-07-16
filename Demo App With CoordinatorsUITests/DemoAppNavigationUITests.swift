@@ -33,12 +33,19 @@ final class DemoAppNavigationUITests: XCTestCase, DemoAppUITesting {
         defer { app.terminate() }
         waitForMainTabs()
 
-        // act
+        // act: открываем стек ПВЗ — push экрана выбора поверх «Главная».
         tapButton(named: "ПВЗ", timeout: 8)
+
+        // assert: выбор ПВЗ стал верхним экраном стека.
+        // (В едином UINavigationController активен только navigation bar
+        // верхнего контроллера, поэтому проверяем его сразу после push,
+        // до того, как следующий push его перекроет.)
+        XCTAssertTrue(app.navigationBars["Выбор ПВЗ"].waitForExistence(timeout: 5))
+
+        // act: push экрана добавления поверх выбора ПВЗ.
         tapButton(named: "Добавить", timeout: 5)
 
-        // assert
-        XCTAssertTrue(app.navigationBars["Выбор ПВЗ"].waitForExistence(timeout: 5))
+        // assert: теперь верхний экран — «Добавить ПВЗ».
         XCTAssertTrue(app.navigationBars["Добавить ПВЗ"].waitForExistence(timeout: 5))
 
         // act
