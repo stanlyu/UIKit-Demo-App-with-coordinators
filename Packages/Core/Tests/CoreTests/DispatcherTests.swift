@@ -284,7 +284,7 @@ struct NavigationControllerDelegateDispatcherTests {
     // MARK: - reconcile (чистая логика, без swizzling)
 
     /// `reconcile(externalDelegate: foreign)` регистрирует внешний делегат и
-    /// возвращает dispatcher в слот.
+    /// снова делает dispatcher значением свойства `delegate`.
     @Test(.tags(.reconcile)) func reconcileRegistersForeignDelegate() {
         // arrange
         let dispatcher = NavigationControllerDelegateDispatcher()
@@ -408,7 +408,7 @@ struct NavigationControllerDelegateDispatcherTests {
         let foreign = RecordingDelegate()
         nav.delegate = foreign
 
-        // assert (часть 1): слот читается как dispatcher (не foreign),
+        // assert (часть 1): свойство `delegate` читается как dispatcher (не foreign),
         // оба делегата получают события.
         #expect((nav.delegate as? NavigationControllerDelegateDispatcher) === dispatcher)
         nav.delegate?.navigationController?(nav, didShow: UIViewController(), animated: false)
@@ -418,7 +418,7 @@ struct NavigationControllerDelegateDispatcherTests {
         // act (часть 2): внешний код сбрасывает делегата в nil.
         nav.delegate = nil
 
-        // assert (часть 2): слот НЕ nil — там снова dispatcher; наблюдатель
+        // assert (часть 2): свойство `delegate` НЕ равно nil — оно снова содержит dispatcher; наблюдатель
         // продолжает работать, foreign больше не получает события.
         #expect((nav.delegate as? NavigationControllerDelegateDispatcher) === dispatcher)
         #expect(nav.delegate != nil)
@@ -438,8 +438,8 @@ struct DispatcherSwizzlingCoexistenceTests {
     /// Принцип: если чужой swizzle сделан правильно — вызывает исходную
     /// реализацию селектора, — наша обёртка `fl_setDelegate` по-прежнему
     /// отрабатывает, а оригинальный setter UIKit всё равно вызывается. Проверяем,
-    /// что при двойном swizzle: (а) dispatcher остаётся в слоте и `reconcile`
-    /// выполняется; (б) оригинальный setter UIKit выполняется (значение слота
+    /// что при двойном swizzle: (а) dispatcher остаётся значением свойства `delegate` и `reconcile`
+    /// выполняется; (б) оригинальный setter UIKit выполняется (значение свойства `delegate`
     /// реально меняется на dispatcher).
     ///
     /// IMP обязательно восстанавливается (обратный обмен), чтобы не загрязнять
@@ -465,7 +465,7 @@ struct DispatcherSwizzlingCoexistenceTests {
         let foreign = RecordingDelegate()
         nav.delegate = foreign
 
-        // assert: оригинальный setter UIKit вызвался (слот реально равен
+        // assert: оригинальный setter UIKit вызвался (свойство `delegate` реально равно
         // dispatcher), а наша обёртка отработала (foreign зарегистрирован,
         // наблюдатель цел).
         #expect((nav.delegate as? NavigationControllerDelegateDispatcher) === dispatcher)
@@ -476,7 +476,7 @@ struct DispatcherSwizzlingCoexistenceTests {
         // act: сброс через nil тоже проходит через двойной swizzle.
         nav.delegate = nil
 
-        // assert: слот снова dispatcher, foreign снят, наблюдатель продолжает работу.
+        // assert: свойство `delegate` снова содержит dispatcher, foreign снят, наблюдатель продолжает работу.
         #expect((nav.delegate as? NavigationControllerDelegateDispatcher) === dispatcher)
         nav.delegate?.navigationController?(nav, didShow: UIViewController(), animated: false)
         #expect(foreign.calls.count == 1)
