@@ -1,7 +1,7 @@
 import UIKit
 
 /// Точка входа для сборки flow: связывает роутер, координатор и узлы дерева в
-/// единый объект `CreatedFlow`.
+/// единый объект `Flow`.
 @MainActor
 public enum FlowBuilder {
     /// Собирает flow с собственным `UINavigationController`.
@@ -21,7 +21,7 @@ public enum FlowBuilder {
             _ router: any StackNavigation,
             _ composer: Composer
         ) -> Coordinator
-    ) -> CreatedFlow<Coordinator>
+    ) -> Flow<Coordinator>
     where Coordinator: BaseCoordinator<any StackNavigation, Composer.Route>, Composer: Composing {
         stack(
             attachmentStore: FlowInstanceAttachments.default,
@@ -42,7 +42,7 @@ public enum FlowBuilder {
             _ router: any StackNavigation,
             _ composer: Composer
         ) -> Coordinator
-    ) -> CreatedFlow<Coordinator>
+    ) -> Flow<Coordinator>
     where Coordinator: BaseCoordinator<any StackNavigation, Composer.Route>, Composer: Composing {
         let router = RouterProvider.stack(makeNavigationController: makeNavigationController)
         let coordinator = makeCoordinator(router, composer)
@@ -55,7 +55,7 @@ public enum FlowBuilder {
         guard let rootVC = router.extractParentViewController() else {
             fatalError("StackRouter должен настроить родительский UIViewController")
         }
-        return CreatedFlow(viewController: rootVC, coordinator: coordinator)
+        return Flow(viewController: rootVC, coordinator: coordinator)
     }
 
     /// Собирает flow на базе `UITabBarController`.
@@ -75,7 +75,7 @@ public enum FlowBuilder {
             _ router: any TabsNavigation,
             _ composer: Composer
         ) -> Coordinator
-    ) -> CreatedFlow<Coordinator>
+    ) -> Flow<Coordinator>
     where Coordinator: BaseCoordinator<any TabsNavigation, Composer.Route>, Composer: Composing {
         tab(
             attachmentStore: FlowInstanceAttachments.default,
@@ -96,7 +96,7 @@ public enum FlowBuilder {
             _ router: any TabsNavigation,
             _ composer: Composer
         ) -> Coordinator
-    ) -> CreatedFlow<Coordinator>
+    ) -> Flow<Coordinator>
     where Coordinator: BaseCoordinator<any TabsNavigation, Composer.Route>, Composer: Composing {
         let router = RouterProvider.tabs(makeTabBarController: makeTabBarController)
         let coordinator = makeCoordinator(router, composer)
@@ -109,7 +109,7 @@ public enum FlowBuilder {
         guard let rootVC = router.extractParentViewController() else {
             fatalError("TabsRouter должен настроить родительский UIViewController")
         }
-        return CreatedFlow(viewController: rootVC, coordinator: coordinator)
+        return Flow(viewController: rootVC, coordinator: coordinator)
     }
 
     /// Собирает flow, корнем которого является обычный `UIViewController`,
@@ -125,7 +125,7 @@ public enum FlowBuilder {
             _ router: any StackNavigation,
             _ composer: Composer
         ) -> Coordinator
-    ) -> CreatedFlow<Coordinator>
+    ) -> Flow<Coordinator>
     where Coordinator: BaseCoordinator<any StackNavigation, Composer.Route>, Composer: Composing {
         inline(
             attachmentStore: FlowInstanceAttachments.default,
@@ -142,7 +142,7 @@ public enum FlowBuilder {
             _ router: any StackNavigation,
             _ composer: Composer
         ) -> Coordinator
-    ) -> CreatedFlow<Coordinator>
+    ) -> Flow<Coordinator>
     where Coordinator: BaseCoordinator<any StackNavigation, Composer.Route>, Composer: Composing {
         let router = RouterProvider.inline()
         let coordinator = makeCoordinator(router, composer)
@@ -156,7 +156,7 @@ public enum FlowBuilder {
             fatalError("Координатор должен установить корневой контент (setRoot) во время start(_:).")
         }
 
-        return CreatedFlow(viewController: rootVC, coordinator: coordinator)
+        return Flow(viewController: rootVC, coordinator: coordinator)
     }
 
     /// Собирает flow, корень которого полностью заменяется при переключении
@@ -172,7 +172,7 @@ public enum FlowBuilder {
             _ router: any SwitchNavigation,
             _ composer: Composer
         ) -> Coordinator
-    ) -> CreatedFlow<Coordinator>
+    ) -> Flow<Coordinator>
     where Coordinator: BaseCoordinator<any SwitchNavigation, Composer.Route>, Composer: Composing {
         switching(
             attachmentStore: FlowInstanceAttachments.default,
@@ -189,7 +189,7 @@ public enum FlowBuilder {
             _ router: any SwitchNavigation,
             _ composer: Composer
         ) -> Coordinator
-    ) -> CreatedFlow<Coordinator>
+    ) -> Flow<Coordinator>
     where Coordinator: BaseCoordinator<any SwitchNavigation, Composer.Route>, Composer: Composing {
         let router = RouterProvider.switch()
         let coordinator = makeCoordinator(router, composer)
@@ -203,6 +203,6 @@ public enum FlowBuilder {
             fatalError("Координатор должен установить корневой контент (switchTo) во время start(_:).")
         }
 
-        return CreatedFlow(viewController: rootVC, coordinator: coordinator)
+        return Flow(viewController: rootVC, coordinator: coordinator)
     }
 }

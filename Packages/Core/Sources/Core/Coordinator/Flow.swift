@@ -7,7 +7,7 @@ import UIKit
 /// где координатор реализует дополнительный внешний контракт (например,
 /// принимает интенты или команды навигации).
 @MainActor
-public struct CreatedFlow<Coordinator: AnyObject> {
+public struct Flow<Coordinator: AnyObject> {
     /// Корневой контроллер собранного flow.
     public let viewController: UIViewController
     /// Координатор, управляющий flow.
