@@ -1,11 +1,15 @@
 import UIKit
 
 extension RouterProvider {
+    /// Создаёт роутер навигации по вкладкам на базе `UITabBarController`.
+    ///
+    /// - Parameter makeTabBarController: Фабрика контроллера вкладок.
     static func tabs(makeTabBarController: () -> UITabBarController = { UITabBarController() }) -> TabsNavigation & FlowLifecycleRouter {
         TabsRouter(makeTabBarController: makeTabBarController)
     }
 }
 
+/// Роутер навигации по вкладкам: управляет набором вкладок и выбором активной.
 @MainActor
 private final class TabsRouter: BaseRouter<UITabBarController> {
     init(makeTabBarController: () -> UITabBarController) {

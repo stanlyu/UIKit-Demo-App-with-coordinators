@@ -1,8 +1,17 @@
 import UIKit
 
+/// Точка входа для сборки flow: связывает роутер, координатор и узлы дерева в
+/// единый объект `CreatedFlow`.
 @MainActor
 public enum FlowBuilder {
     /// Собирает flow с собственным `UINavigationController`.
+    ///
+    /// - Parameters:
+    ///   - makeNavigationController: Фабрика навигационного контроллера; по
+    ///     умолчанию создаёт пустой `UINavigationController`.
+    ///   - composer: Компоузер, строящий экраны по маршрутам.
+    ///   - makeCoordinator: Замыкание, создающее координатор из роутера и компоузера.
+    /// - Returns: Собранный flow.
     public static func stack<Coordinator, Composer>(
         makeNavigationController: @escaping @MainActor () -> UINavigationController = {
             UINavigationController()
@@ -22,7 +31,7 @@ public enum FlowBuilder {
         )
     }
 
-    /// Тестовая перегрузка с подменяемым attachment store.
+    /// Внутренняя перегрузка `stack` с подменяемым attachment store.
     static func stack<Coordinator, Composer>(
         attachmentStore: any FlowInstanceAttachmentStoring,
         makeNavigationController: @escaping @MainActor () -> UINavigationController = {
@@ -50,6 +59,13 @@ public enum FlowBuilder {
     }
 
     /// Собирает flow на базе `UITabBarController`.
+    ///
+    /// - Parameters:
+    ///   - makeTabBarController: Фабрика контроллера вкладок; по умолчанию
+    ///     создаёт пустой `UITabBarController`.
+    ///   - composer: Компоузер, строящий экраны по маршрутам.
+    ///   - makeCoordinator: Замыкание, создающее координатор из роутера и компоузера.
+    /// - Returns: Собранный flow.
     public static func tab<Coordinator, Composer>(
         makeTabBarController: @escaping @MainActor () -> UITabBarController = {
             UITabBarController()
@@ -69,7 +85,7 @@ public enum FlowBuilder {
         )
     }
 
-    /// Тестовая перегрузка с подменяемым attachment store.
+    /// Внутренняя перегрузка `tab` с подменяемым attachment store.
     static func tab<Coordinator, Composer>(
         attachmentStore: any FlowInstanceAttachmentStoring,
         makeTabBarController: @escaping @MainActor () -> UITabBarController = {
@@ -96,7 +112,13 @@ public enum FlowBuilder {
         return CreatedFlow(viewController: rootVC, coordinator: coordinator)
     }
 
-    /// Собирает flow, root которого является обычным `UIViewController`.
+    /// Собирает flow, корнем которого является обычный `UIViewController`,
+    /// встраиваемый в уже существующий навигационный стек.
+    ///
+    /// - Parameters:
+    ///   - composer: Компоузер, строящий экраны по маршрутам.
+    ///   - makeCoordinator: Замыкание, создающее координатор из роутера и компоузера.
+    /// - Returns: Собранный flow.
     public static func inline<Coordinator, Composer>(
         composer: Composer,
         makeCoordinator: @MainActor (
@@ -112,7 +134,7 @@ public enum FlowBuilder {
         )
     }
 
-    /// Тестовая перегрузка с подменяемым attachment store.
+    /// Внутренняя перегрузка `inline` с подменяемым attachment store.
     static func inline<Coordinator, Composer>(
         attachmentStore: any FlowInstanceAttachmentStoring,
         composer: Composer,
@@ -137,7 +159,13 @@ public enum FlowBuilder {
         return CreatedFlow(viewController: rootVC, coordinator: coordinator)
     }
 
-    /// Собирает flow, который заменяет текущий root content целиком.
+    /// Собирает flow, корень которого полностью заменяется при переключении
+    /// (одновременно активен только один экран).
+    ///
+    /// - Parameters:
+    ///   - composer: Компоузер, строящий экраны по маршрутам.
+    ///   - makeCoordinator: Замыкание, создающее координатор из роутера и компоузера.
+    /// - Returns: Собранный flow.
     public static func switching<Coordinator, Composer>(
         composer: Composer,
         makeCoordinator: @MainActor (
@@ -153,7 +181,7 @@ public enum FlowBuilder {
         )
     }
 
-    /// Тестовая перегрузка с подменяемым attachment store.
+    /// Внутренняя перегрузка `switching` с подменяемым attachment store.
     static func switching<Coordinator, Composer>(
         attachmentStore: any FlowInstanceAttachmentStoring,
         composer: Composer,

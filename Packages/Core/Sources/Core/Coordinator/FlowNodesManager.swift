@@ -1,7 +1,10 @@
 import UIKit
 
+/// Реализация `FlowNodesManaging`: владеет узлом координатора и поддерживает
+/// дерево дочерних узлов в соответствии с набором контроллеров экрана.
 @MainActor
 final class FlowNodesManager: FlowNodesManaging {
+    /// Узел координатора, которым управляет менеджер.
     let node: FlowNode
     private let attachmentStore: any FlowInstanceAttachmentStoring
 

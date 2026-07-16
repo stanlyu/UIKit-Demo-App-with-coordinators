@@ -3,30 +3,35 @@ import ObjectiveC
 
 /// Хранилище связей между `UIViewController` и `FlowNode`.
 ///
-/// Связь нужна Core для ownership: node живет столько же, сколько root
-/// экран, а родительский router может найти child node без публичного
-/// lifecycle API.
+/// Связь нужна для управления владением: узел живёт столько же, сколько его
+/// корневой экран, а родительский роутер может найти дочерний узел без
+/// публичного lifecycle-API.
 @MainActor
 protocol FlowInstanceAttachmentStoring {
-    /// Координатор/узел удерживается от root `UIViewController`, чтобы жить столько же,
-    /// сколько живет экран UIKit.
+    /// Удерживает объект (`retainer`) от контроллера экрана, продлевая его жизнь
+    /// до времени жизни самого экрана.
     func retain(_ retainer: AnyObject, to viewController: UIViewController)
+
+    /// Освобождает ранее удержанный объект от контроллера экрана.
     func release(_ retainer: AnyObject, from viewController: UIViewController)
 
-    /// Хранит связь `UIViewController -> FlowNode`.
-    /// Родительские роутеры используют ее, чтобы усыновить child flow без публичного lifecycle API.
+    /// Хранит связь `UIViewController -> FlowNode`. Родительские роутеры
+    /// используют её, чтобы усыновить дочерний flow без публичного lifecycle-API.
     func attach(_ instance: FlowNode, to viewController: UIViewController)
+
+    /// Разрывает связь узла с контроллером экрана.
     func detach(_ instance: FlowNode, from viewController: UIViewController)
-    
-    /// Поиск для adoption в порядке child-first.
+
+    /// Возвращает первый привязанный узел (поиск в порядке добавления).
     func instance(attachedTo viewController: UIViewController) -> FlowNode?
-    
-    /// Полный список.
+
+    /// Полный список узлов, привязанных к контроллеру, в порядке добавления.
     func instances(attachedTo viewController: UIViewController) -> [FlowNode]
 }
 
 @MainActor
 enum FlowInstanceAttachments {
+    /// Хранилище по умолчанию (на associated objects `UIViewController`).
     static let `default`: any FlowInstanceAttachmentStoring = AssociatedObjectFlowInstanceAttachmentStore()
 }
 
@@ -113,14 +118,15 @@ final class AssociatedObjectFlowInstanceAttachmentStore: FlowInstanceAttachmentS
         ) as? FlowInstanceAssociatedStorage else {
             return []
         }
-        
-        // Решаем проблему [P2].2: очистка мертвых записей из словаря
+
+        // Чистим мёртвые записи: после освобождения узла слабая ссылка
+        // обнуляется, и запись с ней нужно убрать из словаря и порядка.
         let deadIDs = storage.attachedInstances.filter { $0.value.object == nil }.keys
         for id in deadIDs {
             storage.attachedInstances.removeValue(forKey: id)
             storage.instanceOrder.removeAll { $0 == id }
         }
-        
+
         return storage.instanceOrder.compactMap { storage.attachedInstances[$0]?.object }
     }
 

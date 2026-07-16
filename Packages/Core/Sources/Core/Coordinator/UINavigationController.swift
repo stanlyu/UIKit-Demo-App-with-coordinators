@@ -1,17 +1,17 @@
-//
-//  UINavigationController.swift
-//  Core
-//
-//  Created by Любченко Станислав Валерьевич on 10.02.2026.
-//
-
-
 import UIKit
 
+/// Расширение `UINavigationController` с вариантами навигации, поддерживающими
+/// обработчик завершения (`completion`).
+///
+/// Системные методы вызывают `completion` только по завершении анимации. Эти
+/// перегрузки дополнительно вызывают его и без анимации, поэтому внешний код
+/// может единообразно реагировать на конец операции.
 public extension UINavigationController {
 
     // MARK: - Push
 
+    /// Помещает контроллер на вершину стека и вызывает `completion` по
+    /// завершении операции.
     func pushViewController(_ viewController: UIViewController, animated: Bool, completion: (() -> Void)?) {
         pushViewController(viewController, animated: animated)
         handleCompletion(animated: animated, completion: completion)
@@ -19,6 +19,8 @@ public extension UINavigationController {
 
     // MARK: - Pop
 
+    /// Снимает контроллер с вершины стека и вызывает `completion` по завершении
+    /// операции. Возвращает снятый контроллер.
     @discardableResult
     func popViewController(animated: Bool, completion: (() -> Void)?) -> UIViewController? {
         let poppedViewController = popViewController(animated: animated)
@@ -26,6 +28,8 @@ public extension UINavigationController {
         return poppedViewController
     }
 
+    /// Снимает контроллеры до заданного включительно и вызывает `completion` по
+    /// завершении операции. Возвращает список снятых контроллеров.
     @discardableResult
     func popToViewController(_ viewController: UIViewController, animated: Bool, completion: (() -> Void)?) -> [UIViewController]? {
         let poppedViewControllers = popToViewController(viewController, animated: animated)
@@ -33,6 +37,8 @@ public extension UINavigationController {
         return poppedViewControllers
     }
 
+    /// Снимает все контроллеры, кроме корневого, и вызывает `completion` по
+    /// завершении операции. Возвращает список снятых контроллеров.
     @discardableResult
     func popToRootViewController(animated: Bool, completion: (() -> Void)?) -> [UIViewController]? {
         let poppedViewControllers = popToRootViewController(animated: animated)
@@ -42,6 +48,8 @@ public extension UINavigationController {
 
     // MARK: - Set View Controllers
 
+    /// Полностью заменяет стек контроллеров и вызывает `completion` по завершении
+    /// операции.
     func setViewControllers(_ viewControllers: [UIViewController], animated: Bool, completion: (() -> Void)?) {
         setViewControllers(viewControllers, animated: animated)
         handleCompletion(animated: animated, completion: completion)

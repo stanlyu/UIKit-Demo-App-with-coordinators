@@ -6,10 +6,14 @@ protocol FlowLifecycleRouter: AnyObject {
     func setNodesManager(_ nodesManager: any FlowNodesManaging)
 }
 
+/// Базовый роутер: хранит родительский контроллер и список дочерних
+/// навигационных элементов, синхронизирует дерево flow-узлов и обрабатывает
+/// закрытие модальных экранов.
 @MainActor
 class BaseRouter<Parent: UIViewController>: NSObject, UIAdaptivePresentationControllerDelegate {
     // MARK: -  API для наследников
-    
+
+    /// Родительский контроллер, которым управляет роутер.
     var parentViewController: Parent {
         guard let parent = _parentViewController else {
             fatalError("Родительский view controller типа \(Parent.self) не настроен или был освобождён")
@@ -17,10 +21,12 @@ class BaseRouter<Parent: UIViewController>: NSObject, UIAdaptivePresentationCont
         return parent
     }
 
+    /// Навигационный элемент, оборачивающий родительский контроллер.
     var parentRouterItem: RouterItem? {
         _parentViewController.map { RouterItem($0) }
     }
     
+    /// Устанавливает родительский контроллер и привязывает к нему узел координатора.
     func updateParent(_ item: RouterItem?) {
         let vc = item?.viewController as? Parent
         _parentViewController = vc
@@ -30,13 +36,15 @@ class BaseRouter<Parent: UIViewController>: NSObject, UIAdaptivePresentationCont
         }
     }
 
+    /// Обновляет список дочерних элементов и синхронизирует дочерние узлы.
     func updateChildren(_ items: [RouterItem]) {
         self.childRouterItems = items
         nodesManager?.updateChildViewControllers(items.map(\.viewController))
     }
-    
+
     // MARK: - UIAdaptivePresentationControllerDelegate
-    
+
+    /// При закрытии модального экрана удаляет его узел из дерева flow-узлов.
     func presentationControllerDidDismiss(_ presentationController: UIPresentationController) {
         let dismissedVC = presentationController.presentedViewController
         if let dismissedNode = FlowInstanceAttachments.default.instance(attachedTo: dismissedVC) {
@@ -81,5 +89,6 @@ extension BaseRouter: BaseNavigation {
     }
 }
 
-@MainActor 
+/// Фабрика конкретных роутеров (`stack`, `tab`, `inline`, `switch`).
+@MainActor
 enum RouterProvider {}

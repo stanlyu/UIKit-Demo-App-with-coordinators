@@ -1,11 +1,17 @@
 import UIKit
 
 extension RouterProvider {
+    /// Создаёт роутер для flow, корень которого встраивается в уже существующий
+    /// навигационный стек, а не владеет собственным `UINavigationController`.
     static func inline() -> StackNavigation & FlowLifecycleRouter {
         InlineRouter()
     }
 }
 
+/// Роутер inline-flow: управляет частью навигационного стека, начинающейся с
+/// корневого контроллера. Подписывается на `didShow` внешнего навигационного
+/// контроллера, чтобы оставаться в синхронизации при системном «назад» и
+/// свайпе-back.
 @MainActor
 private final class InlineRouter: BaseRouter<UIViewController> {
     func syncChildRouterItems() {

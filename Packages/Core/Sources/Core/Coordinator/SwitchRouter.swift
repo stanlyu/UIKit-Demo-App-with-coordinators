@@ -1,5 +1,9 @@
 import UIKit
 
+/// Кастомный обработчик перехода при замене корневого экрана.
+///
+/// Возвращает `true`, если переход выполнен обработчиком самостоятельно (тогда
+/// стандартная логика `SwitchRouter` не применяется), иначе `false`.
 typealias SwitchTransitionHandler = @MainActor @Sendable (
     _ oldViewController: UIViewController,
     _ newViewController: UIViewController,
@@ -8,20 +12,29 @@ typealias SwitchTransitionHandler = @MainActor @Sendable (
 ) -> Bool
 
 extension RouterProvider {
+    /// Создаёт роутер, где одновременно активен только один корневой экран,
+    /// целиком заменяемый при переключении.
     static func `switch`() -> SwitchNavigation & FlowLifecycleRouter {
         SwitchRouter()
     }
 }
 
+/// Роутер переключаемого контента: заменяет текущий корневой экран новым в
+/// рамках navigation controller, tab bar controller или окна.
 @MainActor
 private final class SwitchRouter: BaseRouter<UIViewController> {
+    /// Текущий корневой контроллер, если он задан.
     var rootViewController: UIViewController? {
         parentRouterItem?.viewController
     }
 
+    /// Удерживает прежний корневой контроллер до завершения перехода, чтобы
+    /// избежать его преждевременного освобождения во время анимации.
     var oldContentRetainer: UIViewController?
+    /// Необязательный кастомный обработчик перехода.
     var transitionHandler: SwitchTransitionHandler?
 
+    /// Устанавливает кастомный обработчик перехода; `nil` отключает его.
     func setTransitionHandler(_ handler: SwitchTransitionHandler?) {
         self.transitionHandler = handler
     }

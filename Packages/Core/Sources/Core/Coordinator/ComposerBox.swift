@@ -1,16 +1,11 @@
-//
-//  ComposerBox.swift
-//  Core
-//
-//  Created by Codex on 27.02.2026.
-//
-
 import UIKit
 
-/// Type-erasure обертка над конкретным `Composing`.
+/// Type-erased обёртка над конкретным `Composing`.
 ///
-/// Предоставляет координатору безопасный API для получения opaque navigation item
-/// по route. Доступ к `UIViewController` остается внутри `Core`.
+/// Даёт координатору безопасный API получения навигационного элемента по
+/// маршруту, скрывая конкретный тип компоузера и сам `UIViewController` внутри
+/// инфраструктуры. Координатор работает только с `RouterItem` и не касается
+/// контроллеров экранов напрямую.
 @MainActor
 public final class ComposerBox<Route> {
     init<C: Composing>(wrappedComposer: C) where C.Route == Route {
@@ -20,6 +15,10 @@ public final class ComposerBox<Route> {
         }
     }
 
+    /// Строит навигационный элемент для заданного маршрута.
+    ///
+    /// - Parameter route: Маршрут, для которого строится элемент.
+    /// - Returns: Готовый `RouterItem`.
     public final func makeItem(for route: Route) -> RouterItem {
         makeRouterItem(route)
     }
