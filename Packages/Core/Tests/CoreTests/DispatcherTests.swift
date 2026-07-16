@@ -397,7 +397,7 @@ struct NavigationControllerDelegateDispatcherTests {
 
     // Перехват `nav.delegate = foreign` / `= nil` через реальный setter
     // (swizzling подключается автоматически при первом `install`).
-    @Test(.tags(.swizzling)) func setDelegateInterceptorKeepsDispatcherInSlotAndSurvivesReset() {
+    @Test(.tags(.swizzling)) func setDelegateInterceptorPreservesDispatcherAndSurvivesReset() {
         // arrange
         let nav = UINavigationController()
         let dispatcher = NavigationControllerDelegateDispatcher.install(on: nav)

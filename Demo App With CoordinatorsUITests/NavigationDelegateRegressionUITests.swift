@@ -13,8 +13,8 @@ import XCTest
 // реальную пользовательскую навигацию: edge-swipe back, push/pop и свайп-back
 // между программными операциями.
 @MainActor
-final class NavigationDelegateRegressionUITests: XCTestCase {
-    private var app: XCUIApplication!
+final class NavigationDelegateRegressionUITests: XCTestCase, DemoAppUITesting {
+    var app: XCUIApplication!
 
     override func setUpWithError() throws {
         continueAfterFailure = false
@@ -163,52 +163,6 @@ final class NavigationDelegateRegressionUITests: XCTestCase {
 // MARK: - Helpers
 
 private extension NavigationDelegateRegressionUITests {
-
-    func launchApp() {
-        app = XCUIApplication()
-        app.launchArguments = [
-            "-ApplePersistenceIgnoreState",
-            "YES"
-        ]
-        app.launchEnvironment["DEMO_APP_RESET_PERSISTED_STATE"] = "1"
-        app.launch()
-    }
-
-    func waitForMainTabs() {
-        XCTAssertTrue(app.tabBars.buttons["Главная"].waitForExistence(timeout: 10))
-        XCTAssertTrue(app.tabBars.buttons["Корзина"].waitForExistence(timeout: 10))
-        XCTAssertTrue(app.navigationBars["Главная"].waitForExistence(timeout: 10))
-    }
-
-    func tapTab(named title: String) {
-        let tab = app.tabBars.buttons[title]
-        XCTAssertTrue(tab.waitForExistence(timeout: 5))
-        tab.tap()
-    }
-
-    func tapButton(named title: String, timeout: TimeInterval) {
-        let button = app.buttons[title]
-        XCTAssertTrue(button.waitForExistence(timeout: timeout), "Button '\(title)' should exist")
-        waitUntilHittable(button, timeout: timeout)
-        button.tap()
-    }
-
-    func tapBackButton(onNavigationBar title: String) {
-        let navigationBar = app.navigationBars[title]
-        XCTAssertTrue(navigationBar.waitForExistence(timeout: 5), "Navigation bar '\(title)' should exist")
-
-        let backButton = navigationBar.buttons.element(boundBy: 0)
-        XCTAssertTrue(backButton.waitForExistence(timeout: 5), "Back button on '\(title)' should exist")
-        waitUntilHittable(backButton, timeout: 5)
-        backButton.tap()
-    }
-
-    func waitUntilHittable(_ element: XCUIElement, timeout: TimeInterval) {
-        let predicate = NSPredicate(format: "exists == true AND hittable == true")
-        let expectation = XCTNSPredicateExpectation(predicate: predicate, object: element)
-        let result = XCTWaiter().wait(for: [expectation], timeout: timeout)
-        XCTAssertEqual(result, .completed)
-    }
 
     // Выполняет edge-swipe back от левого края экрана.
     //
