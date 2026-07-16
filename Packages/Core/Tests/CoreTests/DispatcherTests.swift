@@ -1,12 +1,26 @@
 import Testing
 import UIKit
+import ObjectiveC
 @testable import Core
+
+// MARK: - Tags
+
+extension Tag {
+    /// Доставка событий нескольким делегатам и порядок доставки.
+    @Tag static var dispatch: Tag
+    /// Жизненный цикл слабых ссылок на делегатов.
+    @Tag static var weakLifecycle: Tag
+    /// Чистая логика согласования делегата (без swizzling).
+    @Tag static var reconcile: Tag
+    /// Сквозные сценарии через перехваченный setter `delegate`.
+    @Tag static var swizzling: Tag
+}
 
 // MARK: - Test doubles
 
-/// Общий лог порядка вызовов (reference-тип), в который делегаты аппендят свою
+/// Общий лог порядка вызовов (reference-тип), в который делегаты дописывают свою
 /// метку при срабатывании `didShow`. Нужен для тестов ОТНОСИТЕЛЬНОГО порядка
-/// доставки событий (instance раньше application и т.п.).
+/// доставки событий (внутренний наблюдатель раньше внешнего и т.п.).
 @MainActor
 private final class OrderLog {
     var entries: [String] = []
@@ -35,7 +49,7 @@ private final class RecordingDelegate: NSObject, UINavigationControllerDelegate 
     /// Общий лог порядка для тестов относительного порядка didShow.
     /// Опциональный — в большинстве тестов не задаётся и не влияет на поведение.
     var didShowOrderLog: OrderLog?
-    /// Метка, которую делегат аппендит в `didShowOrderLog` при срабатывании didShow.
+    /// Метка, которую делегат дописывает в `didShowOrderLog` при срабатывании didShow.
     var didShowOrderLabel: String = ""
 
     func navigationController(
@@ -90,7 +104,14 @@ private final class RecordingDelegate: NSObject, UINavigationControllerDelegate 
     }
 }
 
-/// Простой animator для проверки application-first приоритета.
+extension RecordingDelegate {
+    /// `true`, если делегат получил хотя бы одно событие `didShow`.
+    var didReceiveDidShow: Bool {
+        calls.contains { if case .didShow = $0 { return true }; return false }
+    }
+}
+
+/// Простой animator для проверки external-first приоритета.
 @MainActor
 private final class StubAnimator: NSObject, UIViewControllerAnimatedTransitioning {
     func transitionDuration(using transitionContext: (any UIViewControllerContextTransitioning)?) -> TimeInterval { 0 }
@@ -100,147 +121,150 @@ private final class StubAnimator: NSObject, UIViewControllerAnimatedTransitionin
 // MARK: - Dispatcher: multiplexing and dispatch order
 
 @MainActor
-@Suite("NavigationControllerDelegateDispatcher Tests")
+@Suite("NavigationControllerDelegateDispatcher")
 struct NavigationControllerDelegateDispatcherTests {
-    /// Внешние и instance делегаты одновременно получают события.
-    @Test func multiplexingDeliversToAllDelegates() {
+    /// Внешние и внутренние делегаты одновременно получают события.
+    @Test(.tags(.dispatch)) func multiplexingDeliversToAllDelegates() {
+        // arrange
         let dispatcher = NavigationControllerDelegateDispatcher()
-        let application = RecordingDelegate()
-        let instance = RecordingDelegate()
-        dispatcher.addDelegate(application, category: .external)
-        dispatcher.addDelegate(instance, category: .internal)
-
+        let external = RecordingDelegate()
+        let observer = RecordingDelegate()
+        dispatcher.addDelegate(external, category: .external)
+        dispatcher.addDelegate(observer, category: .internal)
         let nav = UINavigationController()
         let shown = UIViewController()
+
+        // act
         dispatcher.navigationController(nav, didShow: shown, animated: false)
         dispatcher.navigationController(nav, willShow: shown, animated: true)
 
-        // didShow получает оба делегата.
-        let didShowApplication = application.calls.contains { if case .didShow = $0 { return true }; return false }
-        let didShowInstance = instance.calls.contains { if case .didShow = $0 { return true }; return false }
-        #expect(didShowApplication)
-        #expect(didShowInstance)
-
-        // willShow также получает оба делегата.
-        let willShowApplication = application.calls.contains { if case .willShow = $0 { return true }; return false }
-        let willShowInstance = instance.calls.contains { if case .willShow = $0 { return true }; return false }
-        #expect(willShowApplication)
-        #expect(willShowInstance)
+        // assert
+        #expect(external.didReceiveDidShow)
+        #expect(observer.didReceiveDidShow)
+        #expect(external.calls.contains { if case .willShow = $0 { return true }; return false })
+        #expect(observer.calls.contains { if case .willShow = $0 { return true }; return false })
     }
 
-    /// didShow: instance-наблюдатель получает событие РАНЬШЕ application delegate.
-    /// Это критично: после native back application delegate должен читать уже
-    /// обновленное дерево FlowInstance.
+    /// didShow: внутренний наблюдатель получает событие РАНЬШЕ внешнего делегата.
     ///
-    /// Проверяется ОТНОСИТЕЛЬНЫЙ порядок (а не просто факт вызова): оба делегата
-    /// аппендят себя в общий лог при didShow, и мы требуем, чтобы индекс instance
-    /// был строго меньше индекса application. Это ловит регрессию, если кто-то
-    /// случайно поменяет `DelegateDispatchOrder.instanceFirst` на `.registration`.
-    @Test func didShowIsInstanceFirst() {
+    /// После системной кнопки «назад» и свайпа-back внешний делегат должен видеть
+    /// уже обновлённое дерево flow-инстансов. Проверяется ОТНОСИТЕЛЬНЫЙ порядок
+    /// (а не просто факт вызова): оба делегата дописывают себя в общий лог при
+    /// didShow, и индекс наблюдателя должен быть строго меньше индекса внешнего.
+    @Test(.tags(.dispatch)) func didShowIsInternalObserverFirst() {
+        // arrange
         let dispatcher = NavigationControllerDelegateDispatcher()
-        let application = RecordingDelegate()
-        let instance = RecordingDelegate()
+        let external = RecordingDelegate()
+        let observer = RecordingDelegate()
         let orderLog = OrderLog()
-        application.didShowOrderLog = orderLog
-        application.didShowOrderLabel = "application"
-        instance.didShowOrderLog = orderLog
-        instance.didShowOrderLabel = "instance"
-        // Намеренно регистрируем application раньше — порядок регистрации не должен
-        // влиять на instanceFirst.
-        dispatcher.addDelegate(application, category: .external)
-        dispatcher.addDelegate(instance, category: .internal)
-
+        external.didShowOrderLog = orderLog
+        external.didShowOrderLabel = "external"
+        observer.didShowOrderLog = orderLog
+        observer.didShowOrderLabel = "observer"
+        // Намеренно регистрируем внешний раньше — порядок регистрации не должен
+        // влиять на «наблюдатель-первым».
+        dispatcher.addDelegate(external, category: .external)
+        dispatcher.addDelegate(observer, category: .internal)
         let nav = UINavigationController()
+
+        // act
         dispatcher.navigationController(nav, didShow: UIViewController(), animated: false)
 
-        // Каждый делегат получил ровно один didShow.
-        #expect(application.calls.count == 1)
-        #expect(instance.calls.count == 1)
-        // Оба делегата отметились в общем логе.
-        let applicationIndex = orderLog.entries.firstIndex(of: "application")
-        let instanceIndex = orderLog.entries.firstIndex(of: "instance")
-        #expect(applicationIndex != nil)
-        #expect(instanceIndex != nil)
-        // ОТНОСИТЕЛЬНЫЙ порядок: instance строго раньше application.
-        if let applicationIndex, let instanceIndex {
-            #expect(instanceIndex < applicationIndex)
-        } else {
+        // assert
+        #expect(external.calls.count == 1)
+        #expect(observer.calls.count == 1)
+        guard let externalIndex = orderLog.entries.firstIndex(of: "external"),
+              let observerIndex = orderLog.entries.firstIndex(of: "observer")
+        else {
             Issue.record("Оба делегата должны отметиться в общем логе порядка didShow")
+            return
         }
+        // ОТНОСИТЕЛЬНЫЙ порядок: наблюдатель строго раньше внешнего.
+        #expect(observerIndex < externalIndex)
     }
 
-    /// willShow: сохраняется порядок регистрации (Core не меняет дерево на willShow).
-    @Test func willShowKeepsRegistrationOrder() {
+    /// willShow: сохраняется порядок регистрации (дерево на willShow не меняется,
+    /// поэтому порядок доставки не важен — проверяем лишь факт доставки обоим).
+    @Test(.tags(.dispatch)) func willShowKeepsRegistrationOrder() {
+        // arrange
         let dispatcher = NavigationControllerDelegateDispatcher()
         let first = RecordingDelegate()
         let second = RecordingDelegate()
         dispatcher.addDelegate(first, category: .internal)
         dispatcher.addDelegate(second, category: .external)
-
         let nav = UINavigationController()
+
+        // act
         dispatcher.navigationController(nav, willShow: UIViewController(), animated: false)
 
-        // Каждый делегат получил ровно один willShow.
+        // assert
         #expect(first.calls.count == 1)
         #expect(second.calls.count == 1)
     }
 
-    /// animationController / orientation: application delegate имеет приоритет
+    /// animationController / orientation: внешний делегат имеет приоритет
     /// (анимации и ориентации принадлежат приложению).
-    @Test func animationControllerIsApplicationFirst() {
+    @Test(.tags(.dispatch)) func animationControllerIsExternalFirst() {
+        // arrange
         let dispatcher = NavigationControllerDelegateDispatcher()
-        let application = RecordingDelegate()
-        application.stubbedAnimator = StubAnimator()
-        let instance = RecordingDelegate()
-        dispatcher.addDelegate(instance, category: .internal)
-        dispatcher.addDelegate(application, category: .external)
-
+        let external = RecordingDelegate()
+        external.stubbedAnimator = StubAnimator()
+        let observer = RecordingDelegate()
+        dispatcher.addDelegate(observer, category: .internal)
+        dispatcher.addDelegate(external, category: .external)
         let nav = UINavigationController()
+
+        // act
         let animator = dispatcher.navigationController(
             nav,
             animationControllerFor: .push,
             from: UIViewController(),
             to: UIViewController()
         )
-        // application-first: первый опрошенный — application, и его animator возвращается.
+
+        // assert
         #expect(animator != nil)
-        #expect(application.calls.count == 1)
-        #expect(instance.calls.isEmpty)
+        #expect(external.calls.count == 1)
+        #expect(observer.calls.isEmpty)
     }
 
     // MARK: - Weak cleanup
 
-    /// `removeReleasedDelegates()` убирает мёртвые weak-ссылки: освобождённый
-    /// делегат больше не получает события.
-    @Test func removeReleasedDelegatesDropsDeadWeakReferences() {
+    /// `removeReleasedDelegates()` убирает мёртвые слабые ссылки:
+    /// освобождённый делегат больше не получает события.
+    @Test(.tags(.weakLifecycle)) func removeReleasedDelegatesDropsDeadWeakReferences() {
+        // arrange
         let dispatcher = NavigationControllerDelegateDispatcher()
         weak var weakLeakingDelegate: RecordingDelegate?
+        var leakingWasDelivered = false
         do {
             let leaking = RecordingDelegate()
             weakLeakingDelegate = leaking
             dispatcher.addDelegate(leaking, category: .external)
-            // Пока жив — получает события.
             let nav = UINavigationController()
-            dispatcher.navigationController(nav, didShow: UIViewController(), animated: false)
-            #expect(leaking.calls.count == 1)
-        }
-        // Объект освобождён.
-        #expect(weakLeakingDelegate == nil)
 
+            // act (часть 1): пока жив — получает событие.
+            dispatcher.navigationController(nav, didShow: UIViewController(), animated: false)
+            leakingWasDelivered = leaking.didReceiveDidShow
+        }
         dispatcher.removeReleasedDelegates()
 
-        // После cleanup новый делегат должен получить событие без мёртвых помех,
-        // а мёртвый — не должен учитываться.
+        // act (часть 2): после cleanup новый делегат должен получить событие.
         let survivor = RecordingDelegate()
         dispatcher.addDelegate(survivor, category: .external)
         let nav = UINavigationController()
         dispatcher.navigationController(nav, didShow: UIViewController(), animated: false)
-        #expect(survivor.calls.count == 1)
+
+        // assert
+        #expect(leakingWasDelivered)
+        #expect(weakLeakingDelegate == nil)
+        #expect(survivor.didReceiveDidShow)
     }
 
     /// Повторное событие после освобождения делегата без явного cleanup
-    /// также не падает (activeDelegates фильтрует мёртвые на лету).
-    @Test func dispatchSurvivesReleasedDelegateWithoutExplicitCleanup() {
+    /// также не падает (мёртвые ссылки фильтруются на лету).
+    @Test(.tags(.weakLifecycle)) func dispatchSurvivesReleasedDelegateWithoutExplicitCleanup() {
+        // arrange
         let dispatcher = NavigationControllerDelegateDispatcher()
         let survivor = RecordingDelegate()
         do {
@@ -249,225 +273,320 @@ struct NavigationControllerDelegateDispatcherTests {
         }
         dispatcher.addDelegate(survivor, category: .internal)
         let nav = UINavigationController()
-        // Не падает; survivor получает событие.
+
+        // act
         dispatcher.navigationController(nav, didShow: UIViewController(), animated: false)
-        #expect(survivor.calls.count == 1)
+
+        // assert
+        #expect(survivor.didReceiveDidShow)
     }
 
     // MARK: - reconcile (чистая логика, без swizzling)
 
-    /// `reconcile(externalDelegate: foreign)` регистрирует внешний делегат.
-    @Test func reconcileRegistersForeignDelegateAsApplication() {
+    /// `reconcile(externalDelegate: foreign)` регистрирует внешний делегат и
+    /// возвращает dispatcher в слот.
+    @Test(.tags(.reconcile)) func reconcileRegistersForeignDelegate() {
+        // arrange
         let dispatcher = NavigationControllerDelegateDispatcher()
         let foreign = RecordingDelegate()
-
-        let resolved = dispatcher.reconcile(externalDelegate: foreign)
-
-        // Dispatcher возвращается в слот.
-        #expect(resolved === dispatcher)
-        // foreign теперь получает события внешнего делегата.
         let nav = UINavigationController()
+
+        // act
+        let resolved = dispatcher.reconcile(externalDelegate: foreign)
         dispatcher.navigationController(nav, didShow: UIViewController(), animated: false)
-        #expect(foreign.calls.count == 1)
+
+        // assert
+        #expect(resolved === dispatcher)
+        #expect(foreign.didReceiveDidShow)
     }
 
-    /// `reconcile(externalDelegate: nil)` снимает прежнего внешнего делегата,
-    /// но не трогает внутреннего наблюдателя — дерево должно обновляться.
-    @Test func reconcileNilRemovesApplicationKeepsInstance() {
+    /// `reconcile(externalDelegate: nil)` снимает внешнего делегата, но не
+    /// трогает внутреннего наблюдателя — дерево должно обновляться.
+    @Test(.tags(.reconcile)) func reconcileNilRemovesExternalKeepsObserver() {
+        // arrange
         let dispatcher = NavigationControllerDelegateDispatcher()
-        let instance = RecordingDelegate()
-        dispatcher.addDelegate(instance, category: .internal)
-
+        let observer = RecordingDelegate()
+        dispatcher.addDelegate(observer, category: .internal)
         let foreign = RecordingDelegate()
         _ = dispatcher.reconcile(externalDelegate: foreign)
-
-        // Сброс делегата.
-        _ = dispatcher.reconcile(externalDelegate: nil)
-
         let nav = UINavigationController()
-        // foreign больше не получает события.
+
+        // act
+        _ = dispatcher.reconcile(externalDelegate: nil)
         dispatcher.navigationController(nav, didShow: UIViewController(), animated: false)
+
+        // assert
         #expect(foreign.calls.isEmpty)
-        // .internal продолжает работать.
-        #expect(instance.calls.count == 1)
+        #expect(observer.didReceiveDidShow)
     }
 
-    /// Замена внешнего делегата: прежний снимается, новый — регистрируется.
+    /// Замена внешнего делегата: прежний снимается, новый регистрируется.
     /// Одновременно активен только один внешний делегат.
-    @Test func reconcileReplacesApplicationDelegate() {
+    @Test(.tags(.reconcile)) func reconcileReplacesExternalDelegate() {
+        // arrange
         let dispatcher = NavigationControllerDelegateDispatcher()
         let first = RecordingDelegate()
         let second = RecordingDelegate()
+        let nav = UINavigationController()
 
+        // act
         _ = dispatcher.reconcile(externalDelegate: first)
         _ = dispatcher.reconcile(externalDelegate: second)
-
-        let nav = UINavigationController()
         dispatcher.navigationController(nav, didShow: UIViewController(), animated: false)
 
-        // Только второй внешний делегат получает событие.
+        // assert
         #expect(first.calls.isEmpty)
-        #expect(second.calls.count == 1)
+        #expect(second.didReceiveDidShow)
     }
 
     /// `reconcile(externalDelegate: dispatcher)` — проброс без действий:
     /// ничего не ломается, возвращается сам dispatcher.
-    @Test func reconcileDispatcherItselfIsNoOp() {
+    @Test(.tags(.reconcile)) func reconcileDispatcherItselfIsNoOp() {
+        // arrange
         let dispatcher = NavigationControllerDelegateDispatcher()
-        let instance = RecordingDelegate()
-        dispatcher.addDelegate(instance, category: .internal)
-
-        let resolved = dispatcher.reconcile(externalDelegate: dispatcher)
-
-        #expect(resolved === dispatcher)
-        // dispatcher не регистрируется как внешний делегат.
+        let observer = RecordingDelegate()
+        dispatcher.addDelegate(observer, category: .internal)
         let nav = UINavigationController()
+
+        // act
+        let resolved = dispatcher.reconcile(externalDelegate: dispatcher)
         dispatcher.navigationController(nav, didShow: UIViewController(), animated: false)
-        // instance продолжает работать, а сам dispatcher получает событие ровно
-        // один раз (он не дублируется как внешний делегат).
-        #expect(instance.calls.count == 1)
+
+        // assert
+        #expect(resolved === dispatcher)
+        #expect(observer.didReceiveDidShow)
     }
 
-    /// Идемпотентность `reconcile`: повторная установка того же foreign не
-    /// создаёт дубль в массиве delegates. Поведение проверяется через диспетчеризацию:
-    /// foreign получает didShow ровно один раз (а не дважды) после двух вызовов
-    /// `reconcile` с тем же объектом.
-    @Test func reconcileSameForeignTwiceIsIdempotent() {
+    /// Идемпотентность `reconcile`: повторная установка того же делегата не
+    /// создаёт дубль — событие доставляется ровно один раз.
+    @Test(.tags(.reconcile)) func reconcileSameForeignTwiceIsIdempotent() {
+        // arrange
         let dispatcher = NavigationControllerDelegateDispatcher()
         let foreign = RecordingDelegate()
-
-        _ = dispatcher.reconcile(externalDelegate: foreign)
-        _ = dispatcher.reconcile(externalDelegate: foreign)
-
-        // foreign зарегистрирован ровно один раз — получает событие один раз.
         let nav = UINavigationController()
+
+        // act
+        _ = dispatcher.reconcile(externalDelegate: foreign)
+        _ = dispatcher.reconcile(externalDelegate: foreign)
         dispatcher.navigationController(nav, didShow: UIViewController(), animated: false)
+
+        // assert
         #expect(foreign.calls.count == 1)
     }
 
-    /// Полный сценарий P1: внешний код назначает делегата, затем nil —
-    /// внутренний наблюдатель Core выживает в обоих случаях.
-    @Test func instanceObserverSurvivesApplicationDelegateChanges() {
+    /// Внешний код назначает делегата, затем nil — внутренний наблюдатель
+    /// выживает в обоих случаях.
+    @Test(.tags(.reconcile)) func observerSurvivesExternalDelegateChanges() {
+        // arrange
         let dispatcher = NavigationControllerDelegateDispatcher()
-        let instance = RecordingDelegate()
-        dispatcher.addDelegate(instance, category: .internal)
-
+        let observer = RecordingDelegate()
+        dispatcher.addDelegate(observer, category: .internal)
         let foreign = RecordingDelegate()
+        let nav = UINavigationController()
+
+        // act
         _ = dispatcher.reconcile(externalDelegate: foreign)
         _ = dispatcher.reconcile(externalDelegate: nil)
-
-        let nav = UINavigationController()
         dispatcher.navigationController(nav, didShow: UIViewController(), animated: false)
-        // .instance получил событие несмотря на смену/сброс application delegate.
-        #expect(instance.calls.count == 1)
+
+        // assert
+        #expect(observer.didReceiveDidShow)
     }
 
     // MARK: - End-to-end swizzling (через РЕАЛЬНЫЙ setter `delegate`)
 
-    /// Интеграционный тест P1: перехват `nav.delegate = foreign` / `= nil` через
-    /// РЕАЛЬНЫЙ setter (swizzling подключается автоматически при первом `install`).
-    ///
-    /// В отличие от тестов `reconcile*`, здесь события и установка делегата идут
-    /// через настоящий `nav.delegate` (setter после swizzling), а не через прямой
-    /// вызов `dispatcher.reconcile`. Верифицируется контракт P1:
-    /// - после `nav.delegate = foreign` слот читается как dispatcher (не foreign),
-    ///   foreign тем не менее получает события как `.application`;
-    /// - после `nav.delegate = nil` слот читается как dispatcher (не nil),
-    ///   instance-наблюдатель Core не теряется, foreign больше не получает события;
-    /// - доставка `didShow` instance-наблюдателю survives обеих операций.
-    @Test func setDelegateInterceptorKeepsDispatcherInSlotAndSurvivesReset() {
+    /// Перехват `nav.delegate = foreign` / `= nil` через реальный setter
+    /// (swizzling подключается автоматически при первом `install`).
+    @Test(.tags(.swizzling)) func setDelegateInterceptorKeepsDispatcherInSlotAndSurvivesReset() {
+        // arrange
         let nav = UINavigationController()
-        // install запускает swizzling (один раз на процесс) и ставит dispatcher в слот.
         let dispatcher = NavigationControllerDelegateDispatcher.install(on: nav)
+        let observer = RecordingDelegate()
+        dispatcher.addDelegate(observer, category: .internal)
 
-        // Регистрируем instance-наблюдатель Core (как это делает StackRouter/InlineRouter).
-        let instance = RecordingDelegate()
-        dispatcher.addDelegate(instance, category: .internal)
-
-        // Внешний код назначает своего делегата через РЕАЛЬНЫЙ setter.
+        // act (часть 1): внешний код назначает своего делегата через реальный setter.
         let foreign = RecordingDelegate()
         nav.delegate = foreign
 
-        // Сознательное поведение обёртки: dispatcher возвращён в слот, поэтому
-        // nav.delegate читается как dispatcher, а не как foreign.
-        let slotAfterForeign = nav.delegate as? NavigationControllerDelegateDispatcher
-        #expect(slotAfterForeign === dispatcher)
+        // assert (часть 1): слот читается как dispatcher (не foreign),
+        // оба делегата получают события.
+        #expect((nav.delegate as? NavigationControllerDelegateDispatcher) === dispatcher)
+        nav.delegate?.navigationController?(nav, didShow: UIViewController(), animated: false)
+        #expect(foreign.didReceiveDidShow)
+        #expect(observer.didReceiveDidShow)
 
-        // foreign получает события как .application, instance — как .instance,
-        // через реальный вызов делегата nav (как это делает UIKit).
-        let shown = UIViewController()
-        nav.delegate?.navigationController?(nav, didShow: shown, animated: false)
-        #expect(foreign.calls.count == 1)
-        #expect(instance.calls.count == 1)
-
-        // Внешний код сбрасывает делегата в nil через РЕАЛЬНЫЙ setter.
+        // act (часть 2): внешний код сбрасывает делегата в nil.
         nav.delegate = nil
 
-        // Сюрприз для внешнего кода (см. документацию контракта): слот НЕ nil —
-        // там снова dispatcher. Core сохраняет instance-наблюдатель.
-        let slotAfterNil = nav.delegate as? NavigationControllerDelegateDispatcher
-        #expect(slotAfterNil === dispatcher)
+        // assert (часть 2): слот НЕ nil — там снова dispatcher; наблюдатель
+        // продолжает работать, foreign больше не получает события.
+        #expect((nav.delegate as? NavigationControllerDelegateDispatcher) === dispatcher)
         #expect(nav.delegate != nil)
-
-        // foreign больше не получает события (снят как .application)...
-        let shown2 = UIViewController()
-        nav.delegate?.navigationController?(nav, didShow: shown2, animated: false)
+        nav.delegate?.navigationController?(nav, didShow: UIViewController(), animated: false)
         #expect(foreign.calls.count == 1)
-        // ...а instance-наблюдатель продолжает работать после сброса делегата.
-        #expect(instance.calls.count == 2)
+        #expect(observer.calls.count == 2)
+    }
+}
+
+// MARK: - Swizzling co-existence
+
+@MainActor
+@Suite("Swizzling co-existence")
+struct DispatcherSwizzlingCoexistenceTests {
+    /// Сценарий: другая библиотека тоже свиззлит `setDelegate:` уже после нас.
+    ///
+    /// Принцип: если чужой swizzle сделан правильно — вызывает исходную
+    /// реализацию селектора, — наша обёртка `fl_setDelegate` по-прежнему
+    /// отрабатывает, а оригинальный setter UIKit всё равно вызывается. Проверяем,
+    /// что при двойном swizzle: (а) dispatcher остаётся в слоте и `reconcile`
+    /// выполняется; (б) оригинальный setter UIKit выполняется (значение слота
+    /// реально меняется на dispatcher).
+    ///
+    /// IMP обязательно восстанавливается (обратный обмен), чтобы не загрязнять
+    /// остальные тесты.
+    @Test(.tags(.swizzling)) func foreignSwizzleOnSameSelectorDoesNotBreakDispatcher() {
+        // arrange
+        let nav = UINavigationController()
+        let dispatcher = NavigationControllerDelegateDispatcher.install(on: nav)
+        let observer = RecordingDelegate()
+        dispatcher.addDelegate(observer, category: .internal)
+
+        // act + assert с восстановлением IMP в любом случае.
+        defer {
+            // Возвращаем IMP в состояние «как было»: снова обмениваем те же методы.
+            Self.swapSetDelegateWithTestWrapper()
+        }
+        // Дополнительный swizzle поверх нашего: имитируем чужую библиотеку,
+        // которая правильно вызывает исходную реализацию.
+        Self.swapSetDelegateWithTestWrapper()
+
+        // act: внешний код назначает делегата — вызов идёт через
+        // testWrapper -> fl_setDelegate -> UIKit setter.
+        let foreign = RecordingDelegate()
+        nav.delegate = foreign
+
+        // assert: оригинальный setter UIKit вызвался (слот реально равен
+        // dispatcher), а наша обёртка отработала (foreign зарегистрирован,
+        // наблюдатель цел).
+        #expect((nav.delegate as? NavigationControllerDelegateDispatcher) === dispatcher)
+        nav.delegate?.navigationController?(nav, didShow: UIViewController(), animated: false)
+        #expect(foreign.didReceiveDidShow)
+        #expect(observer.didReceiveDidShow)
+
+        // act: сброс через nil тоже проходит через двойной swizzle.
+        nav.delegate = nil
+
+        // assert: слот снова dispatcher, foreign снят, наблюдатель продолжает работу.
+        #expect((nav.delegate as? NavigationControllerDelegateDispatcher) === dispatcher)
+        nav.delegate?.navigationController?(nav, didShow: UIViewController(), animated: false)
+        #expect(foreign.calls.count == 1)
+        #expect(observer.calls.count == 2)
+    }
+
+    /// Обменивает IMP селектора `setDelegate:` и тестовой обёртки.
+    ///
+    /// Тестовая обёртка «чужой библиотеки» корректно вызывает предыдущую
+    /// реализацию селектора (`setDelegate:`), поэтому цепочка swizzling-ов
+    /// сохраняется.
+    private static func swapSetDelegateWithTestWrapper() {
+        let originalSelector = #selector(setter: UINavigationController.delegate)
+        let testSelector = #selector(UINavigationController.dispatcherTests_foreignSetDelegate(_:))
+
+        guard
+            let originalMethod = class_getInstanceMethod(UINavigationController.self, originalSelector),
+            let testMethod = class_getInstanceMethod(UINavigationController.self, testSelector)
+        else {
+            Issue.record("Не удалось найти методы для тестового swizzle")
+            return
+        }
+        method_exchangeImplementations(originalMethod, testMethod)
+    }
+}
+
+/// Тестовая обёртка «чужой библиотеки»: вызывает предыдущую реализацию
+/// селектора `setDelegate:` (после нашего swizzle это наша `fl_setDelegate`).
+///
+/// После обмена IMP селектор `setDelegate:` указывает на эту обёртку, а селектор
+/// `dispatcherTests_foreignSetDelegate:` — на предыдущую реализацию. Вызов
+/// `self.dispatcherTests_foreignSetDelegate(value)` — это НЕ рекурсия, а переход
+/// к предыдущему звену цепочки swizzling-ов.
+private extension UINavigationController {
+    @objc func dispatcherTests_foreignSetDelegate(_ delegate: (any UINavigationControllerDelegate)?) {
+        // Корректно делегируем предыдущей реализации цепочки swizzling-ов.
+        self.dispatcherTests_foreignSetDelegate(delegate)
     }
 }
 
 // MARK: - Coordinating protocol
 
 @MainActor
-@Suite("Coordinating Protocol Tests")
+@Suite("Coordinating Protocol")
 struct CoordinatingProtocolTests {
     /// `FlowNode.coordinator` типизирован через `any Coordinating`: принимает
     /// любой координатор, соответствующий протоколу.
     @Test func flowNodeStoresCoordinatingCoordinator() {
+        // arrange
         let coordinator = CoordinatingStub()
+
+        // act
         let node = FlowNode(coordinator: coordinator)
 
+        // assert
         #expect(node.coordinator === coordinator)
     }
 
     /// Дефолтная реализация `receive(_:) -> false`: координатор без override
     /// не обрабатывает интенты.
     @Test func defaultReceiveReturnsFalse() {
+        // arrange
         let coordinator = CoordinatingStub()
         let intent = StubIntent()
 
-        #expect(coordinator.receive(intent) == false)
+        // act
+        let result = coordinator.receive(intent)
+
+        // assert
+        #expect(result == false)
     }
 
     /// Наследник `BaseCoordinator` автоматически соответствует `Coordinating`
     /// и наследует дефолтный `receive(_:) -> false`.
     @Test func baseCoordinatorConformsToCoordinating() {
+        // arrange
         let composer = CoordinatorTestComposer()
         let coordinator = NoopStackCoordinator(router: DummyStackNavigation(), composer: composer)
-
         let intent = StubIntent()
-        #expect(coordinator.receive(intent) == false)
-        // BaseCoordinator действительно соответствует Coordinating.
+
+        // act
+        let result = coordinator.receive(intent)
+
+        // assert
+        #expect(result == false)
         let asCoordinating: any Coordinating = coordinator
         #expect(type(of: asCoordinating) == NoopStackCoordinator.self)
     }
 
     /// Override `receive(_:) -> true` в наследнике останавливает распространение.
     @Test func overridingReceiveReturnsTrue() {
+        // arrange
         let composer = CoordinatorTestComposer()
         let coordinator = HandlingStackCoordinator(router: DummyStackNavigation(), composer: composer)
-
         let intent = StubIntent()
-        #expect(coordinator.receive(intent) == true)
+
+        // act
+        let result = coordinator.receive(intent)
+
+        // assert
+        #expect(result == true)
     }
 
-    /// Типы-маркеры: `CoordinatorIntent` не требует реализаций — конкретный
-    /// интент определяется приложением.
+    /// `CoordinatorIntent` — маркерный протокол: конкретный тип переносится
+    /// без потерь.
     @Test func coordinatorIntentIsMarkerProtocol() {
+        // arrange
         let intent: any CoordinatorIntent = StubIntent()
-        // Маркерный протокол: конкретный тип переносится без потерь.
+
+        // act + assert
         #expect(type(of: intent) == StubIntent.self)
     }
 }
