@@ -8,24 +8,48 @@ import ObjectiveC
 /// публичного lifecycle-API.
 @MainActor
 protocol FlowInstanceAttachmentStoring {
-    /// Удерживает объект (`retainer`) от контроллера экрана, продлевая его жизнь
-    /// до времени жизни самого экрана.
+    /// Удерживает объект от контроллера экрана, продлевая его жизнь до времени
+    /// жизни самого экрана.
+    ///
+    /// - Parameters:
+    ///   - retainer: Объект, который нужно удержать.
+    ///   - viewController: Контроллер экрана, к которому привязывается удержание.
     func retain(_ retainer: AnyObject, to viewController: UIViewController)
 
     /// Освобождает ранее удержанный объект от контроллера экрана.
+    ///
+    /// - Parameters:
+    ///   - retainer: Объект, удержание которого снимается.
+    ///   - viewController: Контроллер экрана, от которого отвязывается удержание.
     func release(_ retainer: AnyObject, from viewController: UIViewController)
 
-    /// Хранит связь `UIViewController -> FlowNode`. Родительские роутеры
-    /// используют её, чтобы усыновить дочерний flow без публичного lifecycle-API.
+    /// Привязывает узел flow к контроллеру экрана. Родительские роутеры
+    /// используют эту связь, чтобы усыновить дочерний flow без публичного
+    /// lifecycle-API.
+    ///
+    /// - Parameters:
+    ///   - instance: Узел flow, который привязывается.
+    ///   - viewController: Контроллер экрана, к которому привязывается узел.
     func attach(_ instance: FlowNode, to viewController: UIViewController)
 
     /// Разрывает связь узла с контроллером экрана.
+    ///
+    /// - Parameters:
+    ///   - instance: Узел flow, связь которого снимается.
+    ///   - viewController: Контроллер экрана, от которого отвязывается узел.
     func detach(_ instance: FlowNode, from viewController: UIViewController)
 
-    /// Возвращает первый привязанный узел (поиск в порядке добавления).
+    /// Возвращает первый привязанный к контроллеру узел в порядке добавления.
+    ///
+    /// - Parameter viewController: Контроллер экрана, для которого ищется узел.
+    /// - Returns: Первый привязанный узел, либо `nil`, если привязок нет.
     func instance(attachedTo viewController: UIViewController) -> FlowNode?
 
-    /// Полный список узлов, привязанных к контроллеру, в порядке добавления.
+    /// Возвращает все узлы, привязанные к контроллеру, в порядке добавления.
+    ///
+    /// - Parameter viewController: Контроллер экрана, для которого ищутся узлы.
+    /// - Returns: Список привязанных узлов в порядке добавления (пустой, если
+    ///   привязок нет).
     func instances(attachedTo viewController: UIViewController) -> [FlowNode]
 }
 
@@ -44,7 +68,6 @@ private final class FlowInstanceAssociatedStorage {
 }
 
 private typealias WeakAttachedFlowNode = WeakContainer<FlowNode, Void>
-
 
 /// Реализация attachment store через associated objects на `UIViewController`.
 @MainActor
@@ -120,7 +143,8 @@ final class AssociatedObjectFlowInstanceAttachmentStore: FlowInstanceAttachmentS
         }
 
         // Чистим мёртвые записи: после освобождения узла слабая ссылка
-        // обнуляется, и запись с ней нужно убрать из словаря и порядка.
+        // обнуляется, и запись нужно убрать из словаря привязок и из массива
+        // порядка добавления (`instanceOrder`).
         let deadIDs = storage.attachedInstances.filter { $0.value.object == nil }.keys
         for id in deadIDs {
             storage.attachedInstances.removeValue(forKey: id)

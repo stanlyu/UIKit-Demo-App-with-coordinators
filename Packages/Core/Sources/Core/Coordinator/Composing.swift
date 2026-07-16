@@ -24,13 +24,20 @@ public protocol Composing {
 /// достаточно передать замыкание, строящее экран по маршруту.
 @MainActor
 public struct InlineComposer<Route>: Composing {
+    /// Замыкание, строящее экран по маршруту.
     public let buildBlock: @MainActor @Sendable (Route) -> UIViewController
 
+    /// Создаёт компоузер, который строит экраны переданным замыканием.
+    ///
     /// - Parameter buildBlock: Замыкание, создающее экран по маршруту.
     public init(buildBlock: @MainActor @Sendable @escaping (Route) -> UIViewController) {
         self.buildBlock = buildBlock
     }
 
+    /// Возвращает экран для заданного маршрута, построенный замыканием `buildBlock`.
+    ///
+    /// - Parameter route: Маршрут, для которого нужно создать экран.
+    /// - Returns: Контроллер экрана.
     public func makeViewController(for route: Route) -> UIViewController {
         return buildBlock(route)
     }

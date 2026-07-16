@@ -2,7 +2,12 @@ import UIKit
 
 @MainActor
 protocol FlowLifecycleRouter: AnyObject {
+    /// Возвращает родительский контроллер, извлекая его из роутера, либо `nil`,
+    /// если он ещё не установлен.
     func extractParentViewController() -> UIViewController?
+
+    /// Передаёт роутеру менеджер узлов, привязывающий узел координатора к
+    /// родительскому контроллеру.
     func setNodesManager(_ nodesManager: any FlowNodesManaging)
 }
 

@@ -24,6 +24,8 @@ open class BaseCoordinator<Navigation, Route>: Coordinating {
     /// Type-erased компоузер для построения навигационных элементов по маршруту.
     public let composer: ComposerBox<Route>
 
+    /// Создаёт координатора с заданным навигационным интерфейсом и компоузером.
+    ///
     /// - Parameters:
     ///   - router: Навигационный интерфейс.
     ///   - composer: Компоузер, строящий экраны по маршрутам типа `Route`.

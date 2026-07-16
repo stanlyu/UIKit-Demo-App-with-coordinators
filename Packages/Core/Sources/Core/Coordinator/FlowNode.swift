@@ -62,6 +62,8 @@ public final class FlowNode: AnyObject {
     /// Дочерние узлы в порядке добавления.
     public private(set) var children: [FlowNode] = []
 
+    /// Создаёт узел дерева flow для заданного координатора.
+    ///
     /// - Parameter coordinator: Координатор, которому принадлежит узел.
     public init(coordinator: any Coordinating) {
         self.coordinator = coordinator
