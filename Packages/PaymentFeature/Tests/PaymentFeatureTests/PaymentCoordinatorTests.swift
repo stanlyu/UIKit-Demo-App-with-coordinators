@@ -7,10 +7,13 @@ import Testing
 struct PaymentCoordinatorTests {
     @Test
     func start_setsPaymentScreenWithoutAnimation() {
+        // arrange
         let sut = makeSUT()
 
+        // act
         sut.coordinator.start(CoordinatorStartContext())
 
+        // assert
         #expect(sut.router.setRootCalls.count == 1)
         #expect(sut.router.setRootCalls[0].item.isWrapping(sut.paymentViewController))
         #expect(sut.router.setRootCalls[0].animated == false)
@@ -18,45 +21,41 @@ struct PaymentCoordinatorTests {
 
     @Test
     func backTap_forwardsCancelledEventToModuleOutput() {
+        // arrange
         var receivedEvents: [PaymentNavigationOutputEvent] = []
         let sut = makeSUT(onEvent: { receivedEvents.append($0) })
-        sut.coordinator.start(CoordinatorStartContext())
 
+        // act
+        sut.coordinator.start(CoordinatorStartContext())
         sut.paymentEventHandler(.onBackTap)
 
-        guard let event = receivedEvents.last else {
-            Issue.record("Не получено событие .cancelled")
-            return
-        }
-        guard case .cancelled = event else {
-            Issue.record("Ожидалось событие .cancelled")
-            return
+        // assert
+        if case .cancelled = receivedEvents.last {
+            #expect(true)
+        } else {
+            #expect(false, "Ожидалось событие .cancelled")
         }
     }
 
     @Test
     func paymentCompleted_forwardsCompletedResultToModuleOutput() {
+        // arrange
         var receivedEvents: [PaymentNavigationOutputEvent] = []
         let sut = makeSUT(onEvent: { receivedEvents.append($0) })
         let result = PaymentResult.failure(amount: 2500, error: .processingTimeout)
 
+        // act
         sut.coordinator.start(CoordinatorStartContext())
         sut.paymentEventHandler(.onPaymentCompleted(result))
 
-        guard let event = receivedEvents.last else {
-            Issue.record("Не получено событие .completed")
-            return
+        // assert
+        if case let .completed(receivedResult) = receivedEvents.last,
+           case let .failure(amount, error) = receivedResult {
+            #expect(amount == 2500)
+            #expect(error == .processingTimeout)
+        } else {
+            #expect(false, "Ожидалось событие .completed(.failure)")
         }
-        guard case let .completed(receivedResult) = event else {
-            Issue.record("Ожидалось событие .completed")
-            return
-        }
-        guard case let .failure(amount, error) = receivedResult else {
-            Issue.record("Ожидался failure результат")
-            return
-        }
-        #expect(amount == 2500)
-        #expect(error == .processingTimeout)
     }
 }
 
@@ -94,6 +93,8 @@ private extension PaymentCoordinatorTests {
     }
 }
 
+// Записывающий роутер для `StackNavigation`. В тестах payment проверяется
+// только `setRootCalls`; остальные команды стека — no-op заглушки.
 @MainActor
 private final class MockStackRouter: StackNavigation {
     struct PushCall {
@@ -101,42 +102,29 @@ private final class MockStackRouter: StackNavigation {
         let animated: Bool
     }
 
-    var items: [RouterItem] = []
-    private(set) var pushCalls: [PushCall] = []
-
     struct SetRootCall {
         let item: RouterItem
         let animated: Bool
     }
+
     private(set) var setRootCalls: [SetRootCall] = []
+    private(set) var pushCalls: [PushCall] = []
+
+    var items: [RouterItem] = []
 
     func setRoot(_ item: RouterItem, animated: Bool) {
         setRootCalls.append(SetRootCall(item: item, animated: animated))
-        items = [item]
     }
 
     func push(_ item: RouterItem, animated: Bool, completion: (() -> Void)?) {
         pushCalls.append(PushCall(item: item, animated: animated))
-        items.append(item)
         completion?()
     }
 
-    func pop(animated: Bool, completion: (() -> Void)?) {
-        completion?()
-    }
-
-    func popToRoot(animated: Bool, completion: (() -> Void)?) {
-        completion?()
-    }
-
-    func popTo(_ item: RouterItem, animated: Bool, completion: (() -> Void)?) {
-        completion?()
-    }
-
-    func setStack(_ items: [RouterItem], animated: Bool) {
-        self.items = items
-    }
-    
+    func pop(animated: Bool, completion: (() -> Void)?) { completion?() }
+    func popToRoot(animated: Bool, completion: (() -> Void)?) { completion?() }
+    func popTo(_ item: RouterItem, animated: Bool, completion: (() -> Void)?) { completion?() }
+    func setStack(_ items: [RouterItem], animated: Bool) {}
     func present(_ item: RouterItem, animated: Bool, completion: (() -> Void)?) {}
     func dismiss(animated: Bool, completion: (() -> Void)?) {}
 }
