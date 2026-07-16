@@ -6,28 +6,28 @@ import ObjectiveC
 // MARK: - Tags
 
 extension Tag {
-    /// Доставка событий нескольким делегатам и порядок доставки.
+    // Доставка событий нескольким делегатам и порядок доставки.
     @Tag static var dispatch: Tag
-    /// Жизненный цикл слабых ссылок на делегатов.
+    // Жизненный цикл слабых ссылок на делегатов.
     @Tag static var weakLifecycle: Tag
-    /// Чистая логика согласования делегата (без swizzling).
+    // Чистая логика согласования делегата (без swizzling).
     @Tag static var reconcile: Tag
-    /// Сквозные сценарии через перехваченный setter `delegate`.
+    // Сквозные сценарии через перехваченный setter `delegate`.
     @Tag static var swizzling: Tag
 }
 
 // MARK: - Test doubles
 
-/// Общий лог порядка вызовов (reference-тип), в который делегаты дописывают свою
-/// метку при срабатывании `didShow`. Нужен для тестов ОТНОСИТЕЛЬНОГО порядка
-/// доставки событий (внутренний наблюдатель раньше внешнего и т.п.).
+// Общий лог порядка вызовов (reference-тип), в который делегаты дописывают свою
+// метку при срабатывании `didShow`. Нужен для тестов ОТНОСИТЕЛЬНОГО порядка
+// доставки событий (внутренний наблюдатель раньше внешнего и т.п.).
 @MainActor
 private final class OrderLog {
     var entries: [String] = []
 }
 
-/// Записывает вызовы `UINavigationControllerDelegate` и опционально
-/// возвращает тестовый animator/interaction/orientation.
+// Записывает вызовы `UINavigationControllerDelegate` и опционально
+// возвращает тестовый animator/interaction/orientation.
 @MainActor
 private final class RecordingDelegate: NSObject, UINavigationControllerDelegate {
     enum Call {
@@ -46,10 +46,10 @@ private final class RecordingDelegate: NSObject, UINavigationControllerDelegate 
     var stubbedOrientations: UIInterfaceOrientationMask?
     var stubbedPreferredOrientation: UIInterfaceOrientation?
 
-    /// Общий лог порядка для тестов относительного порядка didShow.
-    /// Опциональный — в большинстве тестов не задаётся и не влияет на поведение.
+    // Общий лог порядка для тестов относительного порядка didShow.
+    // Опциональный — в большинстве тестов не задаётся и не влияет на поведение.
     var didShowOrderLog: OrderLog?
-    /// Метка, которую делегат дописывает в `didShowOrderLog` при срабатывании didShow.
+    // Метка, которую делегат дописывает в `didShowOrderLog` при срабатывании didShow.
     var didShowOrderLabel: String = ""
 
     func navigationController(
@@ -105,13 +105,13 @@ private final class RecordingDelegate: NSObject, UINavigationControllerDelegate 
 }
 
 extension RecordingDelegate {
-    /// `true`, если делегат получил хотя бы одно событие `didShow`.
+    // `true`, если делегат получил хотя бы одно событие `didShow`.
     var didReceiveDidShow: Bool {
         calls.contains { if case .didShow = $0 { return true }; return false }
     }
 }
 
-/// Простой animator для проверки external-first приоритета.
+// Простой animator для проверки external-first приоритета.
 @MainActor
 private final class StubAnimator: NSObject, UIViewControllerAnimatedTransitioning {
     func transitionDuration(using transitionContext: (any UIViewControllerContextTransitioning)?) -> TimeInterval { 0 }
@@ -123,7 +123,7 @@ private final class StubAnimator: NSObject, UIViewControllerAnimatedTransitionin
 @MainActor
 @Suite("NavigationControllerDelegateDispatcher")
 struct NavigationControllerDelegateDispatcherTests {
-    /// Внешние и внутренние делегаты одновременно получают события.
+    // Внешние и внутренние делегаты одновременно получают события.
     @Test(.tags(.dispatch)) func multiplexingDeliversToAllDelegates() {
         // arrange
         let dispatcher = NavigationControllerDelegateDispatcher()
@@ -145,12 +145,12 @@ struct NavigationControllerDelegateDispatcherTests {
         #expect(observer.calls.contains { if case .willShow = $0 { return true }; return false })
     }
 
-    /// didShow: внутренний наблюдатель получает событие РАНЬШЕ внешнего делегата.
-    ///
-    /// После системной кнопки «назад» и свайпа-back внешний делегат должен видеть
-    /// уже обновлённое дерево flow-инстансов. Проверяется ОТНОСИТЕЛЬНЫЙ порядок
-    /// (а не просто факт вызова): оба делегата дописывают себя в общий лог при
-    /// didShow, и индекс наблюдателя должен быть строго меньше индекса внешнего.
+    // didShow: внутренний наблюдатель получает событие РАНЬШЕ внешнего делегата.
+    //
+    // После системной кнопки «назад» и свайпа-back внешний делегат должен видеть
+    // уже обновлённое дерево flow-инстансов. Проверяется ОТНОСИТЕЛЬНЫЙ порядок
+    // (а не просто факт вызова): оба делегата дописывают себя в общий лог при
+    // didShow, и индекс наблюдателя должен быть строго меньше индекса внешнего.
     @Test(.tags(.dispatch)) func didShowIsInternalObserverFirst() {
         // arrange
         let dispatcher = NavigationControllerDelegateDispatcher()
@@ -183,8 +183,8 @@ struct NavigationControllerDelegateDispatcherTests {
         #expect(observerIndex < externalIndex)
     }
 
-    /// willShow: сохраняется порядок регистрации (дерево на willShow не меняется,
-    /// поэтому порядок доставки не важен — проверяем лишь факт доставки обоим).
+    // willShow: сохраняется порядок регистрации (дерево на willShow не меняется,
+    // поэтому порядок доставки не важен — проверяем лишь факт доставки обоим).
     @Test(.tags(.dispatch)) func willShowKeepsRegistrationOrder() {
         // arrange
         let dispatcher = NavigationControllerDelegateDispatcher()
@@ -202,8 +202,8 @@ struct NavigationControllerDelegateDispatcherTests {
         #expect(second.calls.count == 1)
     }
 
-    /// animationController / orientation: внешний делегат имеет приоритет
-    /// (анимации и ориентации принадлежат приложению).
+    // animationController / orientation: внешний делегат имеет приоритет
+    // (анимации и ориентации принадлежат приложению).
     @Test(.tags(.dispatch)) func animationControllerIsExternalFirst() {
         // arrange
         let dispatcher = NavigationControllerDelegateDispatcher()
@@ -230,8 +230,8 @@ struct NavigationControllerDelegateDispatcherTests {
 
     // MARK: - Weak cleanup
 
-    /// `removeReleasedDelegates()` убирает мёртвые слабые ссылки:
-    /// освобождённый делегат больше не получает события.
+    // `removeReleasedDelegates()` убирает мёртвые слабые ссылки:
+    // освобождённый делегат больше не получает события.
     @Test(.tags(.weakLifecycle)) func removeReleasedDelegatesDropsDeadWeakReferences() {
         // arrange
         let dispatcher = NavigationControllerDelegateDispatcher()
@@ -261,8 +261,8 @@ struct NavigationControllerDelegateDispatcherTests {
         #expect(survivor.didReceiveDidShow)
     }
 
-    /// Повторное событие после освобождения делегата без явного cleanup
-    /// также не падает (мёртвые ссылки фильтруются на лету).
+    // Повторное событие после освобождения делегата без явного cleanup
+    // также не падает (мёртвые ссылки фильтруются на лету).
     @Test(.tags(.weakLifecycle)) func dispatchSurvivesReleasedDelegateWithoutExplicitCleanup() {
         // arrange
         let dispatcher = NavigationControllerDelegateDispatcher()
@@ -283,8 +283,8 @@ struct NavigationControllerDelegateDispatcherTests {
 
     // MARK: - reconcile (чистая логика, без swizzling)
 
-    /// `reconcile(externalDelegate: foreign)` регистрирует внешний делегат и
-    /// снова делает dispatcher значением свойства `delegate`.
+    // `reconcile(externalDelegate: foreign)` регистрирует внешний делегат и
+    // снова делает dispatcher значением свойства `delegate`.
     @Test(.tags(.reconcile)) func reconcileRegistersForeignDelegate() {
         // arrange
         let dispatcher = NavigationControllerDelegateDispatcher()
@@ -300,8 +300,8 @@ struct NavigationControllerDelegateDispatcherTests {
         #expect(foreign.didReceiveDidShow)
     }
 
-    /// `reconcile(externalDelegate: nil)` снимает внешнего делегата, но не
-    /// трогает внутреннего наблюдателя — дерево должно обновляться.
+    // `reconcile(externalDelegate: nil)` снимает внешнего делегата, но не
+    // трогает внутреннего наблюдателя — дерево должно обновляться.
     @Test(.tags(.reconcile)) func reconcileNilRemovesExternalKeepsObserver() {
         // arrange
         let dispatcher = NavigationControllerDelegateDispatcher()
@@ -320,8 +320,8 @@ struct NavigationControllerDelegateDispatcherTests {
         #expect(observer.didReceiveDidShow)
     }
 
-    /// Замена внешнего делегата: прежний снимается, новый регистрируется.
-    /// Одновременно активен только один внешний делегат.
+    // Замена внешнего делегата: прежний снимается, новый регистрируется.
+    // Одновременно активен только один внешний делегат.
     @Test(.tags(.reconcile)) func reconcileReplacesExternalDelegate() {
         // arrange
         let dispatcher = NavigationControllerDelegateDispatcher()
@@ -339,8 +339,8 @@ struct NavigationControllerDelegateDispatcherTests {
         #expect(second.didReceiveDidShow)
     }
 
-    /// `reconcile(externalDelegate: dispatcher)` — проброс без действий:
-    /// ничего не ломается, возвращается сам dispatcher.
+    // `reconcile(externalDelegate: dispatcher)` — проброс без действий:
+    // ничего не ломается, возвращается сам dispatcher.
     @Test(.tags(.reconcile)) func reconcileDispatcherItselfIsNoOp() {
         // arrange
         let dispatcher = NavigationControllerDelegateDispatcher()
@@ -357,8 +357,8 @@ struct NavigationControllerDelegateDispatcherTests {
         #expect(observer.didReceiveDidShow)
     }
 
-    /// Идемпотентность `reconcile`: повторная установка того же делегата не
-    /// создаёт дубль — событие доставляется ровно один раз.
+    // Идемпотентность `reconcile`: повторная установка того же делегата не
+    // создаёт дубль — событие доставляется ровно один раз.
     @Test(.tags(.reconcile)) func reconcileSameForeignTwiceIsIdempotent() {
         // arrange
         let dispatcher = NavigationControllerDelegateDispatcher()
@@ -374,8 +374,8 @@ struct NavigationControllerDelegateDispatcherTests {
         #expect(foreign.calls.count == 1)
     }
 
-    /// Внешний код назначает делегата, затем nil — внутренний наблюдатель
-    /// выживает в обоих случаях.
+    // Внешний код назначает делегата, затем nil — внутренний наблюдатель
+    // выживает в обоих случаях.
     @Test(.tags(.reconcile)) func observerSurvivesExternalDelegateChanges() {
         // arrange
         let dispatcher = NavigationControllerDelegateDispatcher()
@@ -395,8 +395,8 @@ struct NavigationControllerDelegateDispatcherTests {
 
     // MARK: - End-to-end swizzling (через РЕАЛЬНЫЙ setter `delegate`)
 
-    /// Перехват `nav.delegate = foreign` / `= nil` через реальный setter
-    /// (swizzling подключается автоматически при первом `install`).
+    // Перехват `nav.delegate = foreign` / `= nil` через реальный setter
+    // (swizzling подключается автоматически при первом `install`).
     @Test(.tags(.swizzling)) func setDelegateInterceptorKeepsDispatcherInSlotAndSurvivesReset() {
         // arrange
         let nav = UINavigationController()
@@ -433,17 +433,17 @@ struct NavigationControllerDelegateDispatcherTests {
 @MainActor
 @Suite("Swizzling co-existence")
 struct DispatcherSwizzlingCoexistenceTests {
-    /// Сценарий: другая библиотека тоже свиззлит `setDelegate:` уже после нас.
-    ///
-    /// Принцип: если чужой swizzle сделан правильно — вызывает исходную
-    /// реализацию селектора, — наша обёртка `fl_setDelegate` по-прежнему
-    /// отрабатывает, а оригинальный setter UIKit всё равно вызывается. Проверяем,
-    /// что при двойном swizzle: (а) dispatcher остаётся значением свойства `delegate` и `reconcile`
-    /// выполняется; (б) оригинальный setter UIKit выполняется (значение свойства `delegate`
-    /// реально меняется на dispatcher).
-    ///
-    /// IMP обязательно восстанавливается (обратный обмен), чтобы не загрязнять
-    /// остальные тесты.
+    // Сценарий: другая библиотека тоже свиззлит `setDelegate:` уже после нас.
+    //
+    // Принцип: если чужой swizzle сделан правильно — вызывает исходную
+    // реализацию селектора, — наша обёртка `fl_setDelegate` по-прежнему
+    // отрабатывает, а оригинальный setter UIKit всё равно вызывается. Проверяем,
+    // что при двойном swizzle: (а) dispatcher остаётся значением свойства `delegate` и `reconcile`
+    // выполняется; (б) оригинальный setter UIKit выполняется (значение свойства `delegate`
+    // реально меняется на dispatcher).
+    //
+    // IMP обязательно восстанавливается (обратный обмен), чтобы не загрязнять
+    // остальные тесты.
     @Test(.tags(.swizzling)) func foreignSwizzleOnSameSelectorDoesNotBreakDispatcher() {
         // arrange
         let nav = UINavigationController()
@@ -483,11 +483,11 @@ struct DispatcherSwizzlingCoexistenceTests {
         #expect(observer.calls.count == 2)
     }
 
-    /// Обменивает IMP селектора `setDelegate:` и тестовой обёртки.
-    ///
-    /// Тестовая обёртка «чужой библиотеки» корректно вызывает предыдущую
-    /// реализацию селектора (`setDelegate:`), поэтому цепочка swizzling-ов
-    /// сохраняется.
+    // Обменивает IMP селектора `setDelegate:` и тестовой обёртки.
+    //
+    // Тестовая обёртка «чужой библиотеки» корректно вызывает предыдущую
+    // реализацию селектора (`setDelegate:`), поэтому цепочка swizzling-ов
+    // сохраняется.
     private static func swapSetDelegateWithTestWrapper() {
         let originalSelector = #selector(setter: UINavigationController.delegate)
         let testSelector = #selector(UINavigationController.dispatcherTests_foreignSetDelegate(_:))
@@ -503,13 +503,13 @@ struct DispatcherSwizzlingCoexistenceTests {
     }
 }
 
-/// Тестовая обёртка «чужой библиотеки»: вызывает предыдущую реализацию
-/// селектора `setDelegate:` (после нашего swizzle это наша `fl_setDelegate`).
-///
-/// После обмена IMP селектор `setDelegate:` указывает на эту обёртку, а селектор
-/// `dispatcherTests_foreignSetDelegate:` — на предыдущую реализацию. Вызов
-/// `self.dispatcherTests_foreignSetDelegate(value)` — переход к предыдущей
-/// реализации в цепочке swizzling.
+// Тестовая обёртка «чужой библиотеки»: вызывает предыдущую реализацию
+// селектора `setDelegate:` (после нашего swizzle это наша `fl_setDelegate`).
+//
+// После обмена IMP селектор `setDelegate:` указывает на эту обёртку, а селектор
+// `dispatcherTests_foreignSetDelegate:` — на предыдущую реализацию. Вызов
+// `self.dispatcherTests_foreignSetDelegate(value)` — переход к предыдущей
+// реализации в цепочке swizzling.
 private extension UINavigationController {
     @objc func dispatcherTests_foreignSetDelegate(_ delegate: (any UINavigationControllerDelegate)?) {
         // Корректно делегируем предыдущей реализации цепочки swizzling-ов.
@@ -522,8 +522,8 @@ private extension UINavigationController {
 @MainActor
 @Suite("Coordinating Protocol")
 struct CoordinatingProtocolTests {
-    /// `FlowNode.coordinator` типизирован через `any Coordinating`: принимает
-    /// любой координатор, соответствующий протоколу.
+    // `FlowNode.coordinator` типизирован через `any Coordinating`: принимает
+    // любой координатор, соответствующий протоколу.
     @Test func flowNodeStoresCoordinatingCoordinator() {
         // arrange
         let coordinator = CoordinatingStub()
@@ -535,8 +535,8 @@ struct CoordinatingProtocolTests {
         #expect(node.coordinator === coordinator)
     }
 
-    /// Дефолтная реализация `receive(_:) -> false`: координатор без override
-    /// не обрабатывает интенты.
+    // Дефолтная реализация `receive(_:) -> false`: координатор без override
+    // не обрабатывает интенты.
     @Test func defaultReceiveReturnsFalse() {
         // arrange
         let coordinator = CoordinatingStub()
@@ -549,8 +549,8 @@ struct CoordinatingProtocolTests {
         #expect(result == false)
     }
 
-    /// Наследник `BaseCoordinator` автоматически соответствует `Coordinating`
-    /// и наследует дефолтный `receive(_:) -> false`.
+    // Наследник `BaseCoordinator` автоматически соответствует `Coordinating`
+    // и наследует дефолтный `receive(_:) -> false`.
     @Test func baseCoordinatorConformsToCoordinating() {
         // arrange
         let composer = CoordinatorTestComposer()
@@ -566,7 +566,7 @@ struct CoordinatingProtocolTests {
         #expect(type(of: asCoordinating) == NoopStackCoordinator.self)
     }
 
-    /// Override `receive(_:) -> true` в наследнике останавливает распространение.
+    // Override `receive(_:) -> true` в наследнике останавливает распространение.
     @Test func overridingReceiveReturnsTrue() {
         // arrange
         let composer = CoordinatorTestComposer()
@@ -580,8 +580,8 @@ struct CoordinatingProtocolTests {
         #expect(result == true)
     }
 
-    /// `CoordinatorIntent` — маркерный протокол: конкретный тип переносится
-    /// без потерь.
+    // `CoordinatorIntent` — маркерный протокол: конкретный тип переносится
+    // без потерь.
     @Test func coordinatorIntentIsMarkerProtocol() {
         // arrange
         let intent: any CoordinatorIntent = StubIntent()
@@ -593,19 +593,19 @@ struct CoordinatingProtocolTests {
 
 // MARK: - Coordinating test doubles
 
-/// Минимальный координатор-заглушка, соответствующий `Coordinating`.
+// Минимальный координатор-заглушка, соответствующий `Coordinating`.
 @MainActor
 private final class CoordinatingStub: Coordinating {}
 
-/// Маркерный интент без полезной нагрузки.
+// Маркерный интент без полезной нагрузки.
 @MainActor
 private final class StubIntent: CoordinatorIntent {}
 
-/// Конкретная навигация-заглушка для конструирования BaseCoordinator-наследников.
+// Конкретная навигация-заглушка для конструирования BaseCoordinator-наследников.
 @MainActor
 private final class DummyStackNavigation: StubStackNavigation {}
 
-/// Минимальный composer для тестов BaseCoordinator-наследников.
+// Минимальный composer для тестов BaseCoordinator-наследников.
 @MainActor
 private final class CoordinatorTestComposer: Composing {
     typealias Route = CoordinatingTestRoute
@@ -617,13 +617,13 @@ private enum CoordinatingTestRoute { case anyRoute }
 @MainActor
 private protocol StubStackNavigation: AnyObject {}
 
-/// Coordinator без override `receive(_:)` — должен наследовать дефолт false.
+// Coordinator без override `receive(_:)` — должен наследовать дефолт false.
 @MainActor
 private final class NoopStackCoordinator: BaseCoordinator<any StubStackNavigation, CoordinatingTestRoute> {
     override func start(_ context: CoordinatorStartContext) {}
 }
 
-/// Coordinator с собственной реализацией `receive(_:) -> true`.
+// Coordinator с собственной реализацией `receive(_:) -> true`.
 @MainActor
 private final class HandlingStackCoordinator: BaseCoordinator<any StubStackNavigation, CoordinatingTestRoute> {
     override func start(_ context: CoordinatorStartContext) {}

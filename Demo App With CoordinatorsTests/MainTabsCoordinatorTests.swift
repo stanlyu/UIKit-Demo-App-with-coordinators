@@ -9,10 +9,13 @@ import CartFeature
 struct MainTabsCoordinatorTests {
     @Test
     func start_setsHomeAndCartTabsWithoutAnimation() {
+        // arrange
         let sut = makeSUT()
 
+        // act
         sut.coordinator.start(CoordinatorStartContext())
 
+        // assert
         #expect(sut.router.setItemsCalls.count == 1)
         #expect(sut.router.setItemsCalls[0].items.count == 2)
         #expect(sut.router.setItemsCalls[0].items[0].isWrapping(sut.composer.homeViewController))
@@ -22,21 +25,27 @@ struct MainTabsCoordinatorTests {
 
     @Test
     func homePlaceOrder_selectsCartTabController() {
+        // arrange
         let sut = makeSUT()
         sut.coordinator.start(CoordinatorStartContext())
 
+        // act
         sut.composer.homeEventHandler?(.placeOrder(orderID: 42))
 
+        // assert
         #expect(sut.router.selectItemCalls.last?.isWrapping(sut.composer.cartViewController) == true)
     }
 
     @Test
     func homePlaceOrder_forwardsOrderIDToCartCoordinator() {
+        // arrange
         let sut = makeSUT()
         sut.coordinator.start(CoordinatorStartContext())
 
+        // act
         sut.composer.homeEventHandler?(.placeOrder(orderID: 42))
 
+        // assert
         #expect(sut.composer.mockCartNavigationInput.placeOrderCalls == [42])
     }
 }
@@ -58,45 +67,43 @@ private extension MainTabsCoordinatorTests {
 }
 
 @MainActor
-    private final class MockMainTabsComposer: MainTabsComposing {
-        let homeViewController = UIViewController()
-        let cartViewController = UIViewController()
-        let pickupPointsViewController = UIViewController()
-        let paymentViewController = UIViewController()
-        let mockCartNavigationInput = MockCartNavigationInput()
+private final class MockMainTabsComposer: MainTabsComposing {
+    let homeViewController = UIViewController()
+    let cartViewController = UIViewController()
+    let pickupPointsViewController = UIViewController()
+    let paymentViewController = UIViewController()
+    let mockCartNavigationInput = MockCartNavigationInput()
 
-        var homeEventHandler: ((HomeNavigationOutputEvent) -> Void)?
-        var cartEventHandler: ((CartNavigationOutputEvent) -> Void)?
-        var pickupPointsEmbeddedInNavigationStack: Bool?
+    var homeEventHandler: ((HomeNavigationOutputEvent) -> Void)?
+    var cartEventHandler: ((CartNavigationOutputEvent) -> Void)?
+    var pickupPointsEmbeddedInNavigationStack: Bool?
 
-        func makeViewController(for route: MainTabsRoute) -> UIViewController {
-            switch route {
-            case .home(let onEvent):
-                homeEventHandler = onEvent
-                return homeViewController
-            case let .cart(onCreated, onEvent):
-                cartEventHandler = onEvent
-                onCreated(mockCartNavigationInput)
-                return cartViewController
-            case let .pickupPoints(embeddedInNavigationStack, _):
-                pickupPointsEmbeddedInNavigationStack = embeddedInNavigationStack
-                return pickupPointsViewController
-            case .payment:
-                return paymentViewController
-            }
+    func makeViewController(for route: MainTabsRoute) -> UIViewController {
+        switch route {
+        case .home(let onEvent):
+            homeEventHandler = onEvent
+            return homeViewController
+        case let .cart(onCreated, onEvent):
+            cartEventHandler = onEvent
+            onCreated(mockCartNavigationInput)
+            return cartViewController
+        case let .pickupPoints(embeddedInNavigationStack, _):
+            pickupPointsEmbeddedInNavigationStack = embeddedInNavigationStack
+            return pickupPointsViewController
+        case .payment:
+            return paymentViewController
         }
     }
+}
 
-    @MainActor
-    private final class MockCartNavigationInput: CartNavigationInput {
-        private(set) var placeOrderCalls: [Int] = []
+@MainActor
+private final class MockCartNavigationInput: CartNavigationInput {
+    private(set) var placeOrderCalls: [Int] = []
 
-        func placeOrder(_ orderID: Int) {
-            placeOrderCalls.append(orderID)
-        }
+    func placeOrder(_ orderID: Int) {
+        placeOrderCalls.append(orderID)
     }
-
-
+}
 
 @MainActor
 private final class MockTabRouter: TabsNavigation {

@@ -1,17 +1,17 @@
 import XCTest
 
-/// UI-регрессионные тесты для P1-фикса `NavigationControllerDelegateDispatcher`
-/// (навигационный мультиплексор делегатов `UINavigationController`).
-///
-/// Контракт P1: после того, как внешний код затирает `nav.delegate`
-/// (например, экран `AddPickupPointsViewController`/`PlaceOrderViewController`
-/// назначает себя делегатом `interactivePopGestureRecognizer`, что в ряде
-/// сценариев влияет на цепочку делегатов навигации), instance-наблюдатель Core
-/// (StackRouter/InlineRouter) продолжает получать события `didShow` и дерево
-/// координаторов остаётся консистентным. XCUITest не может напрямую выставить
-/// `nav.delegate = nil`, поэтому здесь покрываются наблюдаемые следствия через
-/// реальную пользовательскую навигацию: edge-swipe back, push/pop и свайп-back
-/// между программными операциями.
+// UI-регрессионные тесты для P1-фикса `NavigationControllerDelegateDispatcher`
+// (навигационный мультиплексор делегатов `UINavigationController`).
+//
+// Контракт P1: после того, как внешний код затирает `nav.delegate`
+// (например, экран `AddPickupPointsViewController`/`PlaceOrderViewController`
+// назначает себя делегатом `interactivePopGestureRecognizer`, что в ряде
+// сценариев влияет на цепочку делегатов навигации), instance-наблюдатель Core
+// (StackRouter/InlineRouter) продолжает получать события `didShow` и дерево
+// координаторов остаётся консистентным. XCUITest не может напрямую выставить
+// `nav.delegate = nil`, поэтому здесь покрываются наблюдаемые следствия через
+// реальную пользовательскую навигацию: edge-swipe back, push/pop и свайп-back
+// между программными операциями.
 @MainActor
 final class NavigationDelegateRegressionUITests: XCTestCase {
     private var app: XCUIApplication!
@@ -22,110 +22,106 @@ final class NavigationDelegateRegressionUITests: XCTestCase {
 
     // MARK: - Сценарий 1: Edge-swipe back синхронизирует дерево координаторов
 
-    /// P1-контракт: после edge-swipe back система iOS вызывает `didShow`,
-    /// instance-наблюдатель Core синхронизирует дерево, и последующая
-    /// программная навигация работает корректно (дерево не рассинхронизировано).
-    ///
-    /// Особый акцент: экран «Добавить ПВЗ» сам назначает себя делегатом
-    /// `interactivePopGestureRecognizer` (см. `AddPickupPointsViewController`),
-    /// что делает этот сценарий максимально релевантным для проверки
-    /// устойчивости dispatcher к стороннему вмешательству в делегаты.
+    // P1-контракт: после edge-swipe back система iOS вызывает `didShow`,
+    // instance-наблюдатель Core синхронизирует дерево, и последующая
+    // программная навигация работает корректно (дерево не рассинхронизировано).
+    //
+    // Особый акцент: экран «Добавить ПВЗ» сам назначает себя делегатом
+    // `interactivePopGestureRecognizer` (см. `AddPickupPointsViewController`),
+    // что делает этот сценарий максимально релевантным для проверки
+    // устойчивости dispatcher к стороннему вмешательству в делегаты.
     func testSwipeBackKeepsTreeConsistentAndAllowsSubsequentNavigation() {
+        // arrange: запуск и навигация на экран «Добавить ПВЗ».
         launchApp()
         defer { app.terminate() }
-
         waitForMainTabs()
-
-        // 1. Главная → push «Выбор ПВЗ»
         tapButton(named: "ПВЗ", timeout: 8)
-        XCTAssertTrue(app.navigationBars["Выбор ПВЗ"].waitForExistence(timeout: 5))
-
-        // 2. «Выбор ПВЗ» → push «Добавить ПВЗ»
         tapButton(named: "Добавить", timeout: 5)
+        XCTAssertTrue(app.navigationBars["Выбор ПВЗ"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.navigationBars["Добавить ПВЗ"].waitForExistence(timeout: 5))
 
-        // 3. Edge-swipe back с экрана «Добавить ПВЗ» → возврат на «Выбор ПВЗ».
-        //    Если жест не срабатывает надёжно — тест откатывается на back-кнопку
-        //    (это тоже путь через didShow), но сперва пытаемся именно edge swipe,
-        //    т.к. это и есть целевой P1-сценарий.
+        // act: edge-swipe back с экрана «Добавить ПВЗ».
+        // Если жест не срабатывает надёжно — тест откатывается на back-кнопку
+        // (это тоже путь через didShow), но сперва пытаемся именно edge swipe,
+        // т.к. это и есть целевой P1-сценарий.
         performEdgeSwipeBack(fallbackToBackButtonOn: "Добавить ПВЗ")
+
+        // assert: дерево синхронизировано — ожидается «Выбор ПВЗ».
         XCTAssertTrue(
             app.navigationBars["Выбор ПВЗ"].waitForExistence(timeout: 5),
             "После свайпа-back дерево должно быть синхронизировано: ожидается «Выбор ПВЗ»"
         )
 
-        // 4. Повторная программная навигация после свайпа-back.
-        //    Если бы дерево рассинхронизировалось, push мог бы сломаться
-        //    (наблюдатель не получил бы didShow и не обновил childRouterItems).
+        // act: повторная программная навигация после свайпа-back.
         tapButton(named: "Добавить", timeout: 5)
+
+        // assert: повторный push срабатывает — дерево консистентно
+        // (если бы наблюдатель не получил didShow, push мог бы сломаться).
         XCTAssertTrue(
             app.navigationBars["Добавить ПВЗ"].waitForExistence(timeout: 5),
             "Повторный push после свайпа-back должен срабатывать: дерево консистентно"
         )
 
-        // 5. Полный возврат к корню стекам: «Добавить ПВЗ» → «Выбор ПВЗ» → «Главная».
+        // cleanup: полный возврат к корню стека.
         tapBackButton(onNavigationBar: "Добавить ПВЗ")
         XCTAssertTrue(app.navigationBars["Выбор ПВЗ"].waitForExistence(timeout: 5))
         tapBackButton(onNavigationBar: "Выбор ПВЗ")
         XCTAssertTrue(app.navigationBars["Главная"].waitForExistence(timeout: 5))
     }
 
-    /// Дополнение к Сценарию 1: несколько подряд edge-swipe back не ломают стек.
-    /// Проверяет, что повторные didShow от системы корректно обрабатываются
-    /// dispatcher без накопления состояния/рассинхронизации.
+    // Дополнение к Сценарию 1: несколько подряд edge-swipe back не ломают стек.
+    // Проверяет, что повторные didShow от системы корректно обрабатываются
+    // dispatcher без накопления состояния/рассинхронизации.
     func testRepeatedSwipeBackDoesNotCorruptStack() {
+        // arrange: запуск и навигация на экран «Добавить ПВЗ».
         launchApp()
         defer { app.terminate() }
-
         waitForMainTabs()
-
         tapButton(named: "ПВЗ", timeout: 8)
-        XCTAssertTrue(app.navigationBars["Выбор ПВЗ"].waitForExistence(timeout: 5))
-
         tapButton(named: "Добавить", timeout: 5)
+        XCTAssertTrue(app.navigationBars["Выбор ПВЗ"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.navigationBars["Добавить ПВЗ"].waitForExistence(timeout: 5))
 
-        // Первый edge-swipe back: «Добавить ПВЗ» → «Выбор ПВЗ».
+        // act: два подряд edge-swipe back — «Добавить ПВЗ» → «Выбор ПВЗ» → «Главная».
         performEdgeSwipeBack(fallbackToBackButtonOn: "Добавить ПВЗ")
-        XCTAssertTrue(app.navigationBars["Выбор ПВЗ"].waitForExistence(timeout: 5))
-
-        // Второй edge-swipe back: «Выбор ПВЗ» → «Главная».
         performEdgeSwipeBack(fallbackToBackButtonOn: "Выбор ПВЗ")
+
+        // assert: стек дошёл до корня без рассинхронизации.
+        XCTAssertTrue(app.navigationBars["Выбор ПВЗ"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.navigationBars["Главная"].waitForExistence(timeout: 5))
     }
 
     // MARK: - Сценарий 2: Многоуровневый push/pop/present/dismiss + последующий push
 
-    /// Регрессия дерева координаторов: после серии push/present/dismiss/pop
-    /// дерево остаётся консистентным и повторный push доступен.
-    /// Покрывает смешанную навигацию через Cart flow: программные push/pop
-    /// чередуются с present/dismiss, что прогоняет dispatcher через разные
-    /// пути активации didShow.
+    // Регрессия дерева координаторов: после серии push/present/dismiss/pop
+    // дерево остаётся консистентным и повторный push доступен.
+    // Покрывает смешанную навигацию через Cart flow: программные push/pop
+    // чередуются с present/dismiss, что прогоняет dispatcher через разные
+    // пути активации didShow.
     func testMixedNavigationFlowKeepsTreeConsistentForRepeatedPush() {
+        // arrange: запуск и вход в оформление заказа.
         launchApp()
         defer { app.terminate() }
-
         waitForMainTabs()
-
-        // Оформить заказ → Оформление заказа (программный push внутри Cart).
         tapButton(named: "Оформить заказ", timeout: 10)
         XCTAssertTrue(app.navigationBars["Оформление заказа"].waitForExistence(timeout: 8))
 
-        // Продолжить → Оплата (push), back → Оформление заказа (pop через didShow).
+        // act: push/pop (Оплата) и modal present/dismiss (Выбор ПВЗ).
         tapButton(named: "Продолжить", timeout: 5)
         XCTAssertTrue(app.navigationBars["Оплата"].waitForExistence(timeout: 5))
         tapBackButton(onNavigationBar: "Оплата")
-        XCTAssertTrue(app.navigationBars["Оформление заказа"].waitForExistence(timeout: 5))
-
-        // Смена ПВЗ → modal present «Выбор ПВЗ», Закрыть → dismiss.
         tapButton(named: "Смена ПВЗ", timeout: 5)
         XCTAssertTrue(app.navigationBars["Выбор ПВЗ"].waitForExistence(timeout: 5))
         tapButton(named: "Закрыть", timeout: 5)
+
+        // assert: вернулись на оформление заказа после смешанной навигации.
         XCTAssertTrue(app.navigationBars["Оформление заказа"].waitForExistence(timeout: 5))
 
-        // Повторный push после всей смешанной навигации: должен сработать,
-        // т.к. дерево координаторов консистентно.
+        // act: повторный push оплаты.
         tapButton(named: "Продолжить", timeout: 5)
+
+        // assert: повторный push доступен — дерево консистентно после
+        // серии push/pop/present/dismiss.
         XCTAssertTrue(
             app.navigationBars["Оплата"].waitForExistence(timeout: 5),
             "Повторный push Оплата должен быть доступен: дерево консистентно после push/pop/present/dismiss"
@@ -134,29 +130,32 @@ final class NavigationDelegateRegressionUITests: XCTestCase {
 
     // MARK: - Сценарий 3: Switch flow (ApplicationCoordinator) — корректная смена root
 
-    /// Контракт SwitchRouter: переключение между launch screen и main flow
-    /// (switchTo). Успешный запуск и появление главных табов означает, что
-    /// ApplicationCoordinator выполнил switchTo из launch в mainFlow.
-    /// Это расширенная проверка: после switchTo последующая стековая навигация
-    /// внутри табов работает корректно (root сменился, но дочерние router'ы живы).
+    // Контракт SwitchRouter: переключение между launch screen и main flow
+    // (switchTo). Успешный запуск и появление главных табов означает, что
+    // ApplicationCoordinator выполнил switchTo из launch в mainFlow.
+    // Это расширенная проверка: после switchTo последующая стековая навигация
+    // внутри табов работает корректно (root сменился, но дочерние router'ы живы).
     func testSwitchFlowFromLaunchToMainFlowAllowsStackNavigation() {
+        // arrange: запуск. Появление табов означает, что switchTo
+        // (launch → mainFlow) выполнен успешно.
         launchApp()
         defer { app.terminate() }
-
-        // Появление табов = switchTo(launch → mainFlow) выполнен успешно.
         waitForMainTabs()
 
-        // После смены root-контента стековая навигация в табе должна работать.
+        // act: стековая навигация в табе после смены root-контента.
         tapButton(named: "ПВЗ", timeout: 8)
         XCTAssertTrue(app.navigationBars["Выбор ПВЗ"].waitForExistence(timeout: 5))
-
         tapBackButton(onNavigationBar: "Выбор ПВЗ")
+
+        // assert: возврат на главную — дочерние роутеры живы после switchTo.
         XCTAssertTrue(app.navigationBars["Главная"].waitForExistence(timeout: 5))
 
-        // Переключение между табами тоже не должно ломать дерево.
+        // act: переключение между табами.
         tapTab(named: "Корзина")
-        XCTAssertTrue(app.navigationBars["Корзина"].waitForExistence(timeout: 5))
         tapTab(named: "Главная")
+
+        // assert: табы переключаются, дерево не сломано.
+        XCTAssertTrue(app.navigationBars["Корзина"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.navigationBars["Главная"].waitForExistence(timeout: 5))
     }
 }
@@ -211,15 +210,15 @@ private extension NavigationDelegateRegressionUITests {
         XCTAssertEqual(result, .completed)
     }
 
-    /// Выполняет edge-swipe back от левого края экрана.
-    ///
-    /// `app.swipeRight()` ненадёжен, т.к. может начаться не у самого края и
-    /// попасть в контент (таблицу/кнопку). Здесь swipe инициируется строго у
-    /// левой границы окна, где живёт `interactivePopGestureRecognizer`.
-    ///
-    /// Если жест не привёл к смене экрана за `verificationTimeout`, тест
-    /// откатывается на системную back-кнопку (это тоже валидный путь через
-    /// didShow) — это фиксируется в комментариях к сценарию, но не валит тест.
+    // Выполняет edge-swipe back от левого края экрана.
+    //
+    // `app.swipeRight()` ненадёжен, т.к. может начаться не у самого края и
+    // попасть в контент (таблицу/кнопку). Здесь swipe инициируется строго у
+    // левой границы окна, где живёт `interactivePopGestureRecognizer`.
+    //
+    // Если жест не привёл к смене экрана за `verificationTimeout`, тест
+    // откатывается на системную back-кнопку (это тоже валидный путь через
+    // didShow) — это фиксируется в комментариях к сценарию, но не валит тест.
     func performEdgeSwipeBack(
         fallbackToBackButtonOn currentScreenTitle: String,
         verificationTimeout: TimeInterval = 4.0
@@ -252,7 +251,7 @@ private extension NavigationDelegateRegressionUITests {
 // MARK: - XCUIElement waiting helpers
 
 private extension XCUIElement {
-    /// Ждёт, пока элемент перестанет существовать (например, экран ушёл из стека).
+    // Ждёт, пока элемент перестанет существовать (например, экран ушёл из стека).
     @discardableResult
     func waitForNonExistence(timeout: TimeInterval) -> Bool {
         let predicate = NSPredicate(format: "exists == false")

@@ -2,8 +2,8 @@ import Testing
 import UIKit
 @testable import Core
 
-/// Минимальный тестовый координатор-заглушка, соответствующий `Coordinating`.
-/// Используется вместо `NSObject` там, где требуется `any Coordinating`.
+// Минимальный тестовый координатор-заглушка, соответствующий `Coordinating`.
+// Используется вместо `NSObject` там, где требуется `any Coordinating`.
 @MainActor
 private final class StubCoordinator: Coordinating {}
 

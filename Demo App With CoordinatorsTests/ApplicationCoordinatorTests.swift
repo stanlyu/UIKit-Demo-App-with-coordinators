@@ -7,22 +7,28 @@ import Testing
 struct ApplicationCoordinatorTests {
     @Test
     func start_setsLaunchScreenAsRootWithoutAnimation() {
+        // arrange
         let sut = makeSUT()
-        
+
+        // act
         sut.coordinator.start(CoordinatorStartContext())
-        
+
+        // assert
         #expect(sut.router.switchToCalls.count == 1)
         #expect(sut.router.switchToCalls[0].item.isWrapping(sut.composer.launchViewController))
         #expect(sut.router.switchToCalls[0].animated == false)
     }
-    
+
     @Test
     func launchMainFlowEvent_replacesRootWithMainTabsAnimated() {
+        // arrange
         let sut = makeSUT()
         sut.coordinator.start(CoordinatorStartContext())
-        
+
+        // act
         sut.composer.launchEventHandler?(.mainFlowStarted)
-        
+
+        // assert
         #expect(sut.router.switchToCalls.count == 2)
         #expect(sut.router.switchToCalls[1].item.isWrapping(sut.composer.mainTabsViewController))
         #expect(sut.router.switchToCalls[1].animated == true)
